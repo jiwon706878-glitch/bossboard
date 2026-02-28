@@ -34,6 +34,14 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "A2Z";
+  src: url("/fonts/A2Z-9Black.ttf") format("truetype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -119,39 +127,39 @@
 }
 
 .dark {
-  --background: oklch(0.13 0.02 50);
-  --foreground: oklch(0.96 0.005 50);
-  --card: oklch(0.18 0.02 50);
-  --card-foreground: oklch(0.96 0.005 50);
-  --popover: oklch(0.18 0.02 50);
-  --popover-foreground: oklch(0.96 0.005 50);
-  --primary: oklch(0.75 0.18 50);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.22 0.02 50);
-  --secondary-foreground: oklch(0.96 0.005 50);
-  --muted: oklch(0.22 0.02 50);
-  --muted-foreground: oklch(0.65 0.02 50);
-  --accent: oklch(0.82 0.17 80);
-  --accent-foreground: oklch(0.15 0.05 80);
+  --background: #1a1a2e;
+  --foreground: #e2e2e9;
+  --card: #232340;
+  --card-foreground: #e2e2e9;
+  --popover: #232340;
+  --popover-foreground: #e2e2e9;
+  --primary: #FB923C;
+  --primary-foreground: #1a1a2e;
+  --secondary: #2d2d4a;
+  --secondary-foreground: #e2e2e9;
+  --muted: #2d2d4a;
+  --muted-foreground: #9d9db5;
+  --accent: #3a3a58;
+  --accent-foreground: #e2e2e9;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(0.28 0.02 50);
-  --input: oklch(0.28 0.02 50);
-  --ring: oklch(0.75 0.18 50);
-  --amber: oklch(0.82 0.17 80);
-  --amber-foreground: oklch(0.15 0.05 80);
-  --chart-1: oklch(0.75 0.18 50);
-  --chart-2: oklch(0.82 0.17 80);
+  --border: #2d2d4a;
+  --input: #2d2d4a;
+  --ring: #FB923C;
+  --amber: #FB923C;
+  --amber-foreground: #1a1a2e;
+  --chart-1: #FB923C;
+  --chart-2: #FDBA74;
   --chart-3: oklch(0.696 0.17 162.48);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.15 0.02 50);
-  --sidebar-foreground: oklch(0.96 0.005 50);
-  --sidebar-primary: oklch(0.75 0.18 50);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.22 0.02 50);
-  --sidebar-accent-foreground: oklch(0.96 0.005 50);
-  --sidebar-border: oklch(0.28 0.02 50);
-  --sidebar-ring: oklch(0.75 0.18 50);
+  --sidebar: #1a1a2e;
+  --sidebar-foreground: #e2e2e9;
+  --sidebar-primary: #FB923C;
+  --sidebar-primary-foreground: #1a1a2e;
+  --sidebar-accent: #2d2d4a;
+  --sidebar-accent-foreground: #e2e2e9;
+  --sidebar-border: #2d2d4a;
+  --sidebar-ring: #FB923C;
 }
 
 @layer base {
@@ -162,7 +170,7 @@
     @apply bg-background text-foreground;
   }
   h1 {
-    font-weight: 700;
+    font-weight: 900;
   }
   h2,
   h3 {

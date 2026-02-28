@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, Loader2, Save } from "lucide-react";
+import { Sparkles, Loader2, Save, Camera, Type, Music, Image, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 const formats = [
@@ -30,7 +30,18 @@ const formats = [
 
 function parseScript(text: string) {
   const sections: Record<string, string> = {};
-  const markers = ["---HOOK---", "---BODY---", "---CTA---", "---FILMING GUIDE---"];
+  const markers = [
+    "---HOOK---",
+    "---BODY---",
+    "---CTA---",
+    "---SCENE COMPOSITION---",
+    "---TEXT OVERLAYS---",
+    "---MUSIC & SOUND---",
+    "---THUMBNAIL CONCEPT---",
+    "---HOOK ALTERNATIVES---",
+    // Legacy marker
+    "---FILMING GUIDE---",
+  ];
 
   let current = "";
   for (const line of text.split("\n")) {
@@ -48,6 +59,11 @@ function parseScript(text: string) {
     hook: sections["hook"]?.trim() || "",
     body: sections["body"]?.trim() || "",
     cta: sections["cta"]?.trim() || "",
+    sceneComposition: sections["scene composition"]?.trim() || "",
+    textOverlays: sections["text overlays"]?.trim() || "",
+    musicSound: sections["music & sound"]?.trim() || "",
+    thumbnailConcept: sections["thumbnail concept"]?.trim() || "",
+    hookAlternatives: sections["hook alternatives"]?.trim() || "",
     filmingGuide: sections["filming guide"]?.trim() || "",
   };
 }
@@ -61,6 +77,11 @@ export default function NewScriptPage() {
     hook: string;
     body: string;
     cta: string;
+    sceneComposition: string;
+    textOverlays: string;
+    musicSound: string;
+    thumbnailConcept: string;
+    hookAlternatives: string;
     filmingGuide: string;
   } | null>(null);
   const [fullScript, setFullScript] = useState("");
@@ -230,6 +251,61 @@ export default function NewScriptPage() {
                 </p>
                 <p className="text-sm whitespace-pre-wrap">
                   {parsedScript.cta}
+                </p>
+              </div>
+            )}
+
+            {parsedScript.sceneComposition && (
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <Camera className="h-3 w-3" /> Scene Composition
+                </p>
+                <p className="text-sm whitespace-pre-wrap">
+                  {parsedScript.sceneComposition}
+                </p>
+              </div>
+            )}
+
+            {parsedScript.textOverlays && (
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <Type className="h-3 w-3" /> Text Overlays
+                </p>
+                <p className="text-sm whitespace-pre-wrap">
+                  {parsedScript.textOverlays}
+                </p>
+              </div>
+            )}
+
+            {parsedScript.musicSound && (
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <Music className="h-3 w-3" /> Music & Sound
+                </p>
+                <p className="text-sm whitespace-pre-wrap">
+                  {parsedScript.musicSound}
+                </p>
+              </div>
+            )}
+
+            {parsedScript.thumbnailConcept && (
+              <div className="rounded-lg border-l-4 border-[#E8825A] bg-[#E8825A]/10 p-4">
+                <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[#E8825A]">
+                  <Image className="h-3 w-3" /> Thumbnail Concept
+                </p>
+                <p className="text-sm whitespace-pre-wrap">
+                  {parsedScript.thumbnailConcept}
+                </p>
+              </div>
+            )}
+
+            {parsedScript.hookAlternatives && (
+              <div className="rounded-lg border-l-4 border-amber bg-amber/10 p-4">
+                <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-foreground">
+                  <Zap className="h-3 w-3" /> Hook Alternatives
+                </p>
+                <p className="text-sm whitespace-pre-wrap">
+                  {parsedScript.hookAlternatives}
                 </p>
               </div>
             )}

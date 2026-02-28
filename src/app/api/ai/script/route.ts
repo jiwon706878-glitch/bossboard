@@ -51,18 +51,31 @@ export async function POST(req: Request) {
 Write a script for a ${formatGuide[format] || format}.
 Target audience: ${audience || "general local audience"}.
 
-Format your response EXACTLY like this:
+Format your response EXACTLY like this (include ALL sections):
+
 ---HOOK---
-(Write an attention-grabbing opening line, 1-2 sentences)
+(Write 2-3 attention-grabbing opening lines. Include a pattern interrupt or curiosity gap to stop the scroll.)
 
 ---BODY---
-(Write the main content, 3-5 sentences)
+(Write the main content, 4-6 sentences. Keep it conversational and authentic.)
 
 ---CTA---
-(Write a clear call-to-action, 1-2 sentences)
+(Write a clear call-to-action, 1-2 sentences. Include what to do, why, and urgency.)
 
----FILMING GUIDE---
-(Write 3-5 bullet points with filming tips: camera angles, transitions, text overlays, music suggestions)
+---SCENE COMPOSITION---
+(Describe 3-4 specific shots/scenes with camera angles, framing, and transitions between each scene.)
+
+---TEXT OVERLAYS---
+(List 3-5 on-screen text suggestions with timing, e.g., "0:03 — Bold text: 'Wait for it...'")
+
+---MUSIC & SOUND---
+(Suggest 2-3 music styles/genres or trending sounds that fit the mood. Include tempo and energy level.)
+
+---THUMBNAIL CONCEPT---
+(Describe an eye-catching thumbnail: background, text, expression/pose, colors.)
+
+---HOOK ALTERNATIVES---
+(Write 2 alternative hook options with different angles — e.g., question-based, shock value, or relatable statement.)
 
 Keep it conversational and authentic. No corporate speak.`,
     prompt: `Topic: ${topic}

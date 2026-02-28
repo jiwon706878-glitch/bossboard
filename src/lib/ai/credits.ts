@@ -5,9 +5,12 @@ export const CREDIT_COSTS: Record<string, number> = {
   review_reply: 1,
   caption: 1,
   chat: 1,
+  email_marketing: 1,
+  translation: 1,
   script: 3,
   image_analysis: 5,
   report: 5,
+  review_insights: 5,
   business_plan: 10,
 };
 

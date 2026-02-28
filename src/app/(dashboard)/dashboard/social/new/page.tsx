@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Loader2, Copy, Check, Save } from "lucide-react";
+import { Sparkles, Loader2, Copy, Check, Save, Languages } from "lucide-react";
 import { toast } from "sonner";
 
 export default function NewSocialPostPage() {
@@ -30,6 +30,17 @@ export default function NewSocialPostPage() {
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [translating, setTranslating] = useState(false);
+
+  const translateLanguages = [
+    { value: "spanish", label: "Spanish" },
+    { value: "french", label: "French" },
+    { value: "german", label: "German" },
+    { value: "chinese", label: "Chinese" },
+    { value: "japanese", label: "Japanese" },
+    { value: "korean", label: "Korean" },
+    { value: "portuguese", label: "Portuguese" },
+  ];
 
   const router = useRouter();
   const supabase = createClient();
@@ -103,6 +114,56 @@ export default function NewSocialPostPage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  async function handleTranslate(language: string) {
+    if (!caption || !currentBusiness) return;
+    setTranslating(true);
+    try {
+      const fullText =
+        caption + (hashtags.length > 0 ? "\n\n" + hashtags.map((h) => `#${h}`).join(" ") : "");
+      const res = await fetch("/api/ai/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          businessId: currentBusiness.id,
+          text: fullText,
+          targetLanguage: language,
+        }),
+      });
+      if (res.status === 429) {
+        toast.error("AI credit limit reached");
+        return;
+      }
+      if (!res.ok) {
+        toast.error("Translation failed");
+        return;
+      }
+      const translated = await res.text();
+      // Parse translated text back into caption + hashtags
+      const parts = translated.split("---HASHTAGS---");
+      if (parts.length > 1) {
+        setCaption(parts[0].trim());
+        const tags = parts[1].trim().split(/\s+/).map((t) => t.replace(/^#/, "")).filter(Boolean);
+        setHashtags(tags);
+      } else {
+        // Try to split by double newline if hashtags are present
+        const lines = translated.split("\n\n");
+        const lastLine = lines[lines.length - 1] || "";
+        if (lastLine.includes("#") && lines.length > 1) {
+          setCaption(lines.slice(0, -1).join("\n\n").trim());
+          const tags = lastLine.split(/\s+/).map((t) => t.replace(/^#/, "")).filter(Boolean);
+          setHashtags(tags);
+        } else {
+          setCaption(translated.trim());
+        }
+      }
+      toast.success(`Translated to ${language}`);
+    } catch {
+      toast.error("Connection error");
+    } finally {
+      setTranslating(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
@@ -173,14 +234,40 @@ export default function NewSocialPostPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Generated Caption</CardTitle>
-              <Button variant="ghost" size="sm" onClick={copyCaption}>
-                {copied ? (
-                  <Check className="mr-1 h-3 w-3" />
-                ) : (
-                  <Copy className="mr-1 h-3 w-3" />
-                )}
-                {copied ? "Copied" : "Copy"}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Select
+                  value=""
+                  onValueChange={handleTranslate}
+                  disabled={translating}
+                >
+                  <SelectTrigger className="h-8 w-[140px]">
+                    {translating ? (
+                      <span className="flex items-center gap-1 text-xs">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Translating...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-xs">
+                        <Languages className="h-3 w-3" /> Translate
+                      </span>
+                    )}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {translateLanguages.map((lang) => (
+                      <SelectItem key={lang.value} value={lang.value}>
+                        {lang.label} (1 credit)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="ghost" size="sm" onClick={copyCaption}>
+                  {copied ? (
+                    <Check className="mr-1 h-3 w-3" />
+                  ) : (
+                    <Copy className="mr-1 h-3 w-3" />
+                  )}
+                  {copied ? "Copied" : "Copy"}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">

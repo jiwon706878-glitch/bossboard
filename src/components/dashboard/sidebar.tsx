@@ -16,6 +16,9 @@ import {
   Settings,
   LogOut,
   HelpCircle,
+  Mail,
+  QrCode,
+  MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,6 +26,9 @@ const aiToolsLinks = [
   { href: "/dashboard/reviews", label: "Reviews", icon: Star },
   { href: "/dashboard/social", label: "Social Media", icon: Share2 },
   { href: "/dashboard/scripts", label: "Content Studio", icon: Video },
+  { href: "/dashboard/email-marketing", label: "Email Marketing", icon: Mail },
+  { href: "/dashboard/qr-code", label: "QR Code", icon: QrCode },
+  { href: "/dashboard/review-insights", label: "Review Insights", icon: MessageSquare },
 ];
 
 const accountLinks = [

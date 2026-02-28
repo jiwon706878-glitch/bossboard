@@ -40,10 +40,23 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/dashboard") ||
     request.nextUrl.pathname.startsWith("/onboarding");
 
+  const isAdminPage =
+    request.nextUrl.pathname.startsWith("/admin") ||
+    request.nextUrl.pathname.startsWith("/api/admin");
+
   if (!user && isDashboardPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
+  }
+
+  if (isAdminPage) {
+    const ADMIN_EMAIL = "jiwon706878@gmail.com";
+    if (!user || user.email !== ADMIN_EMAIL) {
+      const url = request.nextUrl.clone();
+      url.pathname = user ? "/dashboard" : "/login";
+      return NextResponse.redirect(url);
+    }
   }
 
   if (user && isAuthPage) {

@@ -27,14 +27,14 @@ export function UsageChart({
           <YAxis fontSize={12} tickLine={false} axisLine={false} />
           <Tooltip
             contentStyle={{
-              backgroundColor: "hsl(var(--card))",
-              border: "1px solid hsl(var(--border))",
+              backgroundColor: "var(--card)",
+              border: "1px solid var(--border)",
               borderRadius: "8px",
             }}
           />
           <Bar
             dataKey="credits"
-            fill="hsl(var(--primary))"
+            fill="#E8825A"
             radius={[4, 4, 0, 0]}
           />
         </BarChart>

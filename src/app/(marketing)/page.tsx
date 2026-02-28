@@ -117,12 +117,13 @@ export default function HomePage() {
                 <CardTitle>Review AI</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm text-muted-foreground">
-                <p>Never leave a review unanswered again. Our AI generates professional, on-brand responses in seconds.</p>
+                <p>Paste any customer review from Google, Yelp, or Facebook — our AI generates a professional reply in seconds. Copy and post it back.</p>
                 <ul className="space-y-1 pt-2">
                   <li className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-primary" /> Smart sentiment analysis</li>
                   <li className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-primary" /> Multiple tone options</li>
                   <li className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-primary" /> One-click copy replies</li>
                 </ul>
+                <p className="pt-2 text-xs text-muted-foreground/70">Works with: Google, Yelp, Facebook, TripAdvisor</p>
               </CardContent>
             </Card>
             <Card className="border-2 hover:border-primary/50 transition-colors">

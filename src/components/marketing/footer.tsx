@@ -6,7 +6,7 @@ export function MarketingFooter() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center gap-6 md:flex-row md:justify-between">
           <div className="flex items-center">
-            <img src="/Logo.png" alt="BossBoard" height={36} style={{ height: 36, width: 'auto' }} />
+            <img src="/logo.png" alt="BossBoard" height={36} style={{ height: 36, width: 'auto' }} />
           </div>
           <nav className="flex items-center gap-6 text-sm text-muted-foreground">
             <Link href="#features" className="hover:text-foreground">Features</Link>

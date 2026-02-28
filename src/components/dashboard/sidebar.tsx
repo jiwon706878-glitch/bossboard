@@ -47,7 +47,7 @@ export function DashboardSidebar({ className }: { className?: string }) {
       )}
     >
       <div className="flex h-16 items-center border-b px-6">
-        <img src="/Logo.png" alt="BossBoard" height={36} style={{ height: 36, width: 'auto' }} />
+        <img src="/logo.png" alt="BossBoard" height={36} style={{ height: 36, width: 'auto' }} />
       </div>
       <nav className="flex-1 space-y-1 p-3">
         {links.map((link) => {

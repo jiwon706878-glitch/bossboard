@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   description:
     "Review management, social media content, and short-form video scripting — all powered by AI.",
   icons: {
-    icon: "/favicon.svg",
+    icon: "/favicon.png",
   },
 };
 

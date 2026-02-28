@@ -28,13 +28,19 @@ export function PricingToggle() {
         {planOrder.map((planId) => {
           const plan = plans[planId];
           const price = annual ? plan.annualPrice : plan.monthlyPrice;
-          const isPro = planId === "business";
+          const isPopular = planId === "business";
+          const isProPlan = planId === "pro";
 
           return (
-            <Card key={planId} className={isPro ? "border-primary shadow-lg relative" : "relative"}>
-              {isPro && (
+            <Card key={planId} className={isPopular ? "border-primary shadow-lg relative" : "relative"}>
+              {isPopular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <Badge className="bg-primary">Most Popular</Badge>
+                </div>
+              )}
+              {isProPlan && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <Badge variant="secondary" className="font-bold">SAVE $80/MONTH</Badge>
                 </div>
               )}
               <CardHeader>
@@ -64,7 +70,7 @@ export function PricingToggle() {
               </CardContent>
               <CardFooter>
                 <Link href="/signup" className="w-full">
-                  <Button className="w-full" variant={isPro ? "default" : "outline"}>
+                  <Button className="w-full" variant={isPopular ? "default" : "outline"}>
                     {planId === "free" ? "Start Free" : "Get Started"}
                   </Button>
                 </Link>

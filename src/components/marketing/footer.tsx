@@ -6,7 +6,7 @@ export function MarketingFooter() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center gap-6 md:flex-row md:justify-between">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="" width={40} height={40} className="h-10 w-10" />
+            <img src="/Logo.png" alt="" width={40} height={40} className="h-10 w-10" />
             <span className="text-lg font-bold">BossBoard</span>
           </div>
           <nav className="flex items-center gap-6 text-sm text-muted-foreground">

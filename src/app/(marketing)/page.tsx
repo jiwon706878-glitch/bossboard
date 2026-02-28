@@ -13,7 +13,6 @@ import {
   Megaphone,
   Sparkles,
   ArrowRight,
-  Quote,
 } from "lucide-react";
 
 export default function HomePage() {
@@ -47,7 +46,7 @@ export default function HomePage() {
             </Link>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
-            No credit card required. 25 free AI credits/month.
+            No credit card required. 30 free AI credits/month.
           </p>
         </div>
       </section>
@@ -171,55 +170,6 @@ export default function HomePage() {
           </div>
           <div className="mt-10">
             <PricingToggle />
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section id="testimonials" className="px-4 py-20">
-        <div className="mx-auto max-w-5xl">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold">Loved by local businesses</h2>
-          </div>
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {[
-              {
-                name: "Sarah M.",
-                role: "Restaurant Owner",
-                quote:
-                  "BossBoard saved me 5 hours a week on review responses alone. My Google rating went from 3.8 to 4.5 in two months.",
-              },
-              {
-                name: "James K.",
-                role: "Gym Owner",
-                quote:
-                  "The script generator is incredible. I went from zero TikToks to posting 3x a week. My membership inquiries doubled.",
-              },
-              {
-                name: "Maria L.",
-                role: "Salon Owner",
-                quote:
-                  "I used to dread social media. Now I upload a photo, get a caption, and I'm done in 30 seconds. Game changer.",
-              },
-            ].map((t) => (
-              <Card key={t.name}>
-                <CardContent className="pt-6">
-                  <Quote className="mb-3 h-6 w-6 text-primary/40" />
-                  <p className="text-sm italic text-muted-foreground">
-                    &ldquo;{t.quote}&rdquo;
-                  </p>
-                  <div className="mt-4 flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
-                      {t.name[0]}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{t.name}</p>
-                      <p className="text-xs text-muted-foreground">{t.role}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
           </div>
         </div>
       </section>

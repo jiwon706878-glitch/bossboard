@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { plans, type PlanId } from "@/config/plans";
 
-const planOrder: PlanId[] = ["free", "starter", "pro", "agency"];
+const planOrder: PlanId[] = ["free", "pro", "business", "enterprise"];
 
 export function PricingToggle() {
   const [annual, setAnnual] = useState(false);
@@ -28,7 +28,7 @@ export function PricingToggle() {
         {planOrder.map((planId) => {
           const plan = plans[planId];
           const price = annual ? plan.annualPrice : plan.monthlyPrice;
-          const isPro = planId === "pro";
+          const isPro = planId === "business";
 
           return (
             <Card key={planId} className={isPro ? "border-primary shadow-lg relative" : "relative"}>

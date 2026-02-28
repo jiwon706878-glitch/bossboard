@@ -1,4 +1,4 @@
-export type PlanId = "free" | "starter" | "pro" | "agency";
+export type PlanId = "free" | "pro" | "business" | "enterprise";
 
 export interface PlanConfig {
   id: PlanId;
@@ -27,27 +27,27 @@ export const plans: Record<PlanId, PlanConfig> = {
     paddlePriceIdMonthly: "",
     paddlePriceIdAnnual: "",
     limits: {
-      aiCredits: 25,
+      aiCredits: 30,
       businesses: 1,
       socialPosts: 10,
       teamMembers: 1,
     },
     features: [
-      "25 AI credits/month",
+      "30 AI credits/month",
       "1 business profile",
       "Review reply generation",
       "Basic social captions",
       "10 scheduled posts/month",
     ],
   },
-  starter: {
-    id: "starter",
-    name: "Starter",
+  pro: {
+    id: "pro",
+    name: "Pro",
     description: "For solo operators",
-    monthlyPrice: 29,
-    annualPrice: 290,
-    paddlePriceIdMonthly: process.env.PADDLE_STARTER_MONTHLY_PRICE_ID || "",
-    paddlePriceIdAnnual: process.env.PADDLE_STARTER_ANNUAL_PRICE_ID || "",
+    monthlyPrice: 19.99,
+    annualPrice: 199.99,
+    paddlePriceIdMonthly: process.env.PADDLE_PRO_MONTHLY_PRICE_ID || "",
+    paddlePriceIdAnnual: process.env.PADDLE_PRO_ANNUAL_PRICE_ID || "",
     limits: {
       aiCredits: 200,
       businesses: 1,
@@ -63,14 +63,14 @@ export const plans: Record<PlanId, PlanConfig> = {
       "Priority support",
     ],
   },
-  pro: {
-    id: "pro",
-    name: "Pro",
+  business: {
+    id: "business",
+    name: "Business",
     description: "For growing businesses",
-    monthlyPrice: 79,
-    annualPrice: 790,
-    paddlePriceIdMonthly: process.env.PADDLE_PRO_MONTHLY_PRICE_ID || "",
-    paddlePriceIdAnnual: process.env.PADDLE_PRO_ANNUAL_PRICE_ID || "",
+    monthlyPrice: 39.99,
+    annualPrice: 399.99,
+    paddlePriceIdMonthly: process.env.PADDLE_BUSINESS_MONTHLY_PRICE_ID || "",
+    paddlePriceIdAnnual: process.env.PADDLE_BUSINESS_ANNUAL_PRICE_ID || "",
     limits: {
       aiCredits: -1,
       businesses: 3,
@@ -87,14 +87,14 @@ export const plans: Record<PlanId, PlanConfig> = {
       "Analytics dashboard",
     ],
   },
-  agency: {
-    id: "agency",
-    name: "Agency",
+  enterprise: {
+    id: "enterprise",
+    name: "Enterprise",
     description: "For agencies & multi-location",
-    monthlyPrice: 199,
-    annualPrice: 1990,
-    paddlePriceIdMonthly: process.env.PADDLE_AGENCY_MONTHLY_PRICE_ID || "",
-    paddlePriceIdAnnual: process.env.PADDLE_AGENCY_ANNUAL_PRICE_ID || "",
+    monthlyPrice: 79.99,
+    annualPrice: 799.99,
+    paddlePriceIdMonthly: process.env.PADDLE_ENTERPRISE_MONTHLY_PRICE_ID || "",
+    paddlePriceIdAnnual: process.env.PADDLE_ENTERPRISE_ANNUAL_PRICE_ID || "",
     limits: {
       aiCredits: -1,
       businesses: 25,

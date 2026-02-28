@@ -85,7 +85,7 @@ export default function BillingPage() {
     [userId, userEmail]
   );
 
-  const planOrder: PlanId[] = ["free", "starter", "pro", "agency"];
+  const planOrder: PlanId[] = ["free", "pro", "business", "enterprise"];
 
   return (
     <div className="space-y-6">
@@ -114,7 +114,7 @@ export default function BillingPage() {
         {planOrder.map((planId) => {
           const plan = plans[planId];
           const isCurrent = planId === currentPlan;
-          const isPro = planId === "pro";
+          const isPro = planId === "business";
 
           return (
             <Card

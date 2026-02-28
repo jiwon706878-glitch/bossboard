@@ -37,7 +37,7 @@ export function AdminSidebar({ className }: { className?: string }) {
   return (
     <aside className={cn("flex h-full w-64 flex-col border-r bg-card", className)}>
       <div className="flex h-16 items-center gap-2 border-b px-6">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive text-destructive-foreground font-bold">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-destructive text-destructive-foreground font-bold text-lg shadow-sm">
           A
         </div>
         <span className="text-lg font-bold">Admin</span>

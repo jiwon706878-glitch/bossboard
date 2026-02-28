@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     .eq("id", user.id)
     .single();
 
-  const planId = (profile?.plan_id as "free" | "starter" | "pro" | "agency") ?? "free";
+  const planId = (profile?.plan_id as "free" | "pro" | "business" | "enterprise") ?? "free";
 
   const creditCheck = await checkCredits(user.id, planId);
   if (!creditCheck.allowed) {

@@ -20,6 +20,9 @@ export const metadata: Metadata = {
   title: "BossBoard — AI-Powered Business Management",
   description:
     "Review management, social media content, and short-form video scripting — all powered by AI.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

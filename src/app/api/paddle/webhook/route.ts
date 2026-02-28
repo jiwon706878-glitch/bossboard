@@ -43,7 +43,7 @@ export async function POST(req: Request) {
         user_id: userId,
         paddle_subscription_id: data.id as string,
         paddle_price_id: priceId || null,
-        plan_id: plan?.id || "starter",
+        plan_id: plan?.id || "pro",
         status: "active",
         current_period_start: currentPeriod?.starts_at || null,
         current_period_end: currentPeriod?.ends_at || null,
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
 
       await supabase
         .from("profiles")
-        .update({ plan_id: plan?.id || "starter" })
+        .update({ plan_id: plan?.id || "pro" })
         .eq("id", userId);
 
       break;

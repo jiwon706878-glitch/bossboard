@@ -87,7 +87,7 @@ export default function HomePage() {
             ].map((item) => (
               <Card key={item.title} className="text-center">
                 <CardContent className="pt-6">
-                  <item.icon className="mx-auto mb-3 h-8 w-8 text-destructive" />
+                  <item.icon className="mx-auto mb-3 h-8 w-8 text-[#E8825A]" />
                   <h3 className="font-semibold">{item.title}</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {item.desc}
@@ -127,8 +127,8 @@ export default function HomePage() {
             </Card>
             <Card className="border-2 hover:border-primary/50 transition-colors">
               <CardHeader>
-                <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-lg bg-accent/20">
-                  <Share2 className="h-6 w-6 text-accent-foreground" />
+                <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-lg bg-[#FFF1E8]">
+                  <Share2 className="h-6 w-6 text-primary" />
                 </div>
                 <CardTitle>Social AI</CardTitle>
               </CardHeader>

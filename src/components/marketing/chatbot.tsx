@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, X, Send, ArrowRight, Bot, Mail } from "lucide-react";
+import { MessageCircle, X, Send, ArrowRight, Bot, Mail, Bug } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // FAQ keyword matching
@@ -138,6 +138,73 @@ function ContactForm() {
 }
 
 // ---------------------------------------------------------------------------
+// Bug report form
+// ---------------------------------------------------------------------------
+
+function BugReportForm() {
+  const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setSending(true);
+    const fd = new FormData(e.currentTarget);
+    const title = fd.get("title") as string;
+    const description = fd.get("description") as string;
+    try {
+      await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Bug Report",
+          email: "bug@bossboard.app",
+          message: `[BossBoard Bug] ${title}\n\n${description}`,
+          subject: `[BossBoard Bug] ${title}`,
+        }),
+      });
+    } catch {
+      // best-effort
+    }
+    setSending(false);
+    setSubmitted(true);
+  }
+
+  if (submitted) {
+    return (
+      <div className="rounded-lg border bg-muted/50 p-4 text-center text-sm">
+        <p className="font-medium">Bug reported!</p>
+        <p className="mt-1 text-muted-foreground">
+          Thanks for letting us know. We&apos;ll look into it.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3 rounded-lg border bg-muted/50 p-4">
+      <p className="text-sm font-medium">Report a Bug</p>
+      <input
+        name="title"
+        type="text"
+        placeholder="Bug title"
+        required
+        className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+      />
+      <textarea
+        name="description"
+        placeholder="What happened? What did you expect?"
+        required
+        rows={3}
+        className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-none"
+      />
+      <Button type="submit" size="sm" className="w-full gap-2" disabled={sending}>
+        {sending ? "Sending..." : "Submit Bug"} <ArrowRight className="h-3 w-3" />
+      </Button>
+    </form>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main chatbot
 // ---------------------------------------------------------------------------
 
@@ -147,6 +214,7 @@ export function Chatbot() {
   const [input, setInput] = useState("");
   const [aiMode, setAiMode] = useState(false);
   const [showContact, setShowContact] = useState(false);
+  const [showBugReport, setShowBugReport] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -154,7 +222,7 @@ export function Chatbot() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, showContact]);
+  }, [messages, showContact, showBugReport]);
 
   function addMessages(...msgs: ChatMessage[]) {
     setMessages((prev) => [...prev, ...msgs]);
@@ -225,6 +293,7 @@ export function Chatbot() {
     if (!text || isLoading) return;
     setInput("");
     setShowContact(false);
+    setShowBugReport(false);
 
     if (aiMode) {
       handleAiSubmit(text);
@@ -235,6 +304,7 @@ export function Chatbot() {
 
   function handleAiClick() {
     setShowContact(false);
+    setShowBugReport(false);
     setAiMode(true);
     addMessages({
       id: nextId(),
@@ -245,11 +315,23 @@ export function Chatbot() {
 
   function handleContactClick() {
     setAiMode(false);
+    setShowBugReport(false);
     setShowContact(true);
     addMessages({
       id: nextId(),
       role: "assistant",
       content: "Fill out the form below and we\u2019ll get back to you!",
+    });
+  }
+
+  function handleBugClick() {
+    setAiMode(false);
+    setShowContact(false);
+    setShowBugReport(true);
+    addMessages({
+      id: nextId(),
+      role: "assistant",
+      content: "Sorry to hear that! Describe the bug below and we\u2019ll fix it.",
     });
   }
 
@@ -323,6 +405,13 @@ export function Chatbot() {
                 <ContactForm />
               </div>
             )}
+
+            {/* Inline bug report form */}
+            {showBugReport && (
+              <div className="max-w-[90%]">
+                <BugReportForm />
+              </div>
+            )}
           </div>
 
           {/* Action buttons — always visible */}
@@ -330,22 +419,32 @@ export function Chatbot() {
             <Button
               variant="outline"
               size="sm"
-              className="flex-1 gap-1.5 text-xs"
+              className="flex-1 gap-1 px-2 text-xs"
               onClick={handleAiClick}
               disabled={aiMode}
             >
-              <Bot className="h-3.5 w-3.5" />
-              Ask AI Assistant
+              <Bot className="h-3.5 w-3.5 shrink-0" />
+              AI Assistant
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="flex-1 gap-1.5 text-xs"
+              className="flex-1 gap-1 px-2 text-xs"
               onClick={handleContactClick}
               disabled={showContact}
             >
-              <Mail className="h-3.5 w-3.5" />
-              Contact Support
+              <Mail className="h-3.5 w-3.5 shrink-0" />
+              Contact
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-1 px-2 text-xs"
+              onClick={handleBugClick}
+              disabled={showBugReport}
+            >
+              <Bug className="h-3.5 w-3.5 shrink-0" />
+              Report Bug
             </Button>
           </div>
 

@@ -1,5 +1,6 @@
 import { MarketingNavbar } from "@/components/marketing/navbar";
 import { MarketingFooter } from "@/components/marketing/footer";
+import { Chatbot } from "@/components/marketing/chatbot";
 
 export default function MarketingLayout({
   children,
@@ -11,6 +12,7 @@ export default function MarketingLayout({
       <MarketingNavbar />
       <main className="flex-1">{children}</main>
       <MarketingFooter />
+      <Chatbot />
     </div>
   );
 }

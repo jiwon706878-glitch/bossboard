@@ -71,7 +71,7 @@ export function ReviewReplyForm({
         ) : (
           <Sparkles className="mr-1 h-3 w-3" />
         )}
-        Generate Reply
+        Generate Reply (1 credit)
       </Button>
     </div>
   );

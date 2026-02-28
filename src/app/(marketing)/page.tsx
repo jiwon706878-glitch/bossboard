@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PricingToggle } from "@/components/marketing/pricing-toggle";
+import { FaqSection } from "@/components/marketing/faq-section";
 import {
   Star,
   MessageSquare,
@@ -13,6 +14,8 @@ import {
   Megaphone,
   Sparkles,
   ArrowRight,
+  UserPlus,
+  Building2,
 } from "lucide-react";
 
 export default function HomePage() {
@@ -29,9 +32,8 @@ export default function HomePage() {
             <span className="text-primary">Smarter</span>, Not Harder
           </h1>
           <p className="mt-6 text-lg text-muted-foreground sm:text-xl">
-            Review management, social media content, and short-form video
-            scripting — all powered by AI. Built for local business owners who
-            want to grow without the grind.
+            Replace $100+/month in marketing tools with one AI-powered
+            dashboard.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/signup">
@@ -159,6 +161,56 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* How It Works */}
+      <section id="how-it-works" className="border-t bg-muted/30 px-4 py-20">
+        <div className="mx-auto max-w-5xl">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold">
+              Get started in{" "}
+              <span className="text-primary">3 easy steps</span>
+            </h2>
+            <p className="mt-2 text-muted-foreground">
+              From sign-up to AI-generated content in under a minute.
+            </p>
+          </div>
+          <div className="mt-12 grid gap-8 md:grid-cols-3">
+            {[
+              {
+                icon: UserPlus,
+                step: 1,
+                title: "Sign Up Free",
+                desc: "Create your account in 30 seconds. No credit card required.",
+              },
+              {
+                icon: Building2,
+                step: 2,
+                title: "Add Your Business",
+                desc: "Tell us about your business type and brand voice.",
+              },
+              {
+                icon: Sparkles,
+                step: 3,
+                title: "Let AI Work For You",
+                desc: "Generate replies, captions, and scripts instantly.",
+              },
+            ].map((item) => (
+              <div key={item.step} className="text-center">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                  <item.icon className="h-7 w-7 text-primary" />
+                </div>
+                <Badge variant="secondary" className="mb-2">
+                  Step {item.step}
+                </Badge>
+                <h3 className="text-lg font-semibold">{item.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {item.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Pricing */}
       <section id="pricing" className="border-t bg-muted/30 px-4 py-20">
         <div className="mx-auto max-w-6xl">
@@ -174,6 +226,9 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* FAQ */}
+      <FaqSection />
+
       {/* CTA */}
       <section className="border-t bg-primary px-4 py-20 text-primary-foreground">
         <div className="mx-auto max-w-3xl text-center">
@@ -181,8 +236,8 @@ export default function HomePage() {
             Ready to run your business smarter?
           </h2>
           <p className="mt-4 text-primary-foreground/80">
-            Join thousands of local business owners using AI to save time, get
-            more reviews, and grow their online presence.
+            Join smart business owners using AI to save time, get more
+            reviews, and grow their online presence.
           </p>
           <Link href="/signup">
             <Button

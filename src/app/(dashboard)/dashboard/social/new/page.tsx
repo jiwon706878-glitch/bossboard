@@ -163,7 +163,7 @@ export default function NewSocialPostPage() {
             ) : (
               <Sparkles className="mr-2 h-4 w-4" />
             )}
-            Generate Caption
+            Generate Caption (1 credit)
           </Button>
         </CardContent>
       </Card>

@@ -1,6 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { plans, type PlanId } from "@/config/plans";
 
+export const CREDIT_COSTS: Record<string, number> = {
+  review_reply: 1,
+  caption: 1,
+  chat: 1,
+  script: 3,
+  image_analysis: 5,
+  report: 5,
+  business_plan: 10,
+};
+
 export async function getMonthlyUsage(userId: string) {
   const supabase = await createClient();
   const now = new Date();
@@ -28,7 +38,8 @@ export async function getMonthlyUsage(userId: string) {
 
 export async function checkCredits(
   userId: string,
-  planId: PlanId
+  planId: PlanId,
+  creditsNeeded: number = 1
 ): Promise<{ allowed: boolean; remaining: number; limit: number }> {
   const plan = plans[planId];
   const limit = plan.limits.aiCredits;
@@ -41,7 +52,7 @@ export async function checkCredits(
   const remaining = limit - total;
 
   return {
-    allowed: remaining > 0,
+    allowed: remaining >= creditsNeeded,
     remaining: Math.max(0, remaining),
     limit,
   };

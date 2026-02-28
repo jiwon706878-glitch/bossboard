@@ -29,15 +29,15 @@ export const plans: Record<PlanId, PlanConfig> = {
     limits: {
       aiCredits: 30,
       businesses: 1,
-      socialPosts: 10,
+      socialPosts: 15,
       teamMembers: 1,
     },
     features: [
       "30 AI credits/month",
       "1 business profile",
       "Review reply generation",
-      "Basic social captions",
-      "10 scheduled posts/month",
+      "AI social captions",
+      "15 scheduled posts/month",
     ],
   },
   pro: {
@@ -49,13 +49,13 @@ export const plans: Record<PlanId, PlanConfig> = {
     paddlePriceIdMonthly: process.env.PADDLE_PRO_MONTHLY_PRICE_ID || "",
     paddlePriceIdAnnual: process.env.PADDLE_PRO_ANNUAL_PRICE_ID || "",
     limits: {
-      aiCredits: 200,
+      aiCredits: 1000,
       businesses: 1,
       socialPosts: 50,
       teamMembers: 1,
     },
     features: [
-      "200 AI credits/month",
+      "1,000 AI credits/month",
       "1 business profile",
       "All AI features",
       "50 scheduled posts/month",
@@ -83,6 +83,8 @@ export const plans: Record<PlanId, PlanConfig> = {
       "All AI features",
       "Unlimited scheduled posts",
       "Content Studio scripts",
+      "Team collaboration (3 users)",
+      "Custom brand voice",
       "Priority support",
       "Analytics dashboard",
     ],

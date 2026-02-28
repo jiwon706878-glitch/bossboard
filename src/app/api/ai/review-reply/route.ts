@@ -1,7 +1,7 @@
 import { streamText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { createClient } from "@/lib/supabase/server";
-import { checkCredits, deductCredit } from "@/lib/ai/credits";
+import { checkCredits, deductCredit, CREDIT_COSTS } from "@/lib/ai/credits";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -26,7 +26,8 @@ export async function POST(req: Request) {
   const planId = (profile?.plan_id as "free" | "pro" | "business" | "enterprise") ?? "free";
 
   // Check credits
-  const creditCheck = await checkCredits(user.id, planId);
+  const cost = CREDIT_COSTS.review_reply;
+  const creditCheck = await checkCredits(user.id, planId, cost);
   if (!creditCheck.allowed) {
     return new Response("AI credit limit reached. Please upgrade your plan.", {
       status: 429,
@@ -57,7 +58,7 @@ Write a ${tone} reply:`,
   });
 
   // Deduct credit after starting stream
-  deductCredit(user.id, businessId, "review_reply").catch(console.error);
+  deductCredit(user.id, businessId, "review_reply", cost).catch(console.error);
 
   return result.toTextStreamResponse();
 }

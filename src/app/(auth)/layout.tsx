@@ -7,11 +7,8 @@ export default function AuthLayout({
 }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
-      <Link href="/" className="mb-8 flex items-center gap-2">
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-xl shadow-sm">
-          B
-        </div>
-        <span className="text-xl font-bold">BossBoard</span>
+      <Link href="/" className="mb-8 flex items-center">
+        <img src="/Logo.png" alt="BossBoard" height={36} style={{ height: 36, width: 'auto' }} />
       </Link>
       <div className="w-full max-w-md">{children}</div>
     </div>

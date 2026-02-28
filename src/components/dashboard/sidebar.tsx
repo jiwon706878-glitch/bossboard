@@ -46,11 +46,8 @@ export function DashboardSidebar({ className }: { className?: string }) {
         className
       )}
     >
-      <div className="flex h-16 items-center gap-2 border-b px-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg shadow-sm">
-          B
-        </div>
-        <span className="text-lg font-bold">BossBoard</span>
+      <div className="flex h-16 items-center border-b px-6">
+        <img src="/Logo.png" alt="BossBoard" height={36} style={{ height: 36, width: 'auto' }} />
       </div>
       <nav className="flex-1 space-y-1 p-3">
         {links.map((link) => {

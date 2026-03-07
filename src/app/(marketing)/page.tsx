@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PricingToggle } from "@/components/marketing/pricing-toggle";
 import { FaqSection } from "@/components/marketing/faq-section";
+import { CountdownTimer } from "@/components/marketing/countdown-timer";
+import { WaitlistModal } from "@/components/marketing/waitlist-modal";
 import {
   Star,
   MessageSquare,
@@ -16,6 +18,7 @@ import {
   ArrowRight,
   UserPlus,
   Building2,
+  Rocket,
 } from "lucide-react";
 
 export default function HomePage() {
@@ -35,20 +38,30 @@ export default function HomePage() {
             Replace $100+/month in marketing tools with one AI-powered
             dashboard.
           </p>
+
+          {/* Urgency text */}
+          <p className="mt-4 font-semibold text-primary">
+            Launching March 15 — First 100 signups get 1 month free Pro
+          </p>
+
+          {/* Countdown timer */}
+          <CountdownTimer />
+
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link href="/signup">
+            <WaitlistModal>
               <Button size="lg" className="gap-2">
-                Get Started Free <ArrowRight className="h-4 w-4" />
+                Join the Waitlist <ArrowRight className="h-4 w-4" />
               </Button>
-            </Link>
-            <Link href="#features">
-              <Button variant="outline" size="lg">
-                See How It Works
+            </WaitlistModal>
+            <WaitlistModal>
+              <Button variant="outline" size="lg" className="gap-2">
+                <Rocket className="h-4 w-4" />
+                Get Early Access
               </Button>
-            </Link>
+            </WaitlistModal>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
-            No credit card required. 30 free AI credits/month.
+            No credit card required. Be the first to know when we launch.
           </p>
         </div>
       </section>
@@ -237,18 +250,18 @@ export default function HomePage() {
             Ready to run your business smarter?
           </h2>
           <p className="mt-4 text-primary-foreground/80">
-            Join smart business owners using AI to save time, get more
-            reviews, and grow their online presence.
+            Join the waitlist and be among the first to access AI-powered tools
+            that save you time, get more reviews, and grow your online presence.
           </p>
-          <Link href="/signup">
+          <WaitlistModal>
             <Button
               size="lg"
               variant="secondary"
               className="mt-8 gap-2"
             >
-              Start Free Today <ArrowRight className="h-4 w-4" />
+              Join the Waitlist <ArrowRight className="h-4 w-4" />
             </Button>
-          </Link>
+          </WaitlistModal>
         </div>
       </section>
     </>

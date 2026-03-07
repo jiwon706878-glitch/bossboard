@@ -2,6 +2,7 @@ import { streamText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { createClient } from "@/lib/supabase/server";
 import { checkCredits, deductCredit, CREDIT_COSTS } from "@/lib/ai/credits";
+import { buildBusinessContext, BUSINESS_PROFILE_SELECT } from "@/lib/ai/business-context";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -33,13 +34,17 @@ export async function POST(req: Request) {
 
   const { data: business } = await supabase
     .from("businesses")
-    .select("name, type")
+    .select(BUSINESS_PROFILE_SELECT)
     .eq("id", businessId)
     .single();
 
+  const businessContext = buildBusinessContext(business ?? {});
+
   const result = streamText({
     model: anthropic("claude-sonnet-4-20250514"),
-    system: `You are an email marketing copywriter for "${business?.name}", a ${business?.type} business.
+    system: `${businessContext}
+
+Your role: Email marketing copywriter.
 Write a ${tone} marketing email.
 Target audience: ${audience || "existing customers"}.
 

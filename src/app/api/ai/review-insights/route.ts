@@ -2,6 +2,7 @@ import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { createClient } from "@/lib/supabase/server";
 import { checkCredits, deductCredit, CREDIT_COSTS } from "@/lib/ai/credits";
+import { buildBusinessContext, BUSINESS_PROFILE_SELECT } from "@/lib/ai/business-context";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -33,13 +34,17 @@ export async function POST(req: Request) {
 
   const { data: business } = await supabase
     .from("businesses")
-    .select("name, type")
+    .select(BUSINESS_PROFILE_SELECT)
     .eq("id", businessId)
     .single();
 
+  const businessContext = buildBusinessContext(business ?? {});
+
   const { text } = await generateText({
     model: anthropic("claude-sonnet-4-20250514"),
-    system: `You are a customer review analyst for "${business?.name}", a ${business?.type} business.
+    system: `${businessContext}
+
+Your role: Customer review analyst.
 Analyze the provided customer reviews and generate a comprehensive insights report.
 
 You MUST respond in valid JSON format with this exact structure:

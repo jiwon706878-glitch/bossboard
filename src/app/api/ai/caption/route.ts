@@ -2,6 +2,7 @@ import { streamText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { createClient } from "@/lib/supabase/server";
 import { checkCredits, deductCredit, CREDIT_COSTS } from "@/lib/ai/credits";
+import { buildBusinessContext, BUSINESS_PROFILE_SELECT } from "@/lib/ai/business-context";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -34,18 +35,22 @@ export async function POST(req: Request) {
 
   const { data: business } = await supabase
     .from("businesses")
-    .select("name, type")
+    .select(BUSINESS_PROFILE_SELECT)
     .eq("id", businessId)
     .single();
 
+  const businessContext = buildBusinessContext(business ?? {});
+
   const result = streamText({
     model: anthropic("claude-sonnet-4-20250514"),
-    system: `You are a social media caption writer for "${business?.name}", a ${business?.type} business.
+    system: `${businessContext}
+
+Your role: Social media caption writer.
 Write an engaging ${tone} caption for ${platform || "Instagram"}.
 Include a hook, body, and call-to-action.
 After the caption, add a line break and then 10-15 relevant hashtags on a single line separated by spaces.
 Format: First the caption text, then "---HASHTAGS---" on its own line, then the hashtags.
-Keep the caption under 150 words. Make it scroll-stopping.`,
+Keep the caption under 150 words. Make it scroll-stopping and reflect the brand voice.`,
     prompt: `Post description: ${description}
 Tone: ${tone}
 Write the caption:`,

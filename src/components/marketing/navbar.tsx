@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { WaitlistModal } from "@/components/marketing/waitlist-modal";
 
 export function MarketingNavbar() {
   return (
@@ -43,9 +44,9 @@ export function MarketingNavbar() {
               Sign in
             </Button>
           </Link>
-          <Link href="/signup">
-            <Button size="sm">Get Started Free</Button>
-          </Link>
+          <WaitlistModal>
+            <Button size="sm">Join Waitlist</Button>
+          </WaitlistModal>
         </div>
       </div>
     </header>

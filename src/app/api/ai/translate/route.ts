@@ -2,6 +2,7 @@ import { streamText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { createClient } from "@/lib/supabase/server";
 import { checkCredits, deductCredit, CREDIT_COSTS } from "@/lib/ai/credits";
+import { buildBusinessContext, BUSINESS_PROFILE_SELECT } from "@/lib/ai/business-context";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -31,9 +32,19 @@ export async function POST(req: Request) {
     });
   }
 
+  // Get business info for context-aware translations
+  const { data: business } = await supabase
+    .from("businesses")
+    .select(BUSINESS_PROFILE_SELECT)
+    .eq("id", businessId)
+    .single();
+
+  const businessContext = business ? buildBusinessContext(business) : "";
+
   const result = streamText({
     model: anthropic("claude-sonnet-4-20250514"),
-    system: `You are a professional translator. Translate the following text into ${targetLanguage}.
+    system: `${businessContext ? businessContext + "\n\n" : ""}Your role: Professional translator.
+Translate the following text into ${targetLanguage}.
 Maintain the original tone, formatting, and intent.
 If the text contains hashtags, translate them appropriately for the target language while keeping them as hashtags.
 Only output the translated text, nothing else.`,

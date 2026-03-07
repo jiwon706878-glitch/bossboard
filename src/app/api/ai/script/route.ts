@@ -2,6 +2,7 @@ import { streamText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { createClient } from "@/lib/supabase/server";
 import { checkCredits, deductCredit, CREDIT_COSTS } from "@/lib/ai/credits";
+import { buildBusinessContext, BUSINESS_PROFILE_SELECT } from "@/lib/ai/business-context";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -33,9 +34,11 @@ export async function POST(req: Request) {
 
   const { data: business } = await supabase
     .from("businesses")
-    .select("name, type")
+    .select(BUSINESS_PROFILE_SELECT)
     .eq("id", businessId)
     .single();
+
+  const businessContext = buildBusinessContext(business ?? {});
 
   const formatGuide: Record<string, string> = {
     tiktok: "TikTok video (15-60 seconds, fast-paced, trendy)",
@@ -47,7 +50,9 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: anthropic("claude-sonnet-4-20250514"),
-    system: `You are a short-form video scriptwriter for "${business?.name}", a ${business?.type} business.
+    system: `${businessContext}
+
+Your role: Short-form video scriptwriter.
 Write a script for a ${formatGuide[format] || format}.
 Target audience: ${audience || "general local audience"}.
 

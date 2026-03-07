@@ -9,6 +9,11 @@ interface Business {
   type: string;
   address: string | null;
   google_place_id: string | null;
+  menu_or_services: string | null;
+  brand_tone: string | null;
+  target_customers: string | null;
+  competitive_advantage: string | null;
+  seasonal_promotions: string | null;
 }
 
 interface BusinessState {

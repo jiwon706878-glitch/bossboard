@@ -2,6 +2,7 @@ import { streamText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { createClient } from "@/lib/supabase/server";
 import { checkCredits, deductCredit, CREDIT_COSTS } from "@/lib/ai/credits";
+import { buildBusinessContext, BUSINESS_PROFILE_SELECT } from "@/lib/ai/business-context";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -37,18 +38,22 @@ export async function POST(req: Request) {
   // Get business info
   const { data: business } = await supabase
     .from("businesses")
-    .select("name, type")
+    .select(BUSINESS_PROFILE_SELECT)
     .eq("id", businessId)
     .single();
 
+  const businessContext = buildBusinessContext(business ?? {});
+
   const result = streamText({
     model: anthropic("claude-sonnet-4-20250514"),
-    system: `You are a review response assistant for "${business?.name}", a ${business?.type} business.
+    system: `${businessContext}
+
+Your role: Review response assistant.
 Write a ${tone} reply to the following customer review.
 Keep it concise (2-4 sentences), genuine, and helpful.
 If the review is negative, acknowledge the concern, apologize, and offer to make it right.
 If the review is positive, express gratitude and invite them back.
-Do not use generic phrases. Make it feel personal.
+Do not use generic phrases. Make it feel personal and reflect the business's brand voice.
 Only output the reply text, nothing else.`,
     prompt: `Reviewer: ${reviewerName}
 Rating: ${rating}/5 stars

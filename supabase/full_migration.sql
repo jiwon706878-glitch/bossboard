@@ -43,6 +43,11 @@ create table public.businesses (
   type text not null,
   address text,
   google_place_id text,
+  menu_or_services text,
+  brand_tone text default 'professional',
+  target_customers text,
+  competitive_advantage text,
+  seasonal_promotions text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -308,3 +313,17 @@ alter table public.subscriptions enable row level security;
 create policy "Users can view own subscription"
   on public.subscriptions for select
   using (auth.uid() = user_id);
+create table public.waitlist (
+  id uuid default gen_random_uuid() primary key,
+  email text not null unique,
+  business_type text not null,
+  interested_features text[] default '{}',
+  feature_request text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.waitlist enable row level security;
+
+create policy "Anyone can join waitlist"
+  on public.waitlist for insert
+  with check (true);

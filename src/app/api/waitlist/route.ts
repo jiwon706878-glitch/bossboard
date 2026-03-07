@@ -1,5 +1,15 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 
+export async function GET() {
+  const supabase = createAdminClient();
+  const { count } = await supabase
+    .from("waitlist")
+    .select("*", { count: "exact", head: true });
+
+  const remaining = Math.max(0, 100 - (count ?? 0));
+  return Response.json({ count: count ?? 0, remaining });
+}
+
 export async function POST(req: Request) {
   const { email, businessType, interestedFeatures, featureRequest } =
     await req.json();

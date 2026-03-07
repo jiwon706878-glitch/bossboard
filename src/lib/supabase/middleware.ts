@@ -29,6 +29,17 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Pre-launch: redirect signup and login to homepage
+  const isPreLaunchBlocked =
+    request.nextUrl.pathname.startsWith("/login") ||
+    request.nextUrl.pathname.startsWith("/signup");
+
+  if (isPreLaunchBlocked && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
+  }
+
   // Protected routes
   const isAuthPage =
     request.nextUrl.pathname.startsWith("/login") ||
@@ -46,7 +57,7 @@ export async function updateSession(request: NextRequest) {
 
   if (!user && isDashboardPage) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = "/";
     return NextResponse.redirect(url);
   }
 
@@ -54,7 +65,7 @@ export async function updateSession(request: NextRequest) {
     const ADMIN_EMAIL = "jiwon706878@gmail.com";
     if (!user || user.email !== ADMIN_EMAIL) {
       const url = request.nextUrl.clone();
-      url.pathname = user ? "/dashboard" : "/login";
+      url.pathname = user ? "/dashboard" : "/";
       return NextResponse.redirect(url);
     }
   }

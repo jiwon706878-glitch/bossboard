@@ -31,36 +31,30 @@ export function CountdownTimer() {
     return () => clearInterval(interval);
   }, []);
 
-  if (!time) {
-    return (
-      <div className="mt-6 flex items-center justify-center gap-3">
-        {["Days", "Hours", "Min", "Sec"].map((label) => (
-          <div key={label} className="text-center">
-            <div className="rounded-lg bg-primary/10 px-3 py-2 text-2xl font-bold tabular-nums sm:px-4 sm:text-3xl">
-              --
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">{label}</p>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
   const units = [
-    { label: "Days", value: time.days },
-    { label: "Hours", value: time.hours },
-    { label: "Min", value: time.minutes },
-    { label: "Sec", value: time.seconds },
+    { label: "Days", value: time?.days },
+    { label: "Hours", value: time?.hours },
+    { label: "Minutes", value: time?.minutes },
+    { label: "Seconds", value: time?.seconds },
   ];
 
   return (
-    <div className="mt-6 flex items-center justify-center gap-3">
-      {units.map((u) => (
-        <div key={u.label} className="text-center">
-          <div className="rounded-lg bg-primary/10 px-3 py-2 text-2xl font-bold tabular-nums sm:px-4 sm:text-3xl">
-            {String(u.value).padStart(2, "0")}
+    <div className="flex items-center justify-center gap-3 sm:gap-4">
+      {units.map((u, i) => (
+        <div key={u.label} className="flex items-center gap-3 sm:gap-4">
+          <div className="text-center">
+            <div className="rounded-xl bg-primary/10 px-4 py-3 text-3xl font-bold tabular-nums sm:px-6 sm:py-4 sm:text-5xl">
+              {u.value != null ? String(u.value).padStart(2, "0") : "--"}
+            </div>
+            <p className="mt-1.5 text-xs font-medium text-muted-foreground sm:text-sm">
+              {u.label}
+            </p>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">{u.label}</p>
+          {i < units.length - 1 && (
+            <span className="text-2xl font-bold text-muted-foreground/50 sm:text-4xl">
+              :
+            </span>
+          )}
         </div>
       ))}
     </div>

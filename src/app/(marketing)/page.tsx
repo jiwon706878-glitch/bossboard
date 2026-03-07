@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { PricingToggle } from "@/components/marketing/pricing-toggle";
 import { FaqSection } from "@/components/marketing/faq-section";
 import { CountdownTimer } from "@/components/marketing/countdown-timer";
-import { WaitlistModal } from "@/components/marketing/waitlist-modal";
+import { WaitlistForm } from "@/components/marketing/waitlist-form";
 import {
   Star,
   MessageSquare,
@@ -18,51 +18,42 @@ import {
   ArrowRight,
   UserPlus,
   Building2,
-  Rocket,
 } from "lucide-react";
 
 export default function HomePage() {
   return (
     <>
-      {/* Hero */}
-      <section className="relative overflow-hidden px-4 py-24 sm:py-32">
-        <div className="mx-auto max-w-4xl text-center">
-          <Badge variant="secondary" className="mb-4">
-            <Sparkles className="mr-1 h-3 w-3" /> AI-Powered Business Tools
-          </Badge>
-          <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-            Run Your Business{" "}
-            <span className="text-primary">Smarter</span>, Not Harder
-          </h1>
-          <p className="mt-6 text-lg text-muted-foreground sm:text-xl">
-            Replace $100+/month in marketing tools with one AI-powered
-            dashboard.
-          </p>
+      {/* Hero — Pre-launch */}
+      <section id="waitlist" className="relative overflow-hidden px-4 py-20 sm:py-28">
+        <div className="mx-auto max-w-4xl">
+          <div className="text-center">
+            <Badge
+              variant="secondary"
+              className="mb-6 px-4 py-1.5 text-sm font-semibold"
+            >
+              First 100 signups get 1 month free Pro
+            </Badge>
 
-          {/* Urgency text */}
-          <p className="mt-4 font-semibold text-primary">
-            Launching March 15 — First 100 signups get 1 month free Pro
-          </p>
+            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
+              <span className="text-primary">BossBoard</span> is launching
+              March 15
+            </h1>
 
-          {/* Countdown timer */}
-          <CountdownTimer />
+            <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground sm:text-xl">
+              AI-powered tools that actually know your business — review
+              replies, social captions, video scripts, and more, all
+              personalized to your brand.
+            </p>
 
-          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <WaitlistModal>
-              <Button size="lg" className="gap-2">
-                Join the Waitlist <ArrowRight className="h-4 w-4" />
-              </Button>
-            </WaitlistModal>
-            <WaitlistModal>
-              <Button variant="outline" size="lg" className="gap-2">
-                <Rocket className="h-4 w-4" />
-                Get Early Access
-              </Button>
-            </WaitlistModal>
+            <div className="mt-10">
+              <CountdownTimer />
+            </div>
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">
-            No credit card required. Be the first to know when we launch.
-          </p>
+
+          {/* Inline waitlist form */}
+          <div className="mt-12">
+            <WaitlistForm />
+          </div>
         </div>
       </section>
 
@@ -247,13 +238,14 @@ export default function HomePage() {
       <section className="border-t bg-primary px-4 py-20 text-primary-foreground">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-bold">
-            Ready to run your business smarter?
+            Don&apos;t miss launch day.
           </h2>
           <p className="mt-4 text-primary-foreground/80">
-            Join the waitlist and be among the first to access AI-powered tools
-            that save you time, get more reviews, and grow your online presence.
+            Join the waitlist now and be among the first to access AI-powered
+            tools that save you time, get more reviews, and grow your online
+            presence.
           </p>
-          <WaitlistModal>
+          <Link href="#waitlist">
             <Button
               size="lg"
               variant="secondary"
@@ -261,7 +253,7 @@ export default function HomePage() {
             >
               Join the Waitlist <ArrowRight className="h-4 w-4" />
             </Button>
-          </WaitlistModal>
+          </Link>
         </div>
       </section>
     </>

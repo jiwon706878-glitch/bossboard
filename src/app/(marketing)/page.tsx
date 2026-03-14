@@ -574,6 +574,95 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Social Proof */}
+      <section
+        className="px-4 sm:px-6 lg:px-8"
+        style={{
+          backgroundColor: "#0C0F17",
+          paddingTop: "64px",
+          paddingBottom: "80px",
+          borderTop: "1px solid #2A3050",
+        }}
+      >
+        <div className="mx-auto max-w-5xl">
+          <h2
+            className="text-center text-2xl font-bold"
+            style={{
+              color: "#E8ECF4",
+              fontFamily: "'DM Sans', sans-serif",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Built for teams who refuse to lose knowledge
+          </h2>
+
+          {/* Stats — NOT identical cards, vary widths */}
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            <div
+              className="rounded-md p-6 text-center"
+              style={{ backgroundColor: "#141824", border: "1px solid #2A3050" }}
+            >
+              <div
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: "2rem",
+                  fontWeight: 700,
+                  color: "#4F8BFF",
+                }}
+              >
+                90%
+              </div>
+              <p className="mt-2 text-sm" style={{ color: "#8B95B0" }}>
+                faster SOP creation vs. manual writing
+              </p>
+            </div>
+            <div
+              className="rounded-md p-6 text-center"
+              style={{ backgroundColor: "#141824", border: "1px solid #2A3050" }}
+            >
+              <div
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: "2rem",
+                  fontWeight: 700,
+                  color: "#34D399",
+                }}
+              >
+                30s
+              </div>
+              <p className="mt-2 text-sm" style={{ color: "#8B95B0" }}>
+                to generate your first SOP with AI
+              </p>
+            </div>
+            <div
+              className="rounded-md p-6 text-center"
+              style={{ backgroundColor: "#141824", border: "1px solid #2A3050" }}
+            >
+              <div
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: "2rem",
+                  fontWeight: 700,
+                  color: "#FBBF24",
+                }}
+              >
+                0
+              </div>
+              <p className="mt-2 text-sm" style={{ color: "#8B95B0" }}>
+                knowledge lost to employee turnover
+              </p>
+            </div>
+          </div>
+
+          <p
+            className="mt-10 text-center text-sm"
+            style={{ color: "#5A6480" }}
+          >
+            Join 50+ teams already streamlining their operations with BossBoard
+          </p>
+        </div>
+      </section>
+
       {/* How It Works */}
       <section
         id="how-it-works"

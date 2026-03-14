@@ -13,6 +13,7 @@ import {
   Clock,
   CheckCircle2,
   FilePlus2,
+  Sparkles,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
@@ -237,6 +238,32 @@ export default function DashboardPage() {
           {todayFormatted}
         </p>
       </div>
+
+      {/* Welcome Banner — shown only when user has no SOPs */}
+      {totalSops === 0 && (
+        <div
+          className="rounded-md p-6"
+          style={{
+            backgroundColor: "#141824",
+            border: "1px solid #2A3050",
+            borderLeft: "3px solid #4F8BFF",
+          }}
+        >
+          <h3 className="text-lg font-semibold text-foreground">
+            Welcome to BossBoard!
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Create your first AI-generated SOP in 30 seconds. Just describe a topic
+            and the AI handles the rest.
+          </p>
+          <Button asChild className="mt-4 gap-2">
+            <Link href="/dashboard/sops/new">
+              <Sparkles className="h-4 w-4" />
+              Create Your First SOP
+            </Link>
+          </Button>
+        </div>
+      )}
 
       {/* Stat Cards — mixed sizes */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">

@@ -1,5 +1,6 @@
-import { streamText } from "ai";
+import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkCredits, deductCredit, CREDIT_COSTS } from "@/lib/ai/credits";
 import { buildBusinessContext, BUSINESS_PROFILE_SELECT } from "@/lib/ai/business-context";
@@ -11,18 +12,18 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return new Response("Unauthorized", { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { businessId, topic, category } = await req.json();
 
   // Input validation
   if (!topic || typeof topic !== "string") {
-    return new Response("Topic is required", { status: 400 });
+    return NextResponse.json({ error: "Topic is required" }, { status: 400 });
   }
 
   if (topic.length > 1000) {
-    return new Response("Topic must be under 1000 characters", { status: 400 });
+    return NextResponse.json({ error: "Topic must be under 1000 characters" }, { status: 400 });
   }
 
   // If no businessId provided, try to find the user's first business
@@ -37,7 +38,10 @@ export async function POST(req: Request) {
     if (userBusinesses && userBusinesses.length > 0) {
       resolvedBusinessId = userBusinesses[0].id;
     } else {
-      return new Response("No business found. Please complete onboarding first.", { status: 400 });
+      return NextResponse.json(
+        { error: "No business found. Please complete onboarding first." },
+        { status: 400 }
+      );
     }
   }
 
@@ -60,9 +64,10 @@ export async function POST(req: Request) {
   const cost = CREDIT_COSTS.sop_generate;
   const creditCheck = await checkCredits(user.id, planId, cost);
   if (!creditCheck.allowed) {
-    return new Response("AI credit limit reached. Please upgrade your plan.", {
-      status: 429,
-    });
+    return NextResponse.json(
+      { error: "AI credit limit reached. Please upgrade your plan." },
+      { status: 429 }
+    );
   }
 
   const { data: business } = await supabase
@@ -72,11 +77,10 @@ export async function POST(req: Request) {
     .single();
 
   const businessContext = buildBusinessContext(business ?? {});
-
   const categoryContext = category ? `\nCategory: ${category}` : "";
 
   try {
-    const result = streamText({
+    const result = await generateText({
       model: anthropic("claude-sonnet-4-20250514"),
       system: `${businessContext}
 
@@ -95,18 +99,16 @@ Output format:
 Keep language simple. Write for someone doing this task for the first time.
 Do NOT use markdown headers with #. Use plain numbered sections.
 Write the SOP content directly without any preamble.`,
-      prompt: `Topic: ${sanitizedTopic}
-
-Generate the SOP:`,
+      prompt: `Topic: ${sanitizedTopic}\n\nGenerate the SOP:`,
     });
 
     deductCredit(user.id, resolvedBusinessId, "sop_generate", cost).catch(console.error);
 
-    return result.toTextStreamResponse();
+    return NextResponse.json({ text: result.text });
   } catch (error) {
     console.error("SOP generation error:", error);
-    return new Response(
-      `AI generation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+    return NextResponse.json(
+      { error: `AI generation failed: ${error instanceof Error ? error.message : "Unknown error"}` },
       { status: 500 }
     );
   }

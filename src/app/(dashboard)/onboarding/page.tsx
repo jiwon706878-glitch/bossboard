@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useCompletion } from "@ai-sdk/react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { Button } from "@/components/ui/button";
@@ -80,63 +79,7 @@ export default function OnboardingPage() {
   const setCurrentBusiness = useBusinessStore((s) => s.setCurrentBusiness);
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
 
-  const { complete, isLoading: isGenerating } = useCompletion({
-    api: "/api/ai/generate",
-    streamProtocol: "text",
-    onError: (error) => {
-      console.error("SOP generation error:", error);
-      toast.error(error.message || "Failed to generate SOP. Please try again.");
-      setGeneratingComplete(true);
-    },
-    onFinish: async (_prompt, completion) => {
-      if (!completion || !completion.trim()) {
-        toast.error("AI returned empty response. Please try again.");
-        setGeneratingComplete(true);
-        return;
-      }
-      // Save generated SOP to database
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !currentBusiness) {
-        toast.error("Could not save SOP");
-        setGeneratingComplete(true);
-        return;
-      }
-
-      // Extract title from first line
-      let title = selectedTopic;
-      const firstLine = completion.split("\n").find((l) => l.trim());
-      if (firstLine) {
-        const cleaned = firstLine
-          .replace(/^\d+\.\s*/, "")
-          .replace(/^Title:\s*/i, "")
-          .trim();
-        title = cleaned.length > 80 ? cleaned.substring(0, 80) : cleaned;
-      }
-
-      const summary = completion.substring(0, 200).replace(/\n/g, " ").trim();
-      const content = textToTipTapJSON(completion);
-
-      const { error } = await supabase
-        .from("sops")
-        .insert({
-          business_id: currentBusiness.id,
-          title: title,
-          content: content,
-          summary: summary || null,
-          status: "draft",
-          version: 1,
-          created_by: user.id,
-        });
-
-      if (error) {
-        toast.error("SOP generated but failed to save: " + error.message);
-      } else {
-        toast.success("Your first SOP has been created!");
-      }
-
-      setGeneratingComplete(true);
-    },
-  });
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     async function prefill() {
@@ -250,13 +193,84 @@ export default function OnboardingPage() {
       toast.error("Please select a topic");
       return;
     }
+    setIsGenerating(true);
     setGeneratingComplete(false);
-    await complete(selectedTopic, {
-      body: {
-        businessId: currentBusiness?.id,
-        topic: selectedTopic,
-      },
-    });
+
+    try {
+      const res = await fetch("/api/ai/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          businessId: currentBusiness?.id,
+          topic: selectedTopic,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || `Server error (${res.status})`);
+      }
+
+      const data = await res.json();
+      const completion = data.text;
+
+      if (!completion || !completion.trim()) {
+        toast.error("AI returned empty response. Please try again.");
+        setGeneratingComplete(true);
+        setIsGenerating(false);
+        return;
+      }
+
+      // Save generated SOP to database
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user || !currentBusiness) {
+        toast.error("Could not save SOP");
+        setGeneratingComplete(true);
+        setIsGenerating(false);
+        return;
+      }
+
+      let title = selectedTopic;
+      const firstLine = completion.split("\n").find((l: string) => l.trim());
+      if (firstLine) {
+        const cleaned = firstLine
+          .replace(/^\d+\.\s*/, "")
+          .replace(/^Title:\s*/i, "")
+          .trim();
+        title = cleaned.length > 80 ? cleaned.substring(0, 80) : cleaned;
+      }
+
+      const summary = completion.substring(0, 200).replace(/\n/g, " ").trim();
+      const content = textToTipTapJSON(completion);
+
+      const { error } = await supabase.from("sops").insert({
+        business_id: currentBusiness.id,
+        title,
+        content,
+        summary: summary || null,
+        status: "draft",
+        version: 1,
+        created_by: user.id,
+      });
+
+      if (error) {
+        toast.error("SOP generated but failed to save: " + error.message);
+      } else {
+        toast.success("Your first SOP has been created!");
+      }
+
+      setGeneratingComplete(true);
+    } catch (error) {
+      console.error("SOP generation error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to generate SOP"
+      );
+      setGeneratingComplete(true);
+    } finally {
+      setIsGenerating(false);
+    }
   }
 
   function handleGoToDashboard() {

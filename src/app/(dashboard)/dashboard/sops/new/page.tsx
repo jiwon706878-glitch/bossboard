@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
-import { useCompletion } from "@ai-sdk/react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { Button } from "@/components/ui/button";
@@ -20,9 +19,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, Loader2, Save, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { SOPEditor } from "@/components/sops/sop-editor";
 import type { JSONContent } from "@tiptap/react";
 import Link from "next/link";
+
+const SOPEditor = lazy(() =>
+  import("@/components/sops/sop-editor").then((m) => ({ default: m.SOPEditor }))
+);
 
 const CATEGORIES = [
   { value: "onboarding", label: "Onboarding" },
@@ -61,40 +63,18 @@ export default function NewSOPPage() {
   const [title, setTitle] = useState("");
   const [editorContent, setEditorContent] = useState<JSONContent | null>(null);
   const [generatedText, setGeneratedText] = useState("");
+  const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const router = useRouter();
   const supabase = createClient();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
 
-  const { complete, isLoading } = useCompletion({
-    api: "/api/ai/generate",
-    streamProtocol: "text",
-    onFinish: (_prompt, completion) => {
-      if (!completion || !completion.trim()) {
-        toast.error("AI returned empty response. Please try again.");
-        return;
-      }
-
-      setGeneratedText(completion);
-      const json = textToTipTapJSON(completion);
-      setEditorContent(json);
-
-      // Extract title from first line
-      const firstLine = completion.split("\n").find((l) => l.trim());
-      if (firstLine) {
-        const cleaned = firstLine
-          .replace(/^\d+\.\s*/, "")
-          .replace(/^Title:\s*/i, "")
-          .trim();
-        setTitle(cleaned.length > 80 ? cleaned.substring(0, 80) : cleaned);
-      }
-    },
-    onError: (error) => {
-      console.error("SOP generation error:", error);
-      toast.error(error.message || "Failed to generate SOP. Please try again.");
-    },
-  });
+  async function getBusinessId(): Promise<string | null> {
+    if (currentBusiness?.id) return currentBusiness.id;
+    const { data } = await supabase.from("businesses").select("id").limit(1);
+    return data?.[0]?.id || null;
+  }
 
   async function handleGenerate() {
     if (!topic) {
@@ -102,28 +82,61 @@ export default function NewSOPPage() {
       return;
     }
 
-    // Try to get businessId from store, or fetch from Supabase
-    let businessId = currentBusiness?.id;
-    if (!businessId) {
-      const { data: businesses } = await supabase
-        .from("businesses")
-        .select("id")
-        .limit(1);
-      if (businesses && businesses.length > 0) {
-        businessId = businesses[0].id;
-      }
-    }
-
+    setGenerating(true);
     setGeneratedText("");
     setEditorContent(null);
     setTitle("");
-    await complete(topic, {
-      body: {
-        businessId: businessId || undefined,
-        topic,
-        category: category || undefined,
-      },
-    });
+
+    try {
+      const businessId = await getBusinessId();
+
+      const res = await fetch("/api/ai/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          businessId,
+          topic,
+          category: category || undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || `Server error (${res.status})`);
+      }
+
+      const data = await res.json();
+      const text = data.text;
+
+      if (!text || !text.trim()) {
+        toast.error("AI returned empty response. Please try again.");
+        setGenerating(false);
+        return;
+      }
+
+      setGeneratedText(text);
+      const json = textToTipTapJSON(text);
+      setEditorContent(json);
+
+      // Extract title from first line
+      const firstLine = text.split("\n").find((l: string) => l.trim());
+      if (firstLine) {
+        const cleaned = firstLine
+          .replace(/^\d+\.\s*/, "")
+          .replace(/^Title:\s*/i, "")
+          .trim();
+        setTitle(cleaned.length > 80 ? cleaned.substring(0, 80) : cleaned);
+      }
+
+      toast.success("SOP generated! Review and save below.");
+    } catch (error) {
+      console.error("SOP generation error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to generate SOP"
+      );
+    } finally {
+      setGenerating(false);
+    }
   }
 
   async function handleSave() {
@@ -138,23 +151,13 @@ export default function NewSOPPage() {
 
     setSaving(true);
 
-    // Get businessId from store or fetch
-    let bizId = currentBusiness?.id;
-    if (!bizId) {
-      const { data: businesses } = await supabase
-        .from("businesses")
-        .select("id")
-        .limit(1);
-      bizId = businesses?.[0]?.id;
-    }
-
+    const bizId = await getBusinessId();
     if (!bizId) {
       toast.error("No business found. Please complete onboarding first.");
       setSaving(false);
       return;
     }
 
-    // Generate a summary from the first ~200 chars of the generated text or editor content
     let summary = "";
     if (generatedText) {
       summary = generatedText.substring(0, 200).replace(/\n/g, " ").trim();
@@ -238,13 +241,13 @@ export default function NewSOPPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={handleGenerate} disabled={isLoading || !topic}>
-                {isLoading ? (
+              <Button onClick={handleGenerate} disabled={generating || !topic}>
+                {generating ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <Sparkles className="mr-2 h-4 w-4" />
                 )}
-                Generate SOP (3 credits)
+                {generating ? "Generating..." : "Generate SOP (3 credits)"}
               </Button>
             </CardContent>
           </Card>
@@ -265,10 +268,18 @@ export default function NewSOPPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Content</Label>
-                  <SOPEditor
-                    content={editorContent}
-                    onChange={setEditorContent}
-                  />
+                  <Suspense
+                    fallback={
+                      <div className="rounded-md border bg-card p-4 text-sm text-muted-foreground">
+                        Loading editor...
+                      </div>
+                    }
+                  >
+                    <SOPEditor
+                      content={editorContent}
+                      onChange={setEditorContent}
+                    />
+                  </Suspense>
                 </div>
                 <Button onClick={handleSave} disabled={saving}>
                   <Save className="mr-2 h-4 w-4" />
@@ -310,10 +321,18 @@ export default function NewSOPPage() {
               </div>
               <div className="space-y-2">
                 <Label>Content</Label>
-                <SOPEditor
-                  content={editorContent}
-                  onChange={setEditorContent}
-                />
+                <Suspense
+                  fallback={
+                    <div className="rounded-md border bg-card p-4 text-sm text-muted-foreground">
+                      Loading editor...
+                    </div>
+                  }
+                >
+                  <SOPEditor
+                    content={editorContent}
+                    onChange={setEditorContent}
+                  />
+                </Suspense>
               </div>
               <Button onClick={handleSave} disabled={saving}>
                 <Save className="mr-2 h-4 w-4" />

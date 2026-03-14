@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   const planId =
     (profile?.plan_id as "free" | "starter" | "pro" | "business") ?? "free";
 
-  // Only Pro, Business, Enterprise can use AI chat
+  // Only Pro and Business can use AI chat
   if (planId === "free") {
     return new Response("Upgrade to Pro to use AI Assistant", { status: 403 });
   }
@@ -40,15 +40,17 @@ export async function POST(req: Request) {
 
   const { text } = await generateText({
     model: anthropic("claude-haiku-4-5-20251001"),
-    system: `You are BossBoard's friendly AI assistant. Help users with questions about BossBoard — an AI-powered dashboard for local business owners.
+    system: `You are the BossBoard AI assistant. BossBoard is an AI-powered operations control tower for business owners.
 
-Key facts:
-- Three modules: Review AI, Social AI, Content Studio
-- Free plan: 30 credits/mo. Pro: $19.99/mo (1,000 credits). Business: $39.99/mo (unlimited). Enterprise: $79.99/mo.
-- Supports Instagram, Facebook, TikTok, X (Twitter), and LinkedIn
-- Cancel anytime from account settings
+Key features:
+- AI SOP Generation: Create detailed standard operating procedures from a simple topic description
+- Team Management: Invite team members, track SOP reads, assign checklists
+- Operations Dashboard: Monitor team compliance, get AI-driven insights
+- SOP Wiki: Searchable library of all your procedures
 
-Be concise, friendly, and helpful. Keep responses under 3 sentences when possible.`,
+Plans: Free ($0/mo, 5 SOPs, 5 AI generations), Starter ($19/mo, 50 SOPs), Pro ($49/mo, unlimited), Business ($129/mo, everything + API + SSO)
+
+Answer questions helpfully and concisely. If asked about features that don't exist, say they're on the roadmap.`,
     prompt: message,
   });
 

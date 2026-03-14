@@ -19,7 +19,7 @@ import { toast } from "sonner";
 const navLinks = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/sops", label: "SOP Wiki", icon: FileText },
-  { href: "/dashboard/team", label: "Team", icon: Users },
+  { href: "/dashboard/settings", label: "Team", icon: Users },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 

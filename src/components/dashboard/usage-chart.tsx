@@ -34,7 +34,7 @@ export function UsageChart({
           />
           <Bar
             dataKey="credits"
-            fill="#E8825A"
+            fill="#4F8BFF"
             radius={[4, 4, 0, 0]}
           />
         </BarChart>

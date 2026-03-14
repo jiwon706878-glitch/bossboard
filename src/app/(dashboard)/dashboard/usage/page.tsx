@@ -75,9 +75,17 @@ export default async function UsagePage() {
   }));
 
   const featureLabels: Record<string, string> = {
-    review_reply: "Review Replies",
-    caption: "Social Captions",
-    script: "Video Scripts",
+    sop_generate: "SOP Generation",
+    chat: "AI Chat",
+    review_reply: "Review Reply",
+    caption: "Caption",
+    script: "Script",
+    email_marketing: "Email",
+    translation: "Translation",
+    image_analysis: "Image Analysis",
+    report: "Report",
+    review_insights: "Review Insights",
+    business_plan: "Business Plan",
   };
 
   return (

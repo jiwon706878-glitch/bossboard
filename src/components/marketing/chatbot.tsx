@@ -12,32 +12,32 @@ const faqEntries = [
   {
     keywords: ["price", "pricing", "cost", "plan", "plans", "subscription"],
     response:
-      "BossBoard offers 4 plans:\n\n\u2022 Free: $0/mo (30 AI credits)\n\u2022 Pro: $19.99/mo (1,000 credits)\n\u2022 Business: $39.99/mo (unlimited credits)\n\u2022 Enterprise: $79.99/mo (unlimited + white-label)\n\nAll plans include Review AI, Social AI, and Content Studio. No credit card required for the free plan!",
+      "BossBoard offers 4 plans:\n\n\u2022 Free: $0/mo (5 SOPs, 5 AI generations)\n\u2022 Starter: $19/mo (50 SOPs, 50 AI generations)\n\u2022 Pro: $49/mo (unlimited SOPs & AI generations)\n\u2022 Business: $129/mo (everything in Pro + unlimited team, API, SSO)\n\nNo credit card required for the free plan!",
   },
   {
     keywords: ["cancel", "refund", "unsubscribe"],
     response:
-      "You can cancel your subscription anytime from your account settings \u2014 no questions asked. Your plan stays active until the end of your billing period, and you won\u2019t be charged again. If you need a refund for a specific situation, reach out to our support team.",
+      "You can cancel your subscription anytime from your account settings \u2014 no questions asked. Your plan stays active until the end of your billing period, and you won\u2019t be charged again.",
   },
   {
     keywords: ["free", "trial", "try"],
     response:
-      "Our free plan gives you 30 AI credits every month \u2014 no credit card required! That\u2019s enough to generate review replies, social captions, and test out video scripts. Sign up in 30 seconds and start using AI right away.",
+      "Our free plan includes 5 SOPs, 3 team members, and 5 AI generations per month \u2014 no credit card required! That\u2019s enough to create your first procedures and see how BossBoard works for your team.",
   },
   {
-    keywords: ["credit", "credits"],
+    keywords: ["credit", "credits", "generation", "generations"],
     response:
-      "Credits are how BossBoard measures AI usage. Different features cost different amounts:\n\n\u2022 Review reply: 1 credit\n\u2022 Social caption: 1 credit\n\u2022 Video script: 3 credits\n\u2022 Image analysis: 5 credits\n\u2022 Report generation: 5 credits\n\u2022 Business plan writing: 10 credits\n\nFree users get 30/mo, Pro gets 1,000/mo, and Business/Enterprise get unlimited.",
+      "AI generations are how BossBoard measures AI usage. Each SOP generation costs 3 credits. Free users get 5/month, Starter gets 50/month, and Pro/Business get unlimited.",
   },
   {
     keywords: ["feature", "features", "what can", "do", "does", "tool", "tools"],
     response:
-      "BossBoard has three main AI modules:\n\n1. Review AI \u2014 Generate professional replies to customer reviews instantly\n2. Social AI \u2014 Create captions, hashtags, and schedule posts for any platform\n3. Content Studio \u2014 Write camera-ready scripts for TikTok, Reels, and Shorts\n\nPlus: analytics dashboard, team collaboration (Business+), and custom brand voice.",
+      "BossBoard helps you:\n\n1. Generate SOPs with AI \u2014 describe a topic and get a complete procedure in seconds\n2. Manage your team \u2014 invite members, track who read what, assign checklists\n3. Get AI insights \u2014 see which SOPs need review and track team compliance\n\nPlus: version history, onboarding paths, and a searchable SOP wiki.",
   },
   {
-    keywords: ["how", "work", "start", "get started", "sign up", "begin"],
+    keywords: ["how", "work", "start", "get started", "sign up", "begin", "sop"],
     response:
-      "Getting started is easy:\n\n1. Sign up free (30 seconds, no credit card)\n2. Add your business name and type\n3. Start generating AI content instantly!\n\nYou can create review replies, social captions, and video scripts right away with your 30 free monthly credits.",
+      "Getting started is easy:\n\n1. Sign up free (30 seconds, no credit card)\n2. Set up your business profile\n3. Create your first SOP with AI \u2014 just describe the topic!\n\nYour AI-generated SOP will include purpose, step-by-step procedures, safety notes, and an extractable checklist.",
   },
 ];
 
@@ -260,7 +260,7 @@ export function Chatbot() {
         addMessages({
           id: nextId(),
           role: "assistant",
-          content: "Upgrade to Pro to chat with AI. The AI Assistant is available on Pro, Business, and Enterprise plans.",
+          content: "Upgrade to Pro to use the AI Assistant. Available on Pro and Business plans.",
         });
         setAiMode(false);
       } else if (res.ok) {
@@ -340,7 +340,7 @@ export function Chatbot() {
       {/* Toggle button */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105"
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground border border-border transition-colors duration-150"
         aria-label={open ? "Close chat" : "Open chat"}
       >
         {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
@@ -348,7 +348,7 @@ export function Chatbot() {
 
       {/* Chat panel */}
       {open && (
-        <div className="fixed bottom-24 right-6 z-50 flex h-[32rem] w-[calc(100vw-3rem)] flex-col rounded-xl border bg-background shadow-2xl sm:w-96">
+        <div className="fixed bottom-24 right-6 z-50 flex h-[32rem] w-[calc(100vw-3rem)] flex-col rounded-xl border bg-background sm:w-96">
           {/* Header */}
           <div className="flex items-center gap-3 border-b px-4 py-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">

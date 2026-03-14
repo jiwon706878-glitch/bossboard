@@ -28,6 +28,8 @@ export function MarketingFooter() {
               { href: "#features", label: "Features" },
               { href: "#pricing", label: "Pricing" },
               { href: "#faq", label: "FAQ" },
+              { href: "/privacy", label: "Privacy" },
+              { href: "/terms", label: "Terms" },
             ].map((link) => (
               <Link
                 key={link.href}

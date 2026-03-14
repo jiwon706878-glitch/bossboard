@@ -6,19 +6,17 @@ import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 const FEATURES = [
   {
-    id: "review_replies",
-    label: "AI Review Replies (auto-respond to Google/Yelp reviews)",
+    id: "sop_generation",
+    label: "AI SOP Generation (create procedures from a topic)",
   },
-  { id: "social_ai", label: "Social Media AI (captions & hashtags)" },
+  { id: "team_management", label: "Team Management (invite, track reads, assign)" },
   {
-    id: "content_studio",
-    label: "Content Studio (video scripts for TikTok/Reels)",
+    id: "operations_dashboard",
+    label: "Operations Dashboard (insights & compliance)",
   },
-  { id: "email_marketing", label: "Email Marketing AI" },
-  { id: "qr_code", label: "QR Code Generator (review collection)" },
-  { id: "review_insights", label: "Review Insights Dashboard" },
-  { id: "translation", label: "Multi-language Translation" },
-  { id: "google_business", label: "Google Business Integration" },
+  { id: "sop_wiki", label: "SOP Wiki (searchable procedure library)" },
+  { id: "checklists", label: "Checklists (auto-generated from SOPs)" },
+  { id: "onboarding_paths", label: "Onboarding Paths (structured new-hire training)" },
 ];
 
 const inputStyle: React.CSSProperties = {

@@ -34,24 +34,41 @@ export function CountdownTimer() {
   const units = [
     { label: "Days", value: time?.days },
     { label: "Hours", value: time?.hours },
-    { label: "Minutes", value: time?.minutes },
-    { label: "Seconds", value: time?.seconds },
+    { label: "Min", value: time?.minutes },
+    { label: "Sec", value: time?.seconds },
   ];
 
   return (
-    <div className="flex items-center justify-center gap-3 sm:gap-4">
+    <div className="flex items-center justify-start gap-3 sm:gap-4">
       {units.map((u, i) => (
         <div key={u.label} className="flex items-center gap-3 sm:gap-4">
           <div className="text-center">
-            <div className="rounded-xl bg-primary/10 px-4 py-3 text-3xl font-bold tabular-nums sm:px-6 sm:py-4 sm:text-5xl">
+            <div
+              className="rounded-md px-3 py-2 sm:px-5 sm:py-3"
+              style={{
+                backgroundColor: "#141824",
+                border: "1px solid #2A3050",
+                fontFamily: "'JetBrains Mono', monospace",
+                color: "#E8ECF4",
+                fontSize: "clamp(1.5rem, 4vw, 2.5rem)",
+                fontWeight: 500,
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
               {u.value != null ? String(u.value).padStart(2, "0") : "--"}
             </div>
-            <p className="mt-1.5 text-xs font-medium text-muted-foreground sm:text-sm">
+            <p
+              className="mt-1.5 text-xs font-medium"
+              style={{ color: "#5A6480" }}
+            >
               {u.label}
             </p>
           </div>
           {i < units.length - 1 && (
-            <span className="text-2xl font-bold text-muted-foreground/50 sm:text-4xl">
+            <span
+              className="text-xl sm:text-2xl font-medium"
+              style={{ color: "#2A3050" }}
+            >
               :
             </span>
           )}

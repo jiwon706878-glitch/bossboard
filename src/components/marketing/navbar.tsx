@@ -1,48 +1,140 @@
+"use client";
+
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
 
 export function MarketingNavbar() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const navLinks = [
+    { href: "#features", label: "Features" },
+    { href: "#how-it-works", label: "How It Works" },
+    { href: "#pricing", label: "Pricing" },
+    { href: "#faq", label: "FAQ" },
+  ];
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header
+      className="sticky top-0 z-50 w-full"
+      style={{
+        backgroundColor: "rgba(12, 15, 23, 0.95)",
+        borderBottom: "1px solid #2A3050",
+        backdropFilter: "blur(12px)",
+      }}
+    >
       <div className="mx-auto flex h-[4.5rem] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2">
-          <img src="/Logo.png" alt="" width={40} height={40} className="h-10 w-10" />
-          <span className="text-xl font-bold">BossBoard</span>
+          <img
+            src="/Logo.png"
+            alt=""
+            width={40}
+            height={40}
+            className="h-10 w-10"
+          />
+          <span
+            className="text-xl font-bold"
+            style={{
+              color: "#E8ECF4",
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            BossBoard
+          </span>
         </Link>
-        <nav className="hidden items-center gap-6 md:flex">
-          <Link
-            href="#features"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Features
-          </Link>
-          <Link
-            href="#how-it-works"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            How It Works
-          </Link>
-          <Link
-            href="#pricing"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Pricing
-          </Link>
-          <Link
-            href="#faq"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            FAQ
-          </Link>
+
+        <nav className="hidden items-center gap-8 md:flex">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="text-sm transition-colors duration-150"
+              style={{
+                color: "#8B95B0",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.color = "#E8ECF4")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color = "#8B95B0")
+              }
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
+
         <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <Link href="#waitlist">
-            <Button size="sm">Join Waitlist</Button>
+          <Link
+            href="#waitlist"
+            className="hidden sm:inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors duration-150"
+            style={{
+              backgroundColor: "#4F8BFF",
+              color: "#FFFFFF",
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#6BA0FF")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "#4F8BFF")
+            }
+          >
+            Join Waitlist
           </Link>
+
+          <button
+            className="md:hidden p-2"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            style={{ color: "#8B95B0" }}
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
+          </button>
         </div>
       </div>
+
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div
+          className="md:hidden px-4 pb-4"
+          style={{ backgroundColor: "#0C0F17" }}
+        >
+          <nav className="flex flex-col gap-3">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-sm py-2"
+                style={{
+                  color: "#8B95B0",
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+                onClick={() => setMobileOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <Link
+              href="#waitlist"
+              className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium mt-2"
+              style={{
+                backgroundColor: "#4F8BFF",
+                color: "#FFFFFF",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+              onClick={() => setMobileOpen(false)}
+            >
+              Join Waitlist
+            </Link>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

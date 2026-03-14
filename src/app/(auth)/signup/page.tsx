@@ -49,11 +49,11 @@ export default function SignupPage() {
 
   if (sent) {
     return (
-      <Card>
+      <Card className="border bg-card">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Check your email</CardTitle>
-          <CardDescription>
-            We sent a confirmation link to <strong>{email}</strong>. Click the
+          <CardTitle className="text-2xl font-bold text-foreground">Check your email</CardTitle>
+          <CardDescription className="text-muted-foreground">
+            We sent a confirmation link to <strong className="text-foreground">{email}</strong>. Click the
             link to activate your account.
           </CardDescription>
         </CardHeader>
@@ -62,49 +62,52 @@ export default function SignupPage() {
   }
 
   return (
-    <Card>
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Create your account</CardTitle>
-        <CardDescription>
+    <Card className="border bg-card">
+      <CardHeader className="text-center pb-4">
+        <CardTitle className="text-2xl font-bold text-foreground">Create your account</CardTitle>
+        <CardDescription className="text-muted-foreground">
           Start managing your business smarter with AI
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSignup} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="fullName">Full name</Label>
+            <Label htmlFor="fullName" className="text-foreground">Full name</Label>
             <Input
               id="fullName"
               placeholder="Jane Smith"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
+              className="bg-background border"
               required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-foreground">Email</Label>
             <Input
               id="email"
               type="email"
               placeholder="you@business.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="bg-background border"
               required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className="text-foreground">Password</Label>
             <Input
               id="password"
               type="password"
               placeholder="At least 6 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="bg-background border"
               minLength={6}
               required
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full transition-colors duration-150" disabled={loading}>
             {loading ? "Creating account..." : "Create account"}
           </Button>
         </form>

@@ -119,7 +119,7 @@ export default function SOPDetailPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold">{sop.title}</h1>
+            <h1 className="text-3xl font-bold text-foreground">{sop.title}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Badge
                 variant="secondary"
@@ -194,7 +194,7 @@ export default function SOPDetailPage() {
       </div>
 
       {/* Content */}
-      <Card>
+      <Card className="border bg-card">
         <CardContent className="py-6">
           {sop.content ? (
             <SOPEditor content={sop.content} editable={false} />

@@ -164,7 +164,7 @@ export default function NewSOPPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold">New SOP</h1>
+          <h1 className="text-3xl font-bold text-foreground">New SOP</h1>
           <p className="text-muted-foreground">
             Create a new Standard Operating Procedure.
           </p>
@@ -178,13 +178,13 @@ export default function NewSOPPage() {
         </TabsList>
 
         <TabsContent value="ai" className="space-y-4 pt-4">
-          <Card>
+          <Card className="border bg-card border-l-4 border-l-primary">
             <CardHeader>
-              <CardTitle>Generate with AI</CardTitle>
+              <CardTitle className="text-foreground">Generate with AI</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Topic / Task</Label>
+                <Label className="text-foreground">Topic / Task</Label>
                 <Textarea
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
@@ -219,9 +219,9 @@ export default function NewSOPPage() {
           </Card>
 
           {editorContent && (
-            <Card>
+            <Card className="border bg-card">
               <CardHeader>
-                <CardTitle>Generated SOP</CardTitle>
+                <CardTitle className="text-foreground">Generated SOP</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -249,9 +249,9 @@ export default function NewSOPPage() {
         </TabsContent>
 
         <TabsContent value="manual" className="space-y-4 pt-4">
-          <Card>
+          <Card className="border bg-card">
             <CardHeader>
-              <CardTitle>Create SOP</CardTitle>
+              <CardTitle className="text-foreground">Create SOP</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">

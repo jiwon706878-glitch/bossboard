@@ -164,15 +164,15 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-lg">
         {/* Progress indicator */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm font-mono text-muted-foreground">
               Step {step} of {TOTAL_STEPS}
             </span>
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm font-medium text-foreground">
               {step === 1 && "About You"}
               {step === 2 && "Your Business"}
               {step === 3 && "All Set"}
@@ -191,29 +191,30 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        <Card className="w-full">
+        <Card className="w-full border bg-card">
           {/* Step 1: About You */}
           {step === 1 && (
             <>
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl">About You</CardTitle>
-                <CardDescription>
+              <CardHeader className="text-center pb-4">
+                <CardTitle className="text-2xl font-bold text-foreground">About You</CardTitle>
+                <CardDescription className="text-muted-foreground">
                   Let us know who you are so we can personalize your experience.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="fullName">Full name</Label>
+                  <Label htmlFor="fullName" className="text-foreground">Full name</Label>
                   <Input
                     id="fullName"
                     placeholder="Jane Smith"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
+                    className="bg-background border"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="role">Your role</Label>
+                  <Label htmlFor="role" className="text-foreground">Your role</Label>
                   <Select value={role} onValueChange={setRole}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select your role" />
@@ -234,26 +235,27 @@ export default function OnboardingPage() {
           {/* Step 2: Your Business */}
           {step === 2 && (
             <>
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl">Your Business</CardTitle>
-                <CardDescription>
+              <CardHeader className="text-center pb-4">
+                <CardTitle className="text-2xl font-bold text-foreground">Your Business</CardTitle>
+                <CardDescription className="text-muted-foreground">
                   Tell us about your business so we can tailor the AI to your
                   needs.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="businessName">Business name</Label>
+                  <Label htmlFor="businessName" className="text-foreground">Business name</Label>
                   <Input
                     id="businessName"
                     placeholder="Acme Coffee Shop"
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
+                    className="bg-background border"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="businessType">Business type</Label>
+                  <Label htmlFor="businessType" className="text-foreground">Business type</Label>
                   <Select
                     value={businessType}
                     onValueChange={setBusinessType}
@@ -271,12 +273,13 @@ export default function OnboardingPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address">Address (optional)</Label>
+                  <Label htmlFor="address" className="text-foreground">Address (optional)</Label>
                   <Input
                     id="address"
                     placeholder="123 Main St, City, State"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
+                    className="bg-background border"
                   />
                 </div>
               </CardContent>
@@ -286,15 +289,15 @@ export default function OnboardingPage() {
           {/* Step 3: All Set */}
           {step === 3 && (
             <>
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl">You're All Set</CardTitle>
-                <CardDescription>
+              <CardHeader className="text-center pb-4">
+                <CardTitle className="text-2xl font-bold text-foreground">You're All Set</CardTitle>
+                <CardDescription className="text-muted-foreground">
                   Here's a summary of your setup. You can change these later in
                   Settings.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="rounded-md border p-4 space-y-3">
+                <div className="rounded-md border bg-background p-4 space-y-3">
                   <div>
                     <p className="text-sm text-muted-foreground">Name</p>
                     <p className="font-medium">{fullName}</p>
@@ -338,11 +341,11 @@ export default function OnboardingPage() {
               <div />
             )}
             {step < 3 ? (
-              <Button onClick={handleNext} disabled={loading}>
+              <Button onClick={handleNext} disabled={loading} className="transition-colors duration-150">
                 {loading ? "Saving..." : "Next"}
               </Button>
             ) : (
-              <Button onClick={handleGoToDashboard} className="w-full">
+              <Button onClick={handleGoToDashboard} className="w-full transition-colors duration-150">
                 Go to Dashboard
               </Button>
             )}

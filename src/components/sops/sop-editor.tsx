@@ -47,8 +47,10 @@ function ToolbarButton({
       variant="ghost"
       size="sm"
       className={cn(
-        "h-8 w-8 p-0",
-        isActive && "bg-muted text-foreground"
+        "h-8 w-8 p-0 transition-colors duration-150",
+        isActive
+          ? "bg-primary/10 text-primary"
+          : "text-muted-foreground hover:text-foreground"
       )}
       onClick={onClick}
       title={title}
@@ -84,7 +86,7 @@ export function SOPEditor({ content, onChange, editable = true }: SOPEditorProps
     editorProps: {
       attributes: {
         class: cn(
-          "prose prose-sm dark:prose-invert max-w-none min-h-[300px] px-4 py-3 focus:outline-none",
+          "prose prose-sm dark:prose-invert max-w-none min-h-[300px] px-4 py-3 focus:outline-none text-foreground",
           "[&_ul[data-type=taskList]]:list-none [&_ul[data-type=taskList]]:pl-0",
           "[&_ul[data-type=taskList]_li]:flex [&_ul[data-type=taskList]_li]:items-start [&_ul[data-type=taskList]_li]:gap-2",
           "[&_ul[data-type=taskList]_li_label]:mt-0.5",
@@ -96,9 +98,9 @@ export function SOPEditor({ content, onChange, editable = true }: SOPEditorProps
   if (!editor) return null;
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border bg-card">
       {editable && (
-        <div className="flex flex-wrap items-center gap-0.5 border-b px-2 py-1.5">
+        <div className="flex flex-wrap items-center gap-0.5 border-b bg-muted/50 px-2 py-1.5">
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleBold().run()}
             isActive={editor.isActive("bold")}

@@ -144,6 +144,15 @@
   --sidebar-accent-foreground: #1a1a1a;
   --sidebar-border: #E5E5E0;
   --sidebar-ring: #E8825A;
+
+  /* BossBoard design system — light mode */
+  --bb-bg-primary: #FAFBFD;
+  --bb-bg-secondary: #FFFFFF;
+  --bb-surface: #F0F2F7;
+  --bb-border: #E2E6EF;
+  --bb-text-primary: #1A1D2B;
+  --bb-text-secondary: #5E6478;
+  --bb-accent-blue: #3366FF;
 }
 
 .dark {
@@ -180,6 +189,21 @@
   --sidebar-accent-foreground: #ECECEC;
   --sidebar-border: #2d2d4a;
   --sidebar-ring: #E8825A;
+
+  /* BossBoard design system — dark mode */
+  --bb-bg-primary: #0C0F17;
+  --bb-bg-secondary: #141824;
+  --bb-bg-tertiary: #1C2033;
+  --bb-surface: #232840;
+  --bb-border: #2A3050;
+  --bb-text-primary: #E8ECF4;
+  --bb-text-secondary: #8B95B0;
+  --bb-text-tertiary: #5A6480;
+  --bb-accent-blue: #4F8BFF;
+  --bb-accent-blue-hover: #6BA0FF;
+  --bb-success: #34D399;
+  --bb-warning: #FBBF24;
+  --bb-danger: #F87171;
 }
 
 @layer base {

@@ -101,7 +101,7 @@ export default function SOPsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Standard Operating Procedures</h1>
+          <h1 className="text-3xl font-bold text-foreground">Standard Operating Procedures</h1>
           <p className="text-muted-foreground">
             Create and manage SOPs for your team with AI assistance.
           </p>
@@ -171,7 +171,7 @@ export default function SOPsPage() {
           {filteredSops.map((sop) => (
             <Card
               key={sop.id}
-              className="cursor-pointer transition-colors hover:bg-muted/50"
+              className="cursor-pointer border bg-card transition-colors duration-150 hover:bg-muted/50"
               onClick={() => router.push(`/dashboard/sops/${sop.id}`)}
             >
               <CardContent className="flex items-center justify-between py-4">

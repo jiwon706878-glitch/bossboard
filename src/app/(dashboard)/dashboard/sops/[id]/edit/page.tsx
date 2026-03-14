@@ -121,20 +121,20 @@ export default function EditSOPPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold">Edit SOP</h1>
+          <h1 className="text-3xl font-bold text-foreground">Edit SOP</h1>
           <p className="text-muted-foreground">
             Update your Standard Operating Procedure.
           </p>
         </div>
       </div>
 
-      <Card>
+      <Card className="border bg-card">
         <CardHeader>
-          <CardTitle>SOP Details</CardTitle>
+          <CardTitle className="text-foreground">SOP Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Title</Label>
+            <Label className="text-foreground">Title</Label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -144,7 +144,7 @@ export default function EditSOPPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Category</Label>
+              <Label className="text-foreground">Category</Label>
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a category" />
@@ -159,7 +159,7 @@ export default function EditSOPPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label className="text-foreground">Status</Label>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger>
                   <SelectValue />
@@ -176,7 +176,7 @@ export default function EditSOPPage() {
           </div>
 
           <div className="space-y-2">
-            <Label>Content</Label>
+            <Label className="text-foreground">Content</Label>
             <SOPEditor content={editorContent} onChange={setEditorContent} />
           </div>
 

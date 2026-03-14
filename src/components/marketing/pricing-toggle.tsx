@@ -3,11 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { plans, type PlanId } from "@/config/plans";
 
 const planOrder: PlanId[] = ["free", "pro", "business", "enterprise"];
@@ -17,65 +12,176 @@ export function PricingToggle() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-center gap-3">
-        <Label htmlFor="billing" className="text-sm">Monthly</Label>
-        <Switch id="billing" checked={annual} onCheckedChange={setAnnual} />
-        <Label htmlFor="billing" className="text-sm">
-          Annual <Badge variant="secondary" className="ml-1">Save 17%</Badge>
-        </Label>
+      {/* Billing toggle */}
+      <div className="mb-10 flex items-center justify-center gap-4">
+        <span
+          className="text-sm font-medium"
+          style={{ color: annual ? "#5A6480" : "#E8ECF4" }}
+        >
+          Monthly
+        </span>
+        <button
+          onClick={() => setAnnual(!annual)}
+          className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200"
+          style={{
+            backgroundColor: annual ? "#4F8BFF" : "#2A3050",
+          }}
+          role="switch"
+          aria-checked={annual}
+        >
+          <span
+            className="inline-block h-4 w-4 rounded-full transition-transform duration-200"
+            style={{
+              backgroundColor: "#E8ECF4",
+              transform: annual ? "translateX(24px)" : "translateX(4px)",
+            }}
+          />
+        </button>
+        <span
+          className="text-sm font-medium flex items-center gap-2"
+          style={{ color: annual ? "#E8ECF4" : "#5A6480" }}
+        >
+          Annual
+          <span
+            className="rounded-md px-2 py-0.5 text-xs font-semibold"
+            style={{
+              backgroundColor: "rgba(52, 211, 153, 0.1)",
+              color: "#34D399",
+              border: "1px solid rgba(52, 211, 153, 0.2)",
+            }}
+          >
+            Save 17%
+          </span>
+        </span>
       </div>
+
+      {/* Plan cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {planOrder.map((planId) => {
           const plan = plans[planId];
           const price = annual ? plan.annualPrice : plan.monthlyPrice;
-          const isPopular = planId === "business";
-          const isProPlan = planId === "pro";
+          const isRecommended = planId === "business";
 
           return (
-            <Card key={planId} className={isPopular ? "border-primary shadow-lg relative" : "relative"}>
-              {isPopular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-primary">Most Popular</Badge>
-                </div>
-              )}
-              {isProPlan && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge variant="secondary" className="font-bold">SAVE $80/MONTH</Badge>
-                </div>
-              )}
-              <CardHeader>
-                <CardTitle>{plan.name}</CardTitle>
-                <CardDescription>{plan.description}</CardDescription>
-                <div className="pt-2">
-                  <span className="text-4xl font-bold">
-                    ${annual ? Math.round(price / 12) : price}
+            <div
+              key={planId}
+              className="relative flex flex-col rounded-md p-6"
+              style={{
+                backgroundColor: "#141824",
+                border: isRecommended
+                  ? "1px solid #4F8BFF"
+                  : "1px solid #2A3050",
+                ...(isRecommended
+                  ? { marginTop: "-8px", paddingTop: "32px", paddingBottom: "32px" }
+                  : {}),
+              }}
+            >
+              {isRecommended && (
+                <div
+                  className="absolute -top-3 left-1/2 -translate-x-1/2"
+                >
+                  <span
+                    className="rounded-md px-3 py-1 text-xs font-semibold"
+                    style={{
+                      backgroundColor: "#4F8BFF",
+                      color: "#FFFFFF",
+                    }}
+                  >
+                    Recommended
                   </span>
-                  <span className="text-muted-foreground">/mo</span>
+                </div>
+              )}
+
+              <div>
+                <h3
+                  className="text-lg font-semibold"
+                  style={{
+                    color: "#E8ECF4",
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                >
+                  {plan.name}
+                </h3>
+                <p
+                  className="mt-1 text-sm"
+                  style={{ color: "#5A6480" }}
+                >
+                  {plan.description}
+                </p>
+                <div className="mt-4">
+                  <span
+                    className="text-3xl font-bold"
+                    style={{
+                      color: "#E8ECF4",
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}
+                  >
+                    ${annual && price > 0 ? Math.round(price / 12) : price}
+                  </span>
+                  <span
+                    className="text-sm ml-1"
+                    style={{ color: "#5A6480" }}
+                  >
+                    /mo
+                  </span>
                   {annual && price > 0 && (
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    <p
+                      className="mt-1 text-xs"
+                      style={{ color: "#5A6480" }}
+                    >
                       ${price}/year
                     </p>
                   )}
                 </div>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2 text-sm">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-              <CardFooter>
-                <Link href="/signup" className="w-full">
-                  <Button className="w-full" variant={isPopular ? "default" : "outline"}>
-                    {planId === "free" ? "Start Free" : "Get Started"}
-                  </Button>
-                </Link>
-              </CardFooter>
-            </Card>
+              </div>
+
+              <ul className="mt-6 space-y-2.5 flex-1">
+                {plan.features.map((feature) => (
+                  <li
+                    key={feature}
+                    className="flex items-start gap-2 text-sm"
+                    style={{ color: "#8B95B0" }}
+                  >
+                    <Check
+                      className="mt-0.5 h-4 w-4 shrink-0"
+                      style={{ color: "#34D399" }}
+                    />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              <Link
+                href="/signup"
+                className="mt-6 block w-full rounded-md px-4 py-2.5 text-center text-sm font-semibold transition-colors duration-150"
+                style={{
+                  backgroundColor: isRecommended ? "#4F8BFF" : "transparent",
+                  color: isRecommended ? "#FFFFFF" : "#8B95B0",
+                  border: isRecommended
+                    ? "1px solid #4F8BFF"
+                    : "1px solid #2A3050",
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+                onMouseEnter={(e) => {
+                  if (isRecommended) {
+                    e.currentTarget.style.backgroundColor = "#6BA0FF";
+                  } else {
+                    e.currentTarget.style.borderColor = "#4F8BFF";
+                    e.currentTarget.style.color = "#E8ECF4";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (isRecommended) {
+                    e.currentTarget.style.backgroundColor = "#4F8BFF";
+                  } else {
+                    e.currentTarget.style.borderColor = "#2A3050";
+                    e.currentTarget.style.color = "#8B95B0";
+                  }
+                }}
+              >
+                {planId === "free" ? "Start Free" : "Get Started"}
+              </Link>
+            </div>
           );
         })}
       </div>

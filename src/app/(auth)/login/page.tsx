@@ -52,27 +52,28 @@ export default function LoginPage() {
   }
 
   return (
-    <Card>
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Welcome back</CardTitle>
-        <CardDescription>Sign in to your BossBoard account</CardDescription>
+    <Card className="border bg-card">
+      <CardHeader className="text-center pb-4">
+        <CardTitle className="text-2xl font-bold text-foreground">Welcome back</CardTitle>
+        <CardDescription className="text-muted-foreground">Sign in to your BossBoard account</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-foreground">Email</Label>
             <Input
               id="email"
               type="email"
               placeholder="you@business.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="bg-background border"
               required
             />
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-foreground">Password</Label>
               <Link
                 href="/forgot-password"
                 className="text-sm text-primary hover:underline"
@@ -85,10 +86,11 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="bg-background border"
               required
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full transition-colors duration-150" disabled={loading}>
             {loading ? "Signing in..." : "Sign in"}
           </Button>
         </form>

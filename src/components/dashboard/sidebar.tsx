@@ -17,10 +17,10 @@ import {
 import { toast } from "sonner";
 
 const navLinks = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/sops", label: "SOP Wiki", icon: FileText },
-  { href: "/dashboard/settings", label: "Team", icon: Users },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
+  { key: "dashboard", href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { key: "sops", href: "/dashboard/sops", label: "SOP Wiki", icon: FileText },
+  { key: "team", href: "/dashboard/settings", label: "Team", icon: Users },
+  { key: "settings", href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 function NavLink({
@@ -163,8 +163,8 @@ export function DashboardSidebar({ className }: { className?: string }) {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-3">
         <div className="space-y-1">
-          {navLinks.map((link) => (
-            <NavLink key={link.href} {...link} pathname={pathname} />
+          {navLinks.map(({ key, ...link }) => (
+            <NavLink key={key} {...link} pathname={pathname} />
           ))}
         </div>
       </nav>

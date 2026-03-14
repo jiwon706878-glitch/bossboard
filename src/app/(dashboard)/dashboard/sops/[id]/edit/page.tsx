@@ -17,8 +17,13 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { SOPEditor } from "@/components/sops/sop-editor";
+import dynamic from "next/dynamic";
 import type { JSONContent } from "@tiptap/react";
+
+const SOPEditor = dynamic(
+  () => import("@/components/sops/sop-editor").then((m) => ({ default: m.SOPEditor })),
+  { ssr: false, loading: () => <div className="rounded-md border bg-card p-4 text-sm text-muted-foreground">Loading editor...</div> }
+);
 
 const CATEGORIES = [
   { value: "onboarding", label: "Onboarding" },

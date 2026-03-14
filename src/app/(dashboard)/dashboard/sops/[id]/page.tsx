@@ -18,9 +18,14 @@ import {
 } from "@/components/ui/dialog";
 import { ArrowLeft, Edit, Trash2, Clock, Tag, FileText } from "lucide-react";
 import { toast } from "sonner";
-import { SOPEditor } from "@/components/sops/sop-editor";
+import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
 import type { JSONContent } from "@tiptap/react";
+
+const SOPEditor = dynamic(
+  () => import("@/components/sops/sop-editor").then((m) => ({ default: m.SOPEditor })),
+  { ssr: false, loading: () => <div className="rounded-md border bg-card p-4 text-sm text-muted-foreground">Loading editor...</div> }
+);
 
 interface SOP {
   id: string;

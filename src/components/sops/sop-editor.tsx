@@ -62,6 +62,7 @@ function ToolbarButton({
 
 export function SOPEditor({ content, onChange, editable = true }: SOPEditorProps) {
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         heading: {

@@ -7,22 +7,22 @@ const faqs = [
   {
     question: "What is BossBoard?",
     answer:
-      "BossBoard is an AI-powered dashboard built for local business owners. It helps you manage online reviews, generate social media content, and create short-form video scripts -- all from one place, in seconds.",
+      "BossBoard is an AI-powered operations control tower for business owners. It helps you create standard operating procedures, manage your team, track who has read what, and get AI-driven insights into your operations -- all from one place.",
   },
   {
-    question: "How does the AI work?",
+    question: "How does the AI SOP generation work?",
     answer:
-      "BossBoard uses advanced AI models to understand your business type, brand voice, and goals. When you request a review reply, social caption, or video script, the AI generates tailored content that sounds like you -- not a robot.",
+      "Describe your topic -- for example, 'morning opening procedure for the cafe' -- and the AI generates a detailed, step-by-step SOP tailored to your industry. It includes purpose, scope, numbered procedures, safety notes, and an extractable checklist. You can edit everything in a rich text editor before publishing.",
   },
   {
     question: "Can I try it for free?",
     answer:
-      "Absolutely! Our free plan includes 30 AI credits per month -- enough to respond to reviews, write captions, and test out video scripts. No credit card required to sign up.",
+      "Yes. The free plan includes 5 SOPs, 3 team members, and 5 AI generations per month. No credit card required to sign up.",
   },
   {
-    question: "What platforms does Social AI support?",
+    question: "How does team management work?",
     answer:
-      "Social AI generates captions optimized for Instagram, Facebook, TikTok, X (Twitter), and LinkedIn. You can choose your platform and tone, and the AI adapts the style accordingly.",
+      "Invite team members by email, assign SOPs, and track who has read and signed off on each procedure. Build onboarding paths by chaining SOPs together, and auto-generate checklists from any SOP.",
   },
   {
     question: "How do I cancel my subscription?",

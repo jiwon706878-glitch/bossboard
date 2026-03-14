@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { PricingToggle } from "@/components/marketing/pricing-toggle";
 import { FaqSection } from "@/components/marketing/faq-section";
-import { CountdownTimer } from "@/components/marketing/countdown-timer";
-import { WaitlistForm } from "@/components/marketing/waitlist-form";
 import { ArrowRight } from "lucide-react";
 
 export default function HomePage() {
@@ -10,7 +8,6 @@ export default function HomePage() {
     <>
       {/* Hero Section — Left-aligned, dark, asymmetric */}
       <section
-        id="waitlist"
         className="px-4 sm:px-6 lg:px-8"
         style={{
           backgroundColor: "#0C0F17",
@@ -22,17 +19,6 @@ export default function HomePage() {
           <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-start">
             {/* Left — Text content */}
             <div>
-              <div
-                className="inline-flex items-center rounded-md px-3 py-1 text-xs font-medium mb-6"
-                style={{
-                  backgroundColor: "rgba(251, 191, 36, 0.1)",
-                  color: "#FBBF24",
-                  border: "1px solid rgba(251, 191, 36, 0.2)",
-                }}
-              >
-                First 100 signups get 1 month free Pro
-              </div>
-
               <h1
                 style={{
                   fontFamily: "'DM Sans', sans-serif",
@@ -65,7 +51,7 @@ export default function HomePage() {
 
               <div className="mt-8">
                 <Link
-                  href="#waitlist-form"
+                  href="/signup"
                   className="inline-flex items-center gap-2 rounded-md px-6 py-3 text-sm font-semibold transition-colors duration-150"
                   style={{
                     backgroundColor: "#4F8BFF",
@@ -73,20 +59,17 @@ export default function HomePage() {
                     fontFamily: "'DM Sans', sans-serif",
                   }}
                 >
-                  Join the Waitlist
+                  Get Started Free
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
 
-              <div className="mt-10">
-                <p
-                  className="text-xs font-medium mb-3"
-                  style={{ color: "#5A6480" }}
-                >
-                  LAUNCHING IN
-                </p>
-                <CountdownTimer />
-              </div>
+              <p
+                className="mt-4 text-xs"
+                style={{ color: "#5A6480" }}
+              >
+                No credit card required. Free plan includes 5 SOPs and 5 AI generations per month.
+              </p>
             </div>
 
             {/* Right — Product preview placeholder */}
@@ -495,9 +478,8 @@ export default function HomePage() {
       {/* FAQ */}
       <FaqSection />
 
-      {/* Waitlist CTA */}
+      {/* Bottom CTA */}
       <section
-        id="waitlist-form"
         className="px-4 sm:px-6 lg:px-8"
         style={{
           backgroundColor: "#0C0F17",
@@ -506,53 +488,40 @@ export default function HomePage() {
           borderTop: "1px solid #2A3050",
         }}
       >
-        <div className="mx-auto max-w-5xl">
-          <div className="grid gap-10 lg:grid-cols-2 items-start">
-            <div>
-              <h2
-                className="text-3xl font-bold"
-                style={{
-                  color: "#E8ECF4",
-                  fontFamily: "'DM Sans', sans-serif",
-                  letterSpacing: "-0.01em",
-                }}
-              >
-                Don&apos;t miss launch day
-              </h2>
-              <p
-                className="mt-3 leading-relaxed"
-                style={{
-                  color: "#8B95B0",
-                  fontSize: "16px",
-                }}
-              >
-                Join the waitlist now and be among the first to access
-                AI-powered operations tools that save you time, keep your team
-                aligned, and give you a daily reason to open BossBoard.
-              </p>
-              <div
-                className="mt-6 space-y-3"
-              >
-                {[
-                  "Early access before public launch",
-                  "Free Pro plan for first 100 signups",
-                  "Direct input on features we build",
-                ].map((item) => (
-                  <div
-                    key={item}
-                    className="flex items-center gap-2 text-sm"
-                    style={{ color: "#8B95B0" }}
-                  >
-                    <span
-                      className="h-1.5 w-1.5 rounded-full shrink-0"
-                      style={{ backgroundColor: "#34D399" }}
-                    />
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <WaitlistForm />
+        <div className="mx-auto max-w-2xl text-center">
+          <h2
+            className="text-3xl font-bold"
+            style={{
+              color: "#E8ECF4",
+              fontFamily: "'DM Sans', sans-serif",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Ready to streamline your operations?
+          </h2>
+          <p
+            className="mt-3 leading-relaxed"
+            style={{
+              color: "#8B95B0",
+              fontSize: "16px",
+            }}
+          >
+            Create your first AI-generated SOP in under a minute.
+            No credit card required.
+          </p>
+          <div className="mt-8">
+            <Link
+              href="/signup"
+              className="inline-flex items-center gap-2 rounded-md px-6 py-3 text-sm font-semibold transition-colors duration-150"
+              style={{
+                backgroundColor: "#4F8BFF",
+                color: "#FFFFFF",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              Get Started Free
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </section>

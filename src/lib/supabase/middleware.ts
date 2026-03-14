@@ -29,17 +29,6 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Pre-launch: redirect signup and login to homepage
-  const isPreLaunchBlocked =
-    request.nextUrl.pathname.startsWith("/login") ||
-    request.nextUrl.pathname.startsWith("/signup");
-
-  if (isPreLaunchBlocked && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
-  }
-
   // Protected routes
   const isAuthPage =
     request.nextUrl.pathname.startsWith("/login") ||

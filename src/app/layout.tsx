@@ -6,13 +6,20 @@ import { Toaster } from "sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "BossBoard — AI-Powered Business Management",
+  title: "BossBoard — AI Operations Control Tower",
   description:
     "AI-powered operations control tower — generate SOPs, manage your team, and streamline business operations.",
+  metadataBase: new URL("https://mybossboard.com"),
+  openGraph: {
+    title: "BossBoard — AI Operations Control Tower",
+    description: "Generate SOPs with AI, manage your team, and streamline operations. Free to start.",
+    url: "https://mybossboard.com",
+    siteName: "BossBoard",
+    type: "website",
+  },
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "32x32" },
-      { url: "/favicon.png", type: "image/png", sizes: "32x32" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
     ],
     apple: "/apple-touch-icon.png",
   },
@@ -28,8 +35,7 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="icon" href="/favicon.ico" sizes="32x32" />
-        <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body

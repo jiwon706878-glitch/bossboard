@@ -25,13 +25,10 @@ export function MarketingNavbar() {
     >
       <div className="mx-auto flex h-[4.5rem] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2">
-          <img
-            src="/Logo.png"
-            alt=""
-            width={40}
-            height={40}
-            className="h-10 w-10 logo-blue"
-          />
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" className="h-10 w-10" style={{ userSelect: "none" }} onContextMenu={(e) => e.preventDefault()}>
+            <rect x="8" y="8" width="48" height="48" rx="12" fill="#4F8BFF"/>
+            <path d="M22 18h12c4.4 0 8 3.6 8 8 0 2.5-1.2 4.8-3 6.2 2.5 1.5 4 4.2 4 7.3 0 4.7-3.8 8.5-8.5 8.5H22V18zm6 5v8h6c1.7 0 3-1.3 3-3v-2c0-1.7-1.3-3-3-3h-6zm0 13v8h7.5c1.9 0 3.5-1.6 3.5-3.5v-1c0-1.9-1.6-3.5-3.5-3.5H28z" fill="#FFFFFF"/>
+          </svg>
           <span
             className="text-xl font-bold"
             style={{

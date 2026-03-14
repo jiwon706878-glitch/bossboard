@@ -2,17 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { plans, type PlanId } from "@/config/plans";
 
 export const CREDIT_COSTS: Record<string, number> = {
-  review_reply: 1,
-  caption: 1,
-  chat: 1,
-  email_marketing: 1,
-  translation: 1,
-  script: 3,
-  image_analysis: 5,
-  report: 5,
-  review_insights: 5,
   sop_generate: 3,
-  business_plan: 10,
+  chat: 1,
 };
 
 export async function getMonthlyUsage(userId: string) {

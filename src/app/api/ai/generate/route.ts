@@ -16,6 +16,26 @@ export async function POST(req: Request) {
 
   const { businessId, topic, category } = await req.json();
 
+  // Input validation
+  if (!topic || typeof topic !== "string") {
+    return new Response("Topic is required", { status: 400 });
+  }
+
+  if (topic.length > 1000) {
+    return new Response("Topic must be under 1000 characters", { status: 400 });
+  }
+
+  if (!businessId || typeof businessId !== "string") {
+    return new Response("Business ID is required", { status: 400 });
+  }
+
+  // Strip potential prompt injection attempts
+  const sanitizedTopic = topic
+    .replace(/```/g, "")
+    .replace(/system:/gi, "")
+    .replace(/\bignore\b.*\binstructions?\b/gi, "")
+    .trim();
+
   // Get user plan
   const { data: profile } = await supabase
     .from("profiles")
@@ -62,7 +82,7 @@ Output format:
 Keep language simple. Write for someone doing this task for the first time.
 Do NOT use markdown headers with #. Use plain numbered sections.
 Write the SOP content directly without any preamble.`,
-    prompt: `Topic: ${topic}
+    prompt: `Topic: ${sanitizedTopic}
 
 Generate the SOP:`,
   });

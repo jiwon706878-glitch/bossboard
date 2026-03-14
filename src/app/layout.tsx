@@ -8,7 +8,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "BossBoard — AI-Powered Business Management",
   description:
-    "Review management, social media content, and short-form video scripting — all powered by AI.",
+    "AI-powered operations control tower — generate SOPs, manage your team, and streamline business operations.",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "32x32" },
@@ -26,6 +26,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="icon" href="/favicon.ico" sizes="32x32" />
         <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

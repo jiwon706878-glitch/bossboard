@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
-import { ko } from "date-fns/locale";
 import {
   FileText,
   Users,
@@ -61,13 +60,11 @@ export default function DashboardPage() {
   const hour = new Date().getHours();
   const greeting =
     hour < 12
-      ? "좋은 아침이에요"
+      ? "Good morning"
       : hour < 18
-        ? "좋은 오후예요"
-        : "좋은 저녁이에요";
-  const todayFormatted = format(new Date(), "yyyy년 M월 d일 EEEE", {
-    locale: ko,
-  });
+        ? "Good afternoon"
+        : "Good evening";
+  const todayFormatted = format(new Date(), "EEEE, MMMM d, yyyy");
 
   useEffect(() => {
     async function loadDashboard() {
@@ -135,11 +132,10 @@ export default function DashboardPage() {
             return {
               id: sop.id,
               text: isNew
-                ? `"${sop.title}" SOP가 생성되었습니다`
-                : `"${sop.title}" SOP가 수정되었습니다`,
+                ? `Created SOP: "${sop.title}"`
+                : `Updated SOP: "${sop.title}"`,
               time: formatDistanceToNow(new Date(sop.updated_at), {
                 addSuffix: true,
-                locale: ko,
               }),
               icon: isNew ? "created" : "updated",
             };
@@ -180,26 +176,26 @@ export default function DashboardPage() {
   const insights: string[] = [];
   if (totalSops > 0) {
     insights.push(
-      `이번 달 SOP ${totalSops}개를 보유하고 있습니다. ${draftSops > 0 ? `초안 상태인 SOP가 ${draftSops}개 있습니다.` : "모든 SOP가 게시되었습니다."}`
+      `You have ${totalSops} SOPs. ${draftSops > 0 ? `${draftSops} are still in draft.` : 'All SOPs are published.'}`
     );
   } else {
     insights.push(
-      "아직 SOP가 없습니다. 첫 번째 SOP를 만들어 팀 운영을 시작해보세요."
+      "No SOPs yet. Create your first SOP to start organizing your team's operations."
     );
   }
   if (!unlimitedCredits) {
     const remaining = creditsLimit - creditsUsed;
     if (remaining > creditsLimit * 0.5) {
       insights.push(
-        `AI 크레딧이 ${remaining}개 남아있습니다. 여유가 있으니 마음껏 활용하세요.`
+        `You have ${remaining} AI credits remaining. Plenty of room to keep generating.`
       );
     } else if (remaining > 0) {
       insights.push(
-        `AI 크레딧이 ${remaining}개 남아있습니다. 이번 달 사용량을 확인해보세요.`
+        `You have ${remaining} AI credits remaining. Keep an eye on your usage this month.`
       );
     } else {
       insights.push(
-        "이번 달 AI 크레딧을 모두 사용했습니다. 플랜 업그레이드를 고려해보세요."
+        "You've used all your AI credits this month. Consider upgrading your plan."
       );
     }
   }
@@ -234,7 +230,7 @@ export default function DashboardPage() {
           className="text-2xl font-semibold tracking-tight"
           style={{ color: "var(--bb-text-primary)" }}
         >
-          {greeting}, {userName}님
+          {greeting}, {userName}
         </h2>
         <p
           className="text-sm"
@@ -256,23 +252,23 @@ export default function DashboardPage() {
               <FileText className="h-4 w-4" style={{ color: "var(--bb-accent-blue)" }} />
             </div>
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              SOP 현황
+              SOP Overview
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-6">
               <div>
                 <span className="font-mono text-3xl font-bold">{totalSops}</span>
-                <span className="ml-1.5 text-xs text-muted-foreground">전체</span>
+                <span className="ml-1.5 text-xs text-muted-foreground">total</span>
               </div>
               <div className="flex gap-4 text-sm">
                 <div>
                   <span className="font-mono font-semibold">{publishedSops}</span>
-                  <span className="ml-1 text-muted-foreground">게시됨</span>
+                  <span className="ml-1 text-muted-foreground">published</span>
                 </div>
                 <div>
                   <span className="font-mono font-semibold">{draftSops}</span>
-                  <span className="ml-1 text-muted-foreground">초안</span>
+                  <span className="ml-1 text-muted-foreground">drafts</span>
                 </div>
               </div>
             </div>
@@ -289,17 +285,17 @@ export default function DashboardPage() {
               <Users className="h-4 w-4" style={{ color: "var(--bb-accent-blue)" }} />
             </div>
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              팀 현황
+              Team
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div>
               <span className="font-mono text-3xl font-bold">{teamCount}</span>
-              <span className="ml-1.5 text-xs text-muted-foreground">명</span>
+              <span className="ml-1.5 text-xs text-muted-foreground">members</span>
             </div>
             {pendingInvites > 0 && (
               <p className="mt-1 text-xs text-muted-foreground">
-                대기 중 {pendingInvites}명
+                {pendingInvites} pending
               </p>
             )}
           </CardContent>
@@ -315,15 +311,15 @@ export default function DashboardPage() {
               <Zap className="h-4 w-4" style={{ color: "var(--bb-accent-blue)" }} />
             </div>
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              AI 크레딧
+              AI Credits
             </CardTitle>
           </CardHeader>
           <CardContent>
             {unlimitedCredits ? (
               <div>
                 <span className="font-mono text-3xl font-bold">{creditsUsed}</span>
-                <span className="ml-1.5 text-xs text-muted-foreground">사용됨</span>
-                <p className="mt-1 text-xs text-muted-foreground">무제한</p>
+                <span className="ml-1.5 text-xs text-muted-foreground">used</span>
+                <p className="mt-1 text-xs text-muted-foreground">Unlimited</p>
               </div>
             ) : (
               <div>
@@ -356,7 +352,7 @@ export default function DashboardPage() {
       <Card className="rounded-md shadow-none" style={{ borderLeftColor: "var(--bb-warning)", borderLeftWidth: "3px" }}>
         <CardHeader className="flex flex-row items-center gap-2">
           <Lightbulb className="h-4 w-4" style={{ color: "var(--bb-warning)" }} />
-          <CardTitle className="text-sm font-medium">AI 인사이트</CardTitle>
+          <CardTitle className="text-sm font-medium">AI Insights</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {insights.map((insight, i) => (
@@ -374,7 +370,7 @@ export default function DashboardPage() {
       {/* Recent Activity */}
       <Card className="rounded-md shadow-none">
         <CardHeader>
-          <CardTitle className="text-sm font-medium">최근 활동</CardTitle>
+          <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
         </CardHeader>
         <CardContent>
           {activities.length === 0 ? (
@@ -384,7 +380,7 @@ export default function DashboardPage() {
                 style={{ color: "var(--bb-text-tertiary, var(--muted-foreground))" }}
               />
               <p className="text-sm text-muted-foreground">
-                아직 활동이 없습니다. 첫 SOP를 만들어보세요!
+                No activity yet. Create your first SOP to get started!
               </p>
             </div>
           ) : (
@@ -426,19 +422,19 @@ export default function DashboardPage() {
           className="text-sm font-medium"
           style={{ color: "var(--bb-text-secondary)" }}
         >
-          빠른 작업
+          Quick Actions
         </h3>
         <div className="flex flex-wrap gap-3">
           <Button asChild variant="outline" className="gap-2 rounded-md">
             <Link href="/dashboard/sops/new">
               <Plus className="h-4 w-4" />
-              새 SOP 만들기
+              New SOP
             </Link>
           </Button>
           <Button asChild variant="outline" className="gap-2 rounded-md">
             <Link href="/dashboard/settings">
               <UserPlus className="h-4 w-4" />
-              팀원 초대
+              Invite Team
             </Link>
           </Button>
         </div>

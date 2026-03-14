@@ -72,7 +72,7 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* Right — Product preview placeholder */}
+            {/* Right — Product preview: CSS-only dashboard mockup */}
             <div
               className="hidden lg:block rounded-md overflow-hidden"
               style={{
@@ -82,47 +82,154 @@ export default function HomePage() {
                 position: "relative",
               }}
             >
-              <div
-                className="absolute inset-0 flex items-center justify-center"
-                style={{ color: "#2A3050" }}
-              >
-                <div className="text-center">
-                  {/* Simulated dashboard skeleton */}
-                  <div className="space-y-3 p-8">
-                    {/* Top bar */}
-                    <div
-                      className="h-8 rounded"
-                      style={{ backgroundColor: "#1C2033", width: "100%" }}
-                    />
-                    {/* Content area */}
-                    <div className="grid grid-cols-3 gap-3">
-                      <div
-                        className="h-20 rounded"
-                        style={{ backgroundColor: "#1C2033" }}
-                      />
-                      <div
-                        className="h-20 rounded"
-                        style={{ backgroundColor: "#1C2033" }}
-                      />
-                      <div
-                        className="h-20 rounded"
-                        style={{ backgroundColor: "#1C2033" }}
-                      />
+              <div style={{ display: "flex", height: "100%", minHeight: "420px" }}>
+                {/* Sidebar */}
+                <div
+                  style={{
+                    width: "50px",
+                    backgroundColor: "#0C0F17",
+                    borderRight: "1px solid #2A3050",
+                    padding: "14px 10px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
+                    flexShrink: 0,
+                  }}
+                >
+                  {/* Logo dot */}
+                  <div
+                    style={{
+                      width: "22px",
+                      height: "22px",
+                      borderRadius: "4px",
+                      backgroundColor: "#4F8BFF",
+                      marginBottom: "8px",
+                      opacity: 0.8,
+                    }}
+                  />
+                  {/* Nav items */}
+                  <div style={{ width: "30px", height: "6px", borderRadius: "3px", backgroundColor: "#4F8BFF", opacity: 0.7 }} />
+                  <div style={{ width: "30px", height: "6px", borderRadius: "3px", backgroundColor: "#2A3050" }} />
+                  <div style={{ width: "30px", height: "6px", borderRadius: "3px", backgroundColor: "#2A3050" }} />
+                  <div style={{ width: "30px", height: "6px", borderRadius: "3px", backgroundColor: "#2A3050" }} />
+                  <div style={{ width: "30px", height: "6px", borderRadius: "3px", backgroundColor: "#2A3050" }} />
+                </div>
+
+                {/* Main area */}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                  {/* Top bar */}
+                  <div
+                    style={{
+                      height: "28px",
+                      backgroundColor: "#0C0F17",
+                      borderBottom: "1px solid #2A3050",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "0 14px",
+                    }}
+                  >
+                    <div style={{ width: "60px", height: "5px", borderRadius: "2px", backgroundColor: "#2A3050" }} />
+                    <div style={{ display: "flex", gap: "6px" }}>
+                      <div style={{ width: "14px", height: "5px", borderRadius: "2px", backgroundColor: "#2A3050" }} />
+                      <div style={{ width: "14px", height: "14px", borderRadius: "50%", backgroundColor: "#1C2033", border: "1px solid #2A3050" }} />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                  </div>
+
+                  {/* Content */}
+                  <div style={{ padding: "16px 18px", flex: 1 }}>
+                    {/* Greeting bar */}
+                    <div style={{ width: "55%", height: "8px", borderRadius: "4px", backgroundColor: "#2A3050", marginBottom: "4px" }} />
+                    <div style={{ width: "30%", height: "5px", borderRadius: "2px", backgroundColor: "#1C2033", marginBottom: "16px" }} />
+
+                    {/* Stat cards row */}
+                    <div style={{ display: "flex", gap: "10px", marginBottom: "14px" }}>
+                      {/* Wide stat card */}
                       <div
-                        className="h-32 rounded"
-                        style={{ backgroundColor: "#1C2033" }}
-                      />
+                        style={{
+                          flex: "1.4",
+                          backgroundColor: "#1C2033",
+                          border: "1px solid #2A3050",
+                          borderRadius: "6px",
+                          padding: "12px",
+                        }}
+                      >
+                        <div style={{ width: "40%", height: "4px", borderRadius: "2px", backgroundColor: "#2A3050", marginBottom: "8px" }} />
+                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "18px", fontWeight: 600, color: "#E8ECF4", lineHeight: 1 }}>24</div>
+                        <div style={{ width: "50%", height: "3px", borderRadius: "2px", backgroundColor: "#2A3050", marginTop: "6px" }} />
+                      </div>
+                      {/* Narrow stat card */}
                       <div
-                        className="h-32 rounded"
-                        style={{ backgroundColor: "#1C2033" }}
-                      />
+                        style={{
+                          flex: "1",
+                          backgroundColor: "#1C2033",
+                          border: "1px solid #2A3050",
+                          borderRadius: "6px",
+                          padding: "12px",
+                        }}
+                      >
+                        <div style={{ width: "50%", height: "4px", borderRadius: "2px", backgroundColor: "#2A3050", marginBottom: "8px" }} />
+                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "18px", fontWeight: 600, color: "#34D399", lineHeight: 1 }}>89%</div>
+                        <div style={{ width: "60%", height: "3px", borderRadius: "2px", backgroundColor: "#2A3050", marginTop: "6px" }} />
+                      </div>
+                      {/* Narrow stat card */}
+                      <div
+                        style={{
+                          flex: "0.8",
+                          backgroundColor: "#1C2033",
+                          border: "1px solid #2A3050",
+                          borderRadius: "6px",
+                          padding: "12px",
+                        }}
+                      >
+                        <div style={{ width: "55%", height: "4px", borderRadius: "2px", backgroundColor: "#2A3050", marginBottom: "8px" }} />
+                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "18px", fontWeight: 600, color: "#4F8BFF", lineHeight: 1 }}>7</div>
+                        <div style={{ width: "45%", height: "3px", borderRadius: "2px", backgroundColor: "#2A3050", marginTop: "6px" }} />
+                      </div>
                     </div>
+
+                    {/* AI Insights card with amber left border */}
                     <div
-                      className="h-24 rounded"
-                      style={{ backgroundColor: "#1C2033" }}
-                    />
+                      style={{
+                        backgroundColor: "#1C2033",
+                        border: "1px solid #2A3050",
+                        borderLeft: "3px solid #FBBF24",
+                        borderRadius: "6px",
+                        padding: "12px 14px",
+                        marginBottom: "14px",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+                        <div style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#FBBF24" }} />
+                        <div style={{ width: "35%", height: "5px", borderRadius: "2px", backgroundColor: "#2A3050" }} />
+                      </div>
+                      <div style={{ width: "90%", height: "4px", borderRadius: "2px", backgroundColor: "#232840", marginBottom: "5px" }} />
+                      <div style={{ width: "70%", height: "4px", borderRadius: "2px", backgroundColor: "#232840" }} />
+                    </div>
+
+                    {/* Activity feed lines */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#34D399", flexShrink: 0 }} />
+                        <div style={{ width: "75%", height: "4px", borderRadius: "2px", backgroundColor: "#232840" }} />
+                        <div style={{ width: "12%", height: "3px", borderRadius: "2px", backgroundColor: "#1C2033", marginLeft: "auto" }} />
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#4F8BFF", flexShrink: 0 }} />
+                        <div style={{ width: "60%", height: "4px", borderRadius: "2px", backgroundColor: "#232840" }} />
+                        <div style={{ width: "12%", height: "3px", borderRadius: "2px", backgroundColor: "#1C2033", marginLeft: "auto" }} />
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#FBBF24", flexShrink: 0 }} />
+                        <div style={{ width: "68%", height: "4px", borderRadius: "2px", backgroundColor: "#232840" }} />
+                        <div style={{ width: "12%", height: "3px", borderRadius: "2px", backgroundColor: "#1C2033", marginLeft: "auto" }} />
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#34D399", flexShrink: 0 }} />
+                        <div style={{ width: "55%", height: "4px", borderRadius: "2px", backgroundColor: "#232840" }} />
+                        <div style={{ width: "12%", height: "3px", borderRadius: "2px", backgroundColor: "#1C2033", marginLeft: "auto" }} />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

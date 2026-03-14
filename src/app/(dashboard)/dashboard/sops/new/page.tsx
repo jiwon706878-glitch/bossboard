@@ -97,20 +97,29 @@ export default function NewSOPPage() {
   });
 
   async function handleGenerate() {
-    if (!currentBusiness) {
-      toast.error("No business selected. Complete onboarding first.");
-      return;
-    }
     if (!topic) {
       toast.error("Please enter a topic");
       return;
     }
+
+    // Try to get businessId from store, or fetch from Supabase
+    let businessId = currentBusiness?.id;
+    if (!businessId) {
+      const { data: businesses } = await supabase
+        .from("businesses")
+        .select("id")
+        .limit(1);
+      if (businesses && businesses.length > 0) {
+        businessId = businesses[0].id;
+      }
+    }
+
     setGeneratedText("");
     setEditorContent(null);
     setTitle("");
     await complete(topic, {
       body: {
-        businessId: currentBusiness.id,
+        businessId: businessId || undefined,
         topic,
         category: category || undefined,
       },
@@ -118,10 +127,6 @@ export default function NewSOPPage() {
   }
 
   async function handleSave() {
-    if (!currentBusiness) {
-      toast.error("No business selected");
-      return;
-    }
     if (!title.trim()) {
       toast.error("Please enter a title");
       return;
@@ -133,6 +138,22 @@ export default function NewSOPPage() {
 
     setSaving(true);
 
+    // Get businessId from store or fetch
+    let bizId = currentBusiness?.id;
+    if (!bizId) {
+      const { data: businesses } = await supabase
+        .from("businesses")
+        .select("id")
+        .limit(1);
+      bizId = businesses?.[0]?.id;
+    }
+
+    if (!bizId) {
+      toast.error("No business found. Please complete onboarding first.");
+      setSaving(false);
+      return;
+    }
+
     // Generate a summary from the first ~200 chars of the generated text or editor content
     let summary = "";
     if (generatedText) {
@@ -142,7 +163,7 @@ export default function NewSOPPage() {
     const { data, error } = await supabase
       .from("sops")
       .insert({
-        business_id: currentBusiness.id,
+        business_id: bizId,
         title: title.trim(),
         content: editorContent,
         summary: summary || null,

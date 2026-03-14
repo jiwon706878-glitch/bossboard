@@ -25,8 +25,20 @@ export async function POST(req: Request) {
     return new Response("Topic must be under 1000 characters", { status: 400 });
   }
 
-  if (!businessId || typeof businessId !== "string") {
-    return new Response("Business ID is required", { status: 400 });
+  // If no businessId provided, try to find the user's first business
+  let resolvedBusinessId = businessId;
+  if (!resolvedBusinessId || typeof resolvedBusinessId !== "string") {
+    const { data: userBusinesses } = await supabase
+      .from("businesses")
+      .select("id")
+      .eq("user_id", user.id)
+      .limit(1);
+
+    if (userBusinesses && userBusinesses.length > 0) {
+      resolvedBusinessId = userBusinesses[0].id;
+    } else {
+      return new Response("No business found. Please complete onboarding first.", { status: 400 });
+    }
   }
 
   // Strip potential prompt injection attempts
@@ -56,7 +68,7 @@ export async function POST(req: Request) {
   const { data: business } = await supabase
     .from("businesses")
     .select(BUSINESS_PROFILE_SELECT)
-    .eq("id", businessId)
+    .eq("id", resolvedBusinessId)
     .single();
 
   const businessContext = buildBusinessContext(business ?? {});
@@ -88,7 +100,7 @@ Write the SOP content directly without any preamble.`,
 Generate the SOP:`,
     });
 
-    deductCredit(user.id, businessId, "sop_generate", cost).catch(console.error);
+    deductCredit(user.id, resolvedBusinessId, "sop_generate", cost).catch(console.error);
 
     return result.toTextStreamResponse();
   } catch (error) {

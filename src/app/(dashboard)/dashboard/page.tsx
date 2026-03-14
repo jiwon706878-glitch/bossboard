@@ -283,12 +283,7 @@ export default function DashboardPage() {
       {/* Welcome Banner — shown only when user has no SOPs */}
       {totalSops === 0 && (
         <div
-          className="rounded-md p-6"
-          style={{
-            backgroundColor: "#141824",
-            border: "1px solid #2A3050",
-            borderLeft: "3px solid #4F8BFF",
-          }}
+          className="rounded-md border border-l-[3px] border-l-primary border-border bg-card p-6"
         >
           <h3 className="text-lg font-semibold text-foreground">
             Welcome to BossBoard!
@@ -312,10 +307,9 @@ export default function DashboardPage() {
         <Card className="col-span-1 gap-4 rounded-md shadow-none md:col-span-2">
           <CardHeader className="flex flex-row items-center gap-2 pb-0">
             <div
-              className="flex h-8 w-8 items-center justify-center rounded-md"
-              style={{ backgroundColor: "#232840" }}
+              className="flex h-8 w-8 items-center justify-center rounded-md bg-accent"
             >
-              <FileText className="h-4 w-4" style={{ color: "#4F8BFF" }} />
+              <FileText className="h-4 w-4 text-primary" />
             </div>
             <CardTitle className="text-sm font-medium text-muted-foreground">
               SOP Overview
@@ -345,10 +339,9 @@ export default function DashboardPage() {
         <Card className="gap-4 rounded-md shadow-none">
           <CardHeader className="flex flex-row items-center gap-2 pb-0">
             <div
-              className="flex h-8 w-8 items-center justify-center rounded-md"
-              style={{ backgroundColor: "#232840" }}
+              className="flex h-8 w-8 items-center justify-center rounded-md bg-accent"
             >
-              <Users className="h-4 w-4" style={{ color: "#4F8BFF" }} />
+              <Users className="h-4 w-4 text-primary" />
             </div>
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Team
@@ -371,10 +364,9 @@ export default function DashboardPage() {
         <Card className="gap-4 rounded-md shadow-none">
           <CardHeader className="flex flex-row items-center gap-2 pb-0">
             <div
-              className="flex h-8 w-8 items-center justify-center rounded-md"
-              style={{ backgroundColor: "#232840" }}
+              className="flex h-8 w-8 items-center justify-center rounded-md bg-accent"
             >
-              <Zap className="h-4 w-4" style={{ color: "#4F8BFF" }} />
+              <Zap className="h-4 w-4 text-primary" />
             </div>
             <CardTitle className="text-sm font-medium text-muted-foreground">
               AI Generations
@@ -419,16 +411,8 @@ export default function DashboardPage() {
         <div className="flex flex-wrap gap-3">
           {unreadSops > 0 && (
             <Link href="/dashboard/sops">
-              <div
-                className="flex items-center gap-2 rounded-md px-4 py-2.5 text-sm transition-colors duration-150 hover:opacity-90"
-                style={{
-                  backgroundColor: "#232840",
-                  border: "1px solid #2A3050",
-                  borderLeftWidth: "3px",
-                  borderLeftColor: "#FBBF24",
-                }}
-              >
-                <FileText className="h-4 w-4" style={{ color: "#FBBF24" }} />
+              <div className="flex items-center gap-2 rounded-md border border-l-[3px] border-border border-l-amber-400 bg-accent px-4 py-2.5 text-sm transition-colors duration-150 hover:opacity-90">
+                <FileText className="h-4 w-4 text-amber-400" />
                 <span className="font-mono font-semibold">{unreadSops}</span>
                 <span className="text-muted-foreground">
                   {unreadSops === 1 ? "SOP needs" : "SOPs need"} your review
@@ -438,16 +422,8 @@ export default function DashboardPage() {
           )}
           {checklistsDueToday > 0 && (
             <Link href="/dashboard/checklists">
-              <div
-                className="flex items-center gap-2 rounded-md px-4 py-2.5 text-sm transition-colors duration-150 hover:opacity-90"
-                style={{
-                  backgroundColor: "#232840",
-                  border: "1px solid #2A3050",
-                  borderLeftWidth: "3px",
-                  borderLeftColor: "#4F8BFF",
-                }}
-              >
-                <CheckSquare className="h-4 w-4" style={{ color: "#4F8BFF" }} />
+              <div className="flex items-center gap-2 rounded-md border border-l-[3px] border-border border-l-primary bg-accent px-4 py-2.5 text-sm transition-colors duration-150 hover:opacity-90">
+                <CheckSquare className="h-4 w-4 text-primary" />
                 <span className="font-mono font-semibold">{checklistsDueToday}</span>
                 <span className="text-muted-foreground">
                   {checklistsDueToday === 1 ? "checklist" : "checklists"} due today
@@ -457,16 +433,8 @@ export default function DashboardPage() {
           )}
           {checklistsOverdue > 0 && (
             <Link href="/dashboard/checklists">
-              <div
-                className="flex items-center gap-2 rounded-md px-4 py-2.5 text-sm transition-colors duration-150 hover:opacity-90"
-                style={{
-                  backgroundColor: "#232840",
-                  border: "1px solid #2A3050",
-                  borderLeftWidth: "3px",
-                  borderLeftColor: "#F87171",
-                }}
-              >
-                <AlertTriangle className="h-4 w-4" style={{ color: "#F87171" }} />
+              <div className="flex items-center gap-2 rounded-md border border-l-[3px] border-border border-l-destructive bg-accent px-4 py-2.5 text-sm transition-colors duration-150 hover:opacity-90">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
                 <span className="font-mono font-semibold">{checklistsOverdue}</span>
                 <span className="text-muted-foreground">overdue</span>
               </div>
@@ -476,9 +444,9 @@ export default function DashboardPage() {
       )}
 
       {/* AI Insights Card */}
-      <Card className="rounded-md shadow-none" style={{ borderLeftColor: "#FBBF24", borderLeftWidth: "3px" }}>
+      <Card className="rounded-md border-l-[3px] border-l-amber-400 shadow-none">
         <CardHeader className="flex flex-row items-center gap-2">
-          <Lightbulb className="h-4 w-4" style={{ color: "#FBBF24" }} />
+          <Lightbulb className="h-4 w-4 text-amber-400" />
           <CardTitle className="text-sm font-medium">AI Insights</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -515,13 +483,11 @@ export default function DashboardPage() {
                   <div className="mt-0.5 flex-shrink-0">
                     {item.icon === "created" ? (
                       <FilePlus2
-                        className="h-4 w-4"
-                        style={{ color: "#34D399" }}
+                        className="h-4 w-4 text-emerald-400"
                       />
                     ) : (
                       <CheckCircle2
-                        className="h-4 w-4"
-                        style={{ color: "#4F8BFF" }}
+                        className="h-4 w-4 text-primary"
                       />
                     )}
                   </div>

@@ -6,12 +6,15 @@ import { Toaster } from "sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "BossBoard — AI Operations Control Tower",
+  title: {
+    default: "BossBoard — AI SOP Generator for Business Teams",
+    template: "%s — BossBoard",
+  },
   description:
     "AI-powered operations control tower — generate SOPs, manage your team, and streamline business operations.",
   metadataBase: new URL("https://mybossboard.com"),
   openGraph: {
-    title: "BossBoard — AI Operations Control Tower",
+    title: "BossBoard — AI SOP Generator for Business Teams",
     description: "Generate SOPs with AI, manage your team, and streamline operations. Free to start.",
     url: "https://mybossboard.com",
     siteName: "BossBoard",

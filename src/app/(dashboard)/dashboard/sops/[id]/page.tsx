@@ -401,8 +401,7 @@ export default function SOPDetailPage() {
               {readBy.slice(0, 8).map((reader) => (
                 <div
                   key={reader.id}
-                  className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-card text-[10px] font-bold"
-                  style={{ backgroundColor: "#232840", color: "#E8ECF4" }}
+                  className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-card bg-accent text-accent-foreground text-[10px] font-bold"
                   title={`${reader.full_name ?? "User"}${reader.signed ? " (signed off)" : ""}`}
                 >
                   {reader.full_name
@@ -412,8 +411,7 @@ export default function SOPDetailPage() {
               ))}
               {readBy.length > 8 && (
                 <div
-                  className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-card text-[10px] font-medium"
-                  style={{ backgroundColor: "#1C2033", color: "#8B95B0" }}
+                  className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-card bg-secondary text-muted-foreground text-[10px] font-medium"
                 >
                   +{readBy.length - 8}
                 </div>
@@ -434,8 +432,7 @@ export default function SOPDetailPage() {
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <ShieldCheck
-              className="h-4 w-4"
-              style={signedOff ? { color: "#34D399" } : undefined}
+              className={cn("h-4 w-4", signedOff && "text-emerald-400")}
             />
           )}
           {signedOff ? "Signed Off" : "Sign Off"}

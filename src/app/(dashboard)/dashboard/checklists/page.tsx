@@ -133,31 +133,15 @@ export default function ChecklistsPage() {
       {(dueToday.length > 0 || overdue.length > 0) && (
         <div className="flex gap-4">
           {dueToday.length > 0 && (
-            <div
-              className="flex items-center gap-2 rounded-md px-4 py-2 text-sm"
-              style={{
-                backgroundColor: "#232840",
-                border: "1px solid #2A3050",
-                borderLeftWidth: "3px",
-                borderLeftColor: "#4F8BFF",
-              }}
-            >
-              <Clock className="h-4 w-4" style={{ color: "#4F8BFF" }} />
+            <div className="flex items-center gap-2 rounded-md border border-l-[3px] border-border border-l-primary bg-accent px-4 py-2 text-sm">
+              <Clock className="h-4 w-4 text-primary" />
               <span className="font-mono font-semibold">{dueToday.length}</span>
               <span className="text-muted-foreground">due today</span>
             </div>
           )}
           {overdue.length > 0 && (
-            <div
-              className="flex items-center gap-2 rounded-md px-4 py-2 text-sm"
-              style={{
-                backgroundColor: "#232840",
-                border: "1px solid #2A3050",
-                borderLeftWidth: "3px",
-                borderLeftColor: "#F87171",
-              }}
-            >
-              <AlertTriangle className="h-4 w-4" style={{ color: "#F87171" }} />
+            <div className="flex items-center gap-2 rounded-md border border-l-[3px] border-border border-l-destructive bg-accent px-4 py-2 text-sm">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
               <span className="font-mono font-semibold">{overdue.length}</span>
               <span className="text-muted-foreground">overdue</span>
             </div>
@@ -199,7 +183,7 @@ export default function ChecklistsPage() {
                   "rounded-md shadow-none transition-colors duration-150 hover:bg-muted/30",
                   isOverdue && "border-l-2"
                 )}
-                style={isOverdue ? { borderLeftColor: "#F87171" } : undefined}
+                style={isOverdue ? { borderLeftColor: "var(--destructive)" } : undefined}
               >
                 <CardContent className="flex items-center gap-4 py-4">
                   <div className="min-w-0 flex-1">

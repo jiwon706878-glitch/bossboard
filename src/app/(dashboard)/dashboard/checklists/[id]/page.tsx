@@ -286,8 +286,7 @@ export default function ChecklistDetailPage() {
                 <div className="mt-0.5 shrink-0">
                   {isChecked ? (
                     <CheckSquare
-                      className="h-4 w-4"
-                      style={{ color: "#34D399" }}
+                      className="h-4 w-4 text-emerald-400"
                     />
                   ) : (
                     <Square className="h-4 w-4 text-muted-foreground" />
@@ -331,16 +330,8 @@ export default function ChecklistDetailPage() {
       )}
 
       {isCompleted && (
-        <div
-          className="flex items-center gap-2 rounded-md px-4 py-3 text-sm"
-          style={{
-            backgroundColor: "#232840",
-            border: "1px solid #2A3050",
-            borderLeftWidth: "3px",
-            borderLeftColor: "#34D399",
-          }}
-        >
-          <Check className="h-4 w-4" style={{ color: "#34D399" }} />
+        <div className="flex items-center gap-2 rounded-md border border-l-[3px] border-border border-l-emerald-400 bg-accent px-4 py-3 text-sm">
+          <Check className="h-4 w-4 text-emerald-400" />
           <span>This checklist has been completed.</span>
         </div>
       )}

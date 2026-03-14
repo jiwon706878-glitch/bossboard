@@ -658,7 +658,7 @@ export default function HomePage() {
             className="mt-10 text-center text-sm"
             style={{ color: "#5A6480" }}
           >
-            Join 50+ teams already streamlining their operations with BossBoard
+            Built for teams who refuse to lose knowledge
           </p>
         </div>
       </section>

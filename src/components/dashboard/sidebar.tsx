@@ -8,34 +8,18 @@ import { plans, type PlanId } from "@/config/plans";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
-  Star,
-  Share2,
-  Video,
-  BarChart3,
-  CreditCard,
+  LayoutDashboard,
+  FileText,
+  Users,
   Settings,
   LogOut,
-  HelpCircle,
-  Mail,
-  QrCode,
-  MessageSquare,
-  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 
-const aiToolsLinks = [
-  { href: "/dashboard/reviews", label: "Reviews", icon: Star },
-  { href: "/dashboard/social", label: "Social Media", icon: Share2 },
-  { href: "/dashboard/scripts", label: "Content Studio", icon: Video },
-  { href: "/dashboard/sops", label: "SOPs", icon: FileText },
-  { href: "/dashboard/email-marketing", label: "Email Marketing", icon: Mail },
-  { href: "/dashboard/qr-code", label: "QR Code", icon: QrCode },
-  { href: "/dashboard/review-insights", label: "Review Insights", icon: MessageSquare },
-];
-
-const accountLinks = [
-  { href: "/dashboard/usage", label: "AI Usage", icon: BarChart3 },
-  { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
+const navLinks = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/sops", label: "SOP Wiki", icon: FileText },
+  { href: "/dashboard/team", label: "Team", icon: Users },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
@@ -139,7 +123,7 @@ export function DashboardSidebar({ className }: { className?: string }) {
     >
       {/* Logo */}
       <div className="flex h-16 items-center gap-2 border-b px-6">
-        <img src="/Logo.png" alt="" width={40} height={40} className="h-10 w-10" />
+        <img src="/Logo.png" alt="" width={40} height={40} className="h-10 w-10 logo-blue" />
         <span className="text-lg font-bold">BossBoard</span>
       </div>
 
@@ -153,8 +137,8 @@ export function DashboardSidebar({ className }: { className?: string }) {
             <p className="truncate text-sm font-medium">{userName}</p>
             <p className="text-xs text-muted-foreground">
               {unlimited
-                ? "Unlimited credits"
-                : `${remaining.toLocaleString()}/${creditsLimit.toLocaleString()} credits`}
+                ? "Unlimited generations"
+                : `${remaining.toLocaleString()}/${creditsLimit.toLocaleString()} generations`}
             </p>
           </div>
         </div>
@@ -177,40 +161,16 @@ export function DashboardSidebar({ className }: { className?: string }) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-3 space-y-4">
-        {/* AI Tools section */}
-        <div>
-          <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            AI Tools
-          </p>
-          <div className="space-y-1">
-            {aiToolsLinks.map((link) => (
-              <NavLink key={link.href} {...link} pathname={pathname} />
-            ))}
-          </div>
-        </div>
-
-        {/* Account section */}
-        <div>
-          <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Account
-          </p>
-          <div className="space-y-1">
-            {accountLinks.map((link) => (
-              <NavLink key={link.href} {...link} pathname={pathname} />
-            ))}
-          </div>
+      <nav className="flex-1 overflow-y-auto p-3">
+        <div className="space-y-1">
+          {navLinks.map((link) => (
+            <NavLink key={link.href} {...link} pathname={pathname} />
+          ))}
         </div>
       </nav>
 
-      {/* Bottom: Help + Log out */}
-      <div className="border-t p-3 space-y-1">
-        <Link href="/dashboard/settings">
-          <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground">
-            <HelpCircle className="h-4 w-4" />
-            Help
-          </Button>
-        </Link>
+      {/* Bottom: Log out */}
+      <div className="border-t p-3">
         <Button
           variant="ghost"
           className="w-full justify-start gap-3 text-muted-foreground"

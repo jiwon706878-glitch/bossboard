@@ -204,3 +204,8 @@
     font-weight: 600;
   }
 }
+
+/* Shift orange logo to blue (#4F8BFF) */
+.logo-blue {
+  filter: hue-rotate(200deg) saturate(1.5) brightness(1.1);
+}

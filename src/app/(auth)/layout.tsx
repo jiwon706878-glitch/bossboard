@@ -13,7 +13,7 @@ export default function AuthLayout({
           alt="BossBoard"
           width={48}
           height={48}
-          className="h-12 w-12"
+          className="h-12 w-12 logo-blue"
         />
         <span className="text-2xl font-bold tracking-tight text-foreground font-sans">BossBoard</span>
       </Link>

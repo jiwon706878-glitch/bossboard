@@ -196,15 +196,17 @@ export default async function UsagePage() {
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Businesses</span>
-              <span className="font-medium">{plan.limits.businesses}</span>
+              <span className="text-muted-foreground">SOPs</span>
+              <span className="font-medium">
+                {plan.limits.sops === -1 ? "Unlimited" : plan.limits.sops}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Social Posts</span>
+              <span className="text-muted-foreground">Team Members</span>
               <span className="font-medium">
-                {plan.limits.socialPosts === -1
+                {plan.limits.teamMembers === -1
                   ? "Unlimited"
-                  : `${plan.limits.socialPosts}/mo`}
+                  : plan.limits.teamMembers}
               </span>
             </div>
           </CardContent>

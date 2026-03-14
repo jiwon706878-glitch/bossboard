@@ -227,14 +227,12 @@ export default function DashboardPage() {
       {/* Greeting Section */}
       <div className="space-y-1">
         <h2
-          className="text-2xl font-semibold tracking-tight"
-          style={{ color: "var(--bb-text-primary)" }}
+          className="text-2xl font-semibold tracking-tight text-foreground"
         >
           {greeting}, {userName}
         </h2>
         <p
-          className="text-sm"
-          style={{ color: "var(--bb-text-secondary)" }}
+          className="text-sm text-muted-foreground"
         >
           {todayFormatted}
         </p>
@@ -247,9 +245,9 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center gap-2 pb-0">
             <div
               className="flex h-8 w-8 items-center justify-center rounded-md"
-              style={{ backgroundColor: "var(--bb-surface)" }}
+              style={{ backgroundColor: "#232840" }}
             >
-              <FileText className="h-4 w-4" style={{ color: "var(--bb-accent-blue)" }} />
+              <FileText className="h-4 w-4" style={{ color: "#4F8BFF" }} />
             </div>
             <CardTitle className="text-sm font-medium text-muted-foreground">
               SOP Overview
@@ -280,9 +278,9 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center gap-2 pb-0">
             <div
               className="flex h-8 w-8 items-center justify-center rounded-md"
-              style={{ backgroundColor: "var(--bb-surface)" }}
+              style={{ backgroundColor: "#232840" }}
             >
-              <Users className="h-4 w-4" style={{ color: "var(--bb-accent-blue)" }} />
+              <Users className="h-4 w-4" style={{ color: "#4F8BFF" }} />
             </div>
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Team
@@ -306,12 +304,12 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center gap-2 pb-0">
             <div
               className="flex h-8 w-8 items-center justify-center rounded-md"
-              style={{ backgroundColor: "var(--bb-surface)" }}
+              style={{ backgroundColor: "#232840" }}
             >
-              <Zap className="h-4 w-4" style={{ color: "var(--bb-accent-blue)" }} />
+              <Zap className="h-4 w-4" style={{ color: "#4F8BFF" }} />
             </div>
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              AI Credits
+              AI Generations
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -349,17 +347,16 @@ export default function DashboardPage() {
       </div>
 
       {/* AI Insights Card */}
-      <Card className="rounded-md shadow-none" style={{ borderLeftColor: "var(--bb-warning)", borderLeftWidth: "3px" }}>
+      <Card className="rounded-md shadow-none" style={{ borderLeftColor: "#FBBF24", borderLeftWidth: "3px" }}>
         <CardHeader className="flex flex-row items-center gap-2">
-          <Lightbulb className="h-4 w-4" style={{ color: "var(--bb-warning)" }} />
+          <Lightbulb className="h-4 w-4" style={{ color: "#FBBF24" }} />
           <CardTitle className="text-sm font-medium">AI Insights</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {insights.map((insight, i) => (
             <p
               key={i}
-              className="text-sm leading-relaxed"
-              style={{ color: "var(--bb-text-secondary)" }}
+              className="text-sm leading-relaxed text-muted-foreground"
             >
               {insight}
             </p>
@@ -376,8 +373,7 @@ export default function DashboardPage() {
           {activities.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <Clock
-                className="mb-3 h-8 w-8"
-                style={{ color: "var(--bb-text-tertiary, var(--muted-foreground))" }}
+                className="mb-3 h-8 w-8 text-muted-foreground"
               />
               <p className="text-sm text-muted-foreground">
                 No activity yet. Create your first SOP to get started!
@@ -391,12 +387,12 @@ export default function DashboardPage() {
                     {item.icon === "created" ? (
                       <FilePlus2
                         className="h-4 w-4"
-                        style={{ color: "var(--bb-success, #34D399)" }}
+                        style={{ color: "#34D399" }}
                       />
                     ) : (
                       <CheckCircle2
                         className="h-4 w-4"
-                        style={{ color: "var(--bb-accent-blue)" }}
+                        style={{ color: "#4F8BFF" }}
                       />
                     )}
                   </div>
@@ -404,8 +400,7 @@ export default function DashboardPage() {
                     <p className="truncate text-sm">{item.text}</p>
                   </div>
                   <span
-                    className="flex-shrink-0 text-xs"
-                    style={{ color: "var(--bb-text-secondary)" }}
+                    className="flex-shrink-0 text-xs text-muted-foreground"
                   >
                     {item.time}
                   </span>
@@ -419,8 +414,7 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <div className="space-y-3">
         <h3
-          className="text-sm font-medium"
-          style={{ color: "var(--bb-text-secondary)" }}
+          className="text-sm font-medium text-muted-foreground"
         >
           Quick Actions
         </h3>

@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     .single();
 
   const planId =
-    (profile?.plan_id as "free" | "pro" | "business" | "enterprise") ?? "free";
+    (profile?.plan_id as "free" | "starter" | "pro" | "business") ?? "free";
 
   // Only Pro, Business, Enterprise can use AI chat
   if (planId === "free") {

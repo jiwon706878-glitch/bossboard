@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Check } from "lucide-react";
 import { plans, type PlanId } from "@/config/plans";
 
-const planOrder: PlanId[] = ["free", "pro", "business", "enterprise"];
+const planOrder: PlanId[] = ["free", "starter", "pro", "business"];
 
 export function PricingToggle() {
   const [annual, setAnnual] = useState(false);
@@ -60,7 +60,7 @@ export function PricingToggle() {
         {planOrder.map((planId) => {
           const plan = plans[planId];
           const price = annual ? plan.annualPrice : plan.monthlyPrice;
-          const isRecommended = planId === "business";
+          const isRecommended = planId === "pro";
 
           return (
             <div

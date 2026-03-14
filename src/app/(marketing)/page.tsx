@@ -321,12 +321,61 @@ export default function HomePage() {
               </ul>
             </div>
             <div
-              className="rounded-md h-64 lg:h-72"
+              className="rounded-md h-64 lg:h-72 overflow-hidden"
               style={{
                 backgroundColor: "#141824",
                 border: "1px solid #2A3050",
+                padding: "20px",
               }}
-            />
+            >
+              {/* Mini SOP generation form */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                <span style={{ fontFamily: "'Source Sans 3', sans-serif", fontSize: "12px", color: "#8B95B0", flexShrink: 0 }}>Topic:</span>
+                <div style={{ flex: 1, height: "28px", backgroundColor: "#1C2033", border: "1px solid #2A3050", borderRadius: "4px", padding: "0 10px", display: "flex", alignItems: "center" }}>
+                  <span style={{ fontFamily: "'Source Sans 3', sans-serif", fontSize: "11px", color: "#5A6480" }}>Enter your topic...</span>
+                </div>
+              </div>
+              <div style={{ marginBottom: "16px" }}>
+                <div style={{ display: "inline-block", backgroundColor: "#4F8BFF", borderRadius: "4px", padding: "5px 14px" }}>
+                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "11px", fontWeight: 600, color: "#FFFFFF" }}>Generate SOP</span>
+                </div>
+              </div>
+              {/* Generated steps */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "14px" }}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", fontWeight: 500, color: "#4F8BFF" }}>1.</span>
+                    <span style={{ fontFamily: "'Source Sans 3', sans-serif", fontSize: "11px", color: "#8B95B0" }}>Purpose</span>
+                  </div>
+                  <div style={{ marginLeft: "18px", height: "3px", width: "70%", backgroundColor: "#2A3050", borderRadius: "2px" }} />
+                </div>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", fontWeight: 500, color: "#4F8BFF" }}>2.</span>
+                    <span style={{ fontFamily: "'Source Sans 3', sans-serif", fontSize: "11px", color: "#8B95B0" }}>Procedure</span>
+                  </div>
+                  <div style={{ marginLeft: "18px", height: "3px", width: "80%", backgroundColor: "#232840", borderRadius: "2px" }} />
+                </div>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", fontWeight: 500, color: "#4F8BFF" }}>3.</span>
+                    <span style={{ fontFamily: "'Source Sans 3', sans-serif", fontSize: "11px", color: "#8B95B0" }}>Safety Notes</span>
+                  </div>
+                  <div style={{ marginLeft: "18px", height: "3px", width: "60%", backgroundColor: "#2A3050", borderRadius: "2px" }} />
+                </div>
+              </div>
+              {/* Checklist items */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ fontFamily: "'Source Sans 3', sans-serif", fontSize: "12px", color: "#34D399", fontWeight: 600 }}>&#10003;</span>
+                  <span style={{ fontFamily: "'Source Sans 3', sans-serif", fontSize: "11px", color: "#8B95B0" }}>Checklist item 1</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ fontFamily: "'Source Sans 3', sans-serif", fontSize: "12px", color: "#34D399", fontWeight: 600 }}>&#10003;</span>
+                  <span style={{ fontFamily: "'Source Sans 3', sans-serif", fontSize: "11px", color: "#8B95B0" }}>Checklist item 2</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Feature 2 — Visual left, text right */}
@@ -335,12 +384,57 @@ export default function HomePage() {
             style={{ paddingBottom: "80px" }}
           >
             <div
-              className="rounded-md h-64 lg:h-72 order-2 lg:order-1"
+              className="rounded-md h-64 lg:h-72 order-2 lg:order-1 overflow-hidden"
               style={{
                 backgroundColor: "#141824",
                 border: "1px solid #2A3050",
+                padding: "20px",
               }}
-            />
+            >
+              {/* Mini stat cards row */}
+              <div style={{ display: "flex", gap: "10px", marginBottom: "14px" }}>
+                <div style={{ flex: 1, backgroundColor: "#1C2033", border: "1px solid #2A3050", borderRadius: "6px", padding: "12px" }}>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "22px", fontWeight: 700, color: "#E8ECF4", lineHeight: 1 }}>12</div>
+                  <div style={{ fontFamily: "'Source Sans 3', sans-serif", fontSize: "11px", color: "#8B95B0", marginTop: "4px" }}>members</div>
+                </div>
+                <div style={{ flex: 1, backgroundColor: "#1C2033", border: "1px solid #2A3050", borderRadius: "6px", padding: "12px" }}>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "22px", fontWeight: 700, color: "#34D399", lineHeight: 1 }}>94%</div>
+                  <div style={{ fontFamily: "'Source Sans 3', sans-serif", fontSize: "11px", color: "#8B95B0", marginTop: "4px" }}>read</div>
+                </div>
+              </div>
+              {/* Team member progress list */}
+              <div style={{ backgroundColor: "#1C2033", border: "1px solid #2A3050", borderRadius: "6px", padding: "14px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {/* John */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#4F8BFF", flexShrink: 0 }} />
+                    <span style={{ fontFamily: "'Source Sans 3', sans-serif", fontSize: "11px", color: "#8B95B0", width: "40px", flexShrink: 0 }}>John</span>
+                    <div style={{ flex: 1, height: "6px", backgroundColor: "#232840", borderRadius: "3px", overflow: "hidden" }}>
+                      <div style={{ width: "100%", height: "100%", backgroundColor: "#34D399", borderRadius: "3px" }} />
+                    </div>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", color: "#8B95B0", flexShrink: 0 }}>100%</span>
+                  </div>
+                  {/* Sarah */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#FBBF24", flexShrink: 0 }} />
+                    <span style={{ fontFamily: "'Source Sans 3', sans-serif", fontSize: "11px", color: "#8B95B0", width: "40px", flexShrink: 0 }}>Sarah</span>
+                    <div style={{ flex: 1, height: "6px", backgroundColor: "#232840", borderRadius: "3px", overflow: "hidden" }}>
+                      <div style={{ width: "75%", height: "100%", backgroundColor: "#4F8BFF", borderRadius: "3px" }} />
+                    </div>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", color: "#8B95B0", flexShrink: 0 }}>75%</span>
+                  </div>
+                  {/* Mike */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#34D399", flexShrink: 0 }} />
+                    <span style={{ fontFamily: "'Source Sans 3', sans-serif", fontSize: "11px", color: "#8B95B0", width: "40px", flexShrink: 0 }}>Mike</span>
+                    <div style={{ flex: 1, height: "6px", backgroundColor: "#232840", borderRadius: "3px", overflow: "hidden" }}>
+                      <div style={{ width: "50%", height: "100%", backgroundColor: "#4F8BFF", borderRadius: "3px" }} />
+                    </div>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", color: "#8B95B0", flexShrink: 0 }}>50%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div className="order-1 lg:order-2">
               <span
                 className="text-xs font-semibold uppercase tracking-wider"
@@ -440,12 +534,42 @@ export default function HomePage() {
               </ul>
             </div>
             <div
-              className="rounded-md h-64 lg:h-72"
+              className="rounded-md h-64 lg:h-72 overflow-hidden"
               style={{
                 backgroundColor: "#141824",
                 border: "1px solid #2A3050",
+                borderLeft: "3px solid #FBBF24",
+                padding: "20px",
               }}
-            />
+            >
+              {/* Insight items */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                {/* Amber insight */}
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                    <div style={{ width: "7px", height: "7px", borderRadius: "50%", backgroundColor: "#FBBF24", flexShrink: 0 }} />
+                    <span style={{ fontFamily: "'Source Sans 3', sans-serif", fontSize: "12px", color: "#E8ECF4" }}>3 SOPs need review</span>
+                  </div>
+                  <div style={{ marginLeft: "15px", height: "3px", width: "75%", backgroundColor: "#232840", borderRadius: "2px" }} />
+                </div>
+                {/* Green insight */}
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                    <div style={{ width: "7px", height: "7px", borderRadius: "50%", backgroundColor: "#34D399", flexShrink: 0 }} />
+                    <span style={{ fontFamily: "'Source Sans 3', sans-serif", fontSize: "12px", color: "#E8ECF4" }}>Team completion: 87%</span>
+                  </div>
+                  <div style={{ marginLeft: "15px", height: "3px", width: "60%", backgroundColor: "#232840", borderRadius: "2px" }} />
+                </div>
+                {/* Blue insight */}
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                    <div style={{ width: "7px", height: "7px", borderRadius: "50%", backgroundColor: "#4F8BFF", flexShrink: 0 }} />
+                    <span style={{ fontFamily: "'Source Sans 3', sans-serif", fontSize: "12px", color: "#E8ECF4" }}>New hire onboarding started</span>
+                  </div>
+                  <div style={{ marginLeft: "15px", height: "3px", width: "85%", backgroundColor: "#232840", borderRadius: "2px" }} />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

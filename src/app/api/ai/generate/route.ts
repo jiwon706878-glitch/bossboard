@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     .eq("id", user.id)
     .single();
 
-  const planId = (profile?.plan_id as "free" | "pro" | "business" | "enterprise") ?? "free";
+  const planId = (profile?.plan_id as "free" | "starter" | "pro" | "business") ?? "free";
 
   const cost = CREDIT_COSTS.sop_generate;
   const creditCheck = await checkCredits(user.id, planId, cost);

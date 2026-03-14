@@ -85,7 +85,7 @@ export default function BillingPage() {
     [userId, userEmail]
   );
 
-  const planOrder: PlanId[] = ["free", "pro", "business", "enterprise"];
+  const planOrder: PlanId[] = ["free", "starter", "pro", "business"];
 
   return (
     <div className="space-y-6">

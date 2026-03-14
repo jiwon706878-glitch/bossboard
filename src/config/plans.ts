@@ -1,4 +1,4 @@
-export type PlanId = "free" | "pro" | "business" | "enterprise";
+export type PlanId = "free" | "starter" | "pro" | "business";
 
 export interface PlanConfig {
   id: PlanId;
@@ -10,9 +10,8 @@ export interface PlanConfig {
   paddlePriceIdAnnual: string;
   limits: {
     aiCredits: number; // per month, -1 = unlimited
-    businesses: number;
-    socialPosts: number; // per month, -1 = unlimited
-    teamMembers: number;
+    sops: number; // -1 = unlimited
+    teamMembers: number; // -1 = unlimited
   };
   features: string[];
 }
@@ -21,97 +20,88 @@ export const plans: Record<PlanId, PlanConfig> = {
   free: {
     id: "free",
     name: "Free",
-    description: "Try it out",
+    description: "Get started",
     monthlyPrice: 0,
     annualPrice: 0,
     paddlePriceIdMonthly: "",
     paddlePriceIdAnnual: "",
     limits: {
-      aiCredits: 30,
-      businesses: 1,
-      socialPosts: 15,
-      teamMembers: 1,
+      aiCredits: 5,
+      sops: 5,
+      teamMembers: 3,
     },
     features: [
-      "30 AI credits/month",
-      "1 business profile",
-      "Review reply generation",
-      "AI social captions",
-      "15 scheduled posts/month",
+      "5 SOPs",
+      "3 team members",
+      "5 AI generations/month",
+      "SOP wiki & search",
+    ],
+  },
+  starter: {
+    id: "starter",
+    name: "Starter",
+    description: "For small teams",
+    monthlyPrice: 19,
+    annualPrice: 190,
+    paddlePriceIdMonthly: process.env.PADDLE_STARTER_MONTHLY_PRICE_ID || "",
+    paddlePriceIdAnnual: process.env.PADDLE_STARTER_ANNUAL_PRICE_ID || "",
+    limits: {
+      aiCredits: 50,
+      sops: 50,
+      teamMembers: 10,
+    },
+    features: [
+      "50 SOPs",
+      "10 team members",
+      "50 AI generations/month",
+      "Read tracking",
+      "Version history",
+      "Checklists",
     ],
   },
   pro: {
     id: "pro",
     name: "Pro",
-    description: "For solo operators",
-    monthlyPrice: 19.99,
-    annualPrice: 199.99,
+    description: "For growing operations",
+    monthlyPrice: 49,
+    annualPrice: 490,
     paddlePriceIdMonthly: process.env.PADDLE_PRO_MONTHLY_PRICE_ID || "",
     paddlePriceIdAnnual: process.env.PADDLE_PRO_ANNUAL_PRICE_ID || "",
     limits: {
-      aiCredits: 1000,
-      businesses: 1,
-      socialPosts: 50,
-      teamMembers: 1,
+      aiCredits: -1,
+      sops: -1,
+      teamMembers: 30,
     },
     features: [
-      "1,000 AI credits/month",
-      "1 business profile",
-      "All AI features",
-      "50 scheduled posts/month",
-      "Content Studio scripts",
+      "Unlimited SOPs",
+      "30 team members",
+      "Unlimited AI generations",
+      "Custom branding",
+      "Onboarding paths",
+      "Multilingual SOPs",
       "Priority support",
     ],
   },
   business: {
     id: "business",
     name: "Business",
-    description: "For growing businesses",
-    monthlyPrice: 39.99,
-    annualPrice: 399.99,
+    description: "For enterprises",
+    monthlyPrice: 129,
+    annualPrice: 1290,
     paddlePriceIdMonthly: process.env.PADDLE_BUSINESS_MONTHLY_PRICE_ID || "",
     paddlePriceIdAnnual: process.env.PADDLE_BUSINESS_ANNUAL_PRICE_ID || "",
     limits: {
       aiCredits: -1,
-      businesses: 3,
-      socialPosts: -1,
-      teamMembers: 3,
+      sops: -1,
+      teamMembers: -1,
     },
     features: [
-      "Unlimited AI credits",
-      "3 business profiles",
-      "All AI features",
-      "Unlimited scheduled posts",
-      "Content Studio scripts",
-      "Team collaboration (3 users)",
-      "Custom brand voice",
-      "Priority support",
-      "Analytics dashboard",
-    ],
-  },
-  enterprise: {
-    id: "enterprise",
-    name: "Enterprise",
-    description: "For agencies & multi-location",
-    monthlyPrice: 79.99,
-    annualPrice: 799.99,
-    paddlePriceIdMonthly: process.env.PADDLE_ENTERPRISE_MONTHLY_PRICE_ID || "",
-    paddlePriceIdAnnual: process.env.PADDLE_ENTERPRISE_ANNUAL_PRICE_ID || "",
-    limits: {
-      aiCredits: -1,
-      businesses: 25,
-      socialPosts: -1,
-      teamMembers: 10,
-    },
-    features: [
-      "Unlimited AI credits",
-      "25 business profiles",
-      "All AI features",
-      "Unlimited scheduled posts",
-      "Content Studio scripts",
+      "Everything in Pro",
+      "Unlimited team members",
+      "API access",
+      "SSO integration",
       "Dedicated support",
-      "Analytics dashboard",
-      "White-label options",
+      "Custom integrations",
     ],
   },
 };

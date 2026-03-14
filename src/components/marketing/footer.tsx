@@ -11,7 +11,7 @@ export function MarketingFooter() {
               alt=""
               width={32}
               height={32}
-              className="h-8 w-8"
+              className="h-8 w-8 logo-blue"
             />
             <span
               className="text-base font-semibold"

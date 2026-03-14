@@ -82,11 +82,18 @@ export default function OnboardingPage() {
 
   const { complete, isLoading: isGenerating } = useCompletion({
     api: "/api/ai/generate",
-    body: {
-      businessId: currentBusiness?.id,
-      topic: selectedTopic,
+    streamProtocol: "text",
+    onError: (error) => {
+      console.error("SOP generation error:", error);
+      toast.error(error.message || "Failed to generate SOP. Please try again.");
+      setGeneratingComplete(true);
     },
     onFinish: async (_prompt, completion) => {
+      if (!completion || !completion.trim()) {
+        toast.error("AI returned empty response. Please try again.");
+        setGeneratingComplete(true);
+        return;
+      }
       // Save generated SOP to database
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !currentBusiness) {
@@ -244,7 +251,12 @@ export default function OnboardingPage() {
       return;
     }
     setGeneratingComplete(false);
-    await complete("");
+    await complete(selectedTopic, {
+      body: {
+        businessId: currentBusiness?.id,
+        topic: selectedTopic,
+      },
+    });
   }
 
   function handleGoToDashboard() {

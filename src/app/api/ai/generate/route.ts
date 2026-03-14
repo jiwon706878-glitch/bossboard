@@ -63,9 +63,10 @@ export async function POST(req: Request) {
 
   const categoryContext = category ? `\nCategory: ${category}` : "";
 
-  const result = streamText({
-    model: anthropic("claude-sonnet-4-20250514"),
-    system: `${businessContext}
+  try {
+    const result = streamText({
+      model: anthropic("claude-sonnet-4-20250514"),
+      system: `${businessContext}
 
 You are an expert operations consultant. Generate a detailed, actionable Standard Operating Procedure (SOP).
 
@@ -82,12 +83,19 @@ Output format:
 Keep language simple. Write for someone doing this task for the first time.
 Do NOT use markdown headers with #. Use plain numbered sections.
 Write the SOP content directly without any preamble.`,
-    prompt: `Topic: ${sanitizedTopic}
+      prompt: `Topic: ${sanitizedTopic}
 
 Generate the SOP:`,
-  });
+    });
 
-  deductCredit(user.id, businessId, "sop_generate", cost).catch(console.error);
+    deductCredit(user.id, businessId, "sop_generate", cost).catch(console.error);
 
-  return result.toTextStreamResponse();
+    return result.toTextStreamResponse();
+  } catch (error) {
+    console.error("SOP generation error:", error);
+    return new Response(
+      `AI generation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      { status: 500 }
+    );
+  }
 }

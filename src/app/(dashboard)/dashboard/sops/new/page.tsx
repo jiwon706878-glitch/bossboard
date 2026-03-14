@@ -69,33 +69,36 @@ export default function NewSOPPage() {
 
   const { complete, isLoading } = useCompletion({
     api: "/api/ai/generate",
-    body: {
-      businessId: currentBusiness?.id,
-      topic,
-      category: category || undefined,
-    },
+    streamProtocol: "text",
     onFinish: (_prompt, completion) => {
+      if (!completion || !completion.trim()) {
+        toast.error("AI returned empty response. Please try again.");
+        return;
+      }
+
       setGeneratedText(completion);
       const json = textToTipTapJSON(completion);
       setEditorContent(json);
 
-      // Extract title from first line if not set
-      if (!title) {
-        const firstLine = completion.split("\n").find((l) => l.trim());
-        if (firstLine) {
-          const cleaned = firstLine
-            .replace(/^\d+\.\s*/, "")
-            .replace(/^Title:\s*/i, "")
-            .trim();
-          setTitle(cleaned.length > 80 ? cleaned.substring(0, 80) : cleaned);
-        }
+      // Extract title from first line
+      const firstLine = completion.split("\n").find((l) => l.trim());
+      if (firstLine) {
+        const cleaned = firstLine
+          .replace(/^\d+\.\s*/, "")
+          .replace(/^Title:\s*/i, "")
+          .trim();
+        setTitle(cleaned.length > 80 ? cleaned.substring(0, 80) : cleaned);
       }
+    },
+    onError: (error) => {
+      console.error("SOP generation error:", error);
+      toast.error(error.message || "Failed to generate SOP. Please try again.");
     },
   });
 
   async function handleGenerate() {
     if (!currentBusiness) {
-      toast.error("No business selected");
+      toast.error("No business selected. Complete onboarding first.");
       return;
     }
     if (!topic) {
@@ -104,7 +107,14 @@ export default function NewSOPPage() {
     }
     setGeneratedText("");
     setEditorContent(null);
-    await complete("");
+    setTitle("");
+    await complete(topic, {
+      body: {
+        businessId: currentBusiness.id,
+        topic,
+        category: category || undefined,
+      },
+    });
   }
 
   async function handleSave() {

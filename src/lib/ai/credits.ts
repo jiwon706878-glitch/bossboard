@@ -11,6 +11,7 @@ export const CREDIT_COSTS: Record<string, number> = {
   image_analysis: 5,
   report: 5,
   review_insights: 5,
+  sop_generate: 3,
   business_plan: 10,
 };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
@@ -21,7 +21,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const businessTypes = [
   "Restaurant",
@@ -36,37 +38,88 @@ const businessTypes = [
   "Other",
 ];
 
+const roles = [
+  "Owner",
+  "Manager",
+  "Operations Lead",
+  "Administrator",
+  "Team Lead",
+  "Other",
+];
+
+const TOTAL_STEPS = 3;
+
 export default function OnboardingPage() {
-  const [name, setName] = useState("");
-  const [type, setType] = useState("");
+  const [step, setStep] = useState(1);
+  const [fullName, setFullName] = useState("");
+  const [role, setRole] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [businessType, setBusinessType] = useState("");
   const [address, setAddress] = useState("");
-  const [googlePlaceId, setGooglePlaceId] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
   const setCurrentBusiness = useBusinessStore((s) => s.setCurrentBusiness);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
+  useEffect(() => {
+    async function prefill() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user?.user_metadata?.full_name) {
+        setFullName(user.user_metadata.full_name);
+      }
+    }
+    prefill();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  async function handleSaveProfile() {
+    setLoading(true);
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
       toast.error("Not authenticated");
       setLoading(false);
-      return;
+      return false;
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .upsert({
+        id: user.id,
+        full_name: fullName,
+        role: role,
+      });
+
+    if (error) {
+      toast.error(error.message);
+      setLoading(false);
+      return false;
+    }
+
+    setLoading(false);
+    return true;
+  }
+
+  async function handleCreateBusiness() {
+    setLoading(true);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Not authenticated");
+      setLoading(false);
+      return false;
     }
 
     const { data, error } = await supabase
       .from("businesses")
       .insert({
         user_id: user.id,
-        name,
-        type,
+        name: businessName,
+        type: businessType,
         address: address || null,
-        google_place_id: googlePlaceId || null,
       })
       .select()
       .single();
@@ -74,78 +127,228 @@ export default function OnboardingPage() {
     if (error) {
       toast.error(error.message);
       setLoading(false);
-      return;
+      return false;
     }
 
     setCurrentBusiness(data);
-    toast.success("Business created!");
+    setLoading(false);
+    return true;
+  }
+
+  async function handleNext() {
+    if (step === 1) {
+      if (!fullName.trim() || !role) {
+        toast.error("Please fill in all required fields");
+        return;
+      }
+      const ok = await handleSaveProfile();
+      if (ok) setStep(2);
+    } else if (step === 2) {
+      if (!businessName.trim() || !businessType) {
+        toast.error("Please fill in business name and type");
+        return;
+      }
+      const ok = await handleCreateBusiness();
+      if (ok) setStep(3);
+    }
+  }
+
+  function handleBack() {
+    if (step > 1) setStep(step - 1);
+  }
+
+  function handleGoToDashboard() {
+    toast.success("Welcome to BossBoard!");
     router.push("/dashboard");
     router.refresh();
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
-      <Card className="w-full max-w-lg">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Set up your business</CardTitle>
-          <CardDescription>
-            Tell us about your business so we can personalize your AI experience.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Business name</Label>
-              <Input
-                id="name"
-                placeholder="Acme Coffee Shop"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
+      <div className="w-full max-w-lg">
+        {/* Progress indicator */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-muted-foreground">
+              Step {step} of {TOTAL_STEPS}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              {step === 1 && "About You"}
+              {step === 2 && "Your Business"}
+              {step === 3 && "All Set"}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "h-1.5 flex-1 rounded-full transition-colors duration-300",
+                  i < step ? "bg-primary" : "bg-muted"
+                )}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="type">Business type</Label>
-              <Select value={type} onValueChange={setType} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {businessTypes.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {t}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address">Address (optional)</Label>
-              <Input
-                id="address"
-                placeholder="123 Main St, City, State"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="placeId">Google Place ID (optional)</Label>
-              <Input
-                id="placeId"
-                placeholder="ChIJ..."
-                value={googlePlaceId}
-                onChange={(e) => setGooglePlaceId(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Used for importing reviews automatically in the future.
-              </p>
-            </div>
-            <Button type="submit" className="w-full" disabled={loading || !type}>
-              {loading ? "Creating..." : "Create Business & Continue"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+            ))}
+          </div>
+        </div>
+
+        <Card className="w-full">
+          {/* Step 1: About You */}
+          {step === 1 && (
+            <>
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl">About You</CardTitle>
+                <CardDescription>
+                  Let us know who you are so we can personalize your experience.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full name</Label>
+                  <Input
+                    id="fullName"
+                    placeholder="Jane Smith"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Your role</Label>
+                  <Select value={role} onValueChange={setRole}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roles.map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {r}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </>
+          )}
+
+          {/* Step 2: Your Business */}
+          {step === 2 && (
+            <>
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl">Your Business</CardTitle>
+                <CardDescription>
+                  Tell us about your business so we can tailor the AI to your
+                  needs.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="businessName">Business name</Label>
+                  <Input
+                    id="businessName"
+                    placeholder="Acme Coffee Shop"
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="businessType">Business type</Label>
+                  <Select
+                    value={businessType}
+                    onValueChange={setBusinessType}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {businessTypes.map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {t}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address (optional)</Label>
+                  <Input
+                    id="address"
+                    placeholder="123 Main St, City, State"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                  />
+                </div>
+              </CardContent>
+            </>
+          )}
+
+          {/* Step 3: All Set */}
+          {step === 3 && (
+            <>
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl">You're All Set</CardTitle>
+                <CardDescription>
+                  Here's a summary of your setup. You can change these later in
+                  Settings.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-md border p-4 space-y-3">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Name</p>
+                    <p className="font-medium">{fullName}</p>
+                  </div>
+                  <Separator />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Role</p>
+                    <p className="font-medium">{role}</p>
+                  </div>
+                  <Separator />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Business</p>
+                    <p className="font-medium">{businessName}</p>
+                  </div>
+                  <Separator />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Type</p>
+                    <p className="font-medium">{businessType}</p>
+                  </div>
+                  {address && (
+                    <>
+                      <Separator />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Address</p>
+                        <p className="font-medium">{address}</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </>
+          )}
+
+          {/* Navigation buttons */}
+          <div className="flex items-center justify-between px-6 pb-6 pt-2">
+            {step > 1 && step < 3 ? (
+              <Button variant="outline" onClick={handleBack} disabled={loading}>
+                Back
+              </Button>
+            ) : (
+              <div />
+            )}
+            {step < 3 ? (
+              <Button onClick={handleNext} disabled={loading}>
+                {loading ? "Saving..." : "Next"}
+              </Button>
+            ) : (
+              <Button onClick={handleGoToDashboard} className="w-full">
+                Go to Dashboard
+              </Button>
+            )}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

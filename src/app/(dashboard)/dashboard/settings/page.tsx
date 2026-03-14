@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
+import { plans, type PlanId } from "@/config/plans";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +18,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+
+interface TeamMember {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  role: string | null;
+}
+
+interface Invite {
+  id: string;
+  email: string;
+  role: string;
+  accepted: boolean;
+  created_at: string;
+}
 
 export default function SettingsPage() {
   const [fullName, setFullName] = useState("");
@@ -30,10 +47,45 @@ export default function SettingsPage() {
   const [seasonalPromotions, setSeasonalPromotions] = useState("");
   const [loading, setLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
+
+  // Team state
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [pendingInvites, setPendingInvites] = useState<Invite[]>([]);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("member");
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [revokeLoadingId, setRevokeLoadingId] = useState<string | null>(null);
+
   const supabase = createClient();
   const router = useRouter();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
   const setCurrentBusiness = useBusinessStore((s) => s.setCurrentBusiness);
+
+  const planId = ((currentBusiness as any)?.plan || "free") as PlanId;
+  const plan = plans[planId];
+  const maxMembers = plan?.limits?.teamMembers ?? 1;
+
+  const loadTeamData = useCallback(async () => {
+    if (!currentBusiness) return;
+
+    // Load team members
+    const { data: members } = await supabase
+      .from("profiles")
+      .select("id, full_name, email, role")
+      .eq("business_id", currentBusiness.id);
+
+    if (members) setTeamMembers(members);
+
+    // Load pending invites
+    const { data: invites } = await supabase
+      .from("invites")
+      .select("id, email, role, accepted, created_at")
+      .eq("workspace_id", currentBusiness.id)
+      .eq("accepted", false)
+      .order("created_at", { ascending: false });
+
+    if (invites) setPendingInvites(invites);
+  }, [currentBusiness, supabase]);
 
   useEffect(() => {
     async function load() {
@@ -54,7 +106,6 @@ export default function SettingsPage() {
         setBusinessName(currentBusiness.name);
         setBusinessAddress(currentBusiness.address || "");
 
-        // Load full business profile from DB for AI context fields
         const { data: biz } = await supabase
           .from("businesses")
           .select(
@@ -73,6 +124,7 @@ export default function SettingsPage() {
       }
     }
     load();
+    loadTeamData();
   }, [currentBusiness]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSaveProfile(e: React.FormEvent) {
@@ -148,6 +200,64 @@ export default function SettingsPage() {
     }
     setProfileLoading(false);
   }
+
+  async function handleSendInvite(e: React.FormEvent) {
+    e.preventDefault();
+    if (!currentBusiness || !inviteEmail.trim()) return;
+    setInviteLoading(true);
+
+    try {
+      const res = await fetch("/api/team/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: inviteEmail.trim(),
+          role: inviteRole,
+          businessId: currentBusiness.id,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || "Failed to send invite");
+      } else {
+        toast.success(`Invite sent to ${inviteEmail}`);
+        setInviteEmail("");
+        setInviteRole("member");
+        loadTeamData();
+      }
+    } catch {
+      toast.error("Failed to send invite");
+    }
+
+    setInviteLoading(false);
+  }
+
+  async function handleRevokeInvite(inviteId: string) {
+    setRevokeLoadingId(inviteId);
+
+    try {
+      const res = await fetch(`/api/team/invite?id=${inviteId}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || "Failed to revoke invite");
+      } else {
+        toast.success("Invite revoked");
+        loadTeamData();
+      }
+    } catch {
+      toast.error("Failed to revoke invite");
+    }
+
+    setRevokeLoadingId(null);
+  }
+
+  const totalUsed = teamMembers.length + pendingInvites.length;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -279,6 +389,132 @@ export default function SettingsPage() {
               {profileLoading ? "Saving..." : "Save AI Profile"}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Team Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Team</CardTitle>
+              <CardDescription>
+                Manage team members and invitations.
+              </CardDescription>
+            </div>
+            <Badge variant="outline" className="text-sm">
+              {totalUsed}/{maxMembers} members
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Current Team Members */}
+          {teamMembers.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-muted-foreground">
+                Current Members
+              </h3>
+              <div className="space-y-2">
+                {teamMembers.map((member) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center justify-between rounded-md border px-4 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">
+                        {member.full_name || "Unnamed"}
+                      </p>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {member.email}
+                      </p>
+                    </div>
+                    <Badge variant="secondary" className="ml-2 shrink-0">
+                      {member.role || "member"}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Pending Invites */}
+          {pendingInvites.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-muted-foreground">
+                Pending Invites
+              </h3>
+              <div className="space-y-2">
+                {pendingInvites.map((invite) => (
+                  <div
+                    key={invite.id}
+                    className="flex items-center justify-between rounded-md border border-dashed px-4 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {invite.email}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Invited as {invite.role}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-2 shrink-0 text-destructive hover:text-destructive"
+                      onClick={() => handleRevokeInvite(invite.id)}
+                      disabled={revokeLoadingId === invite.id}
+                    >
+                      {revokeLoadingId === invite.id ? "Revoking..." : "Revoke"}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <Separator />
+
+          {/* Invite Form */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Invite a Team Member
+            </h3>
+            {totalUsed >= maxMembers ? (
+              <p className="text-sm text-muted-foreground">
+                You've reached the team member limit for your {plan.name} plan.
+                Upgrade to invite more members.
+              </p>
+            ) : (
+              <form onSubmit={handleSendInvite} className="space-y-3">
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <Input
+                      type="email"
+                      placeholder="colleague@business.com"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <Select value={inviteRole} onValueChange={setInviteRole}>
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="member">Member</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  type="submit"
+                  disabled={inviteLoading || !currentBusiness}
+                >
+                  {inviteLoading ? "Sending..." : "Send Invite"}
+                </Button>
+              </form>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

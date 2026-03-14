@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -16,10 +16,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Edit, Trash2, Clock, Tag, FileText } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Clock, Tag, FileText, CheckSquare, Loader2, Eye, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
+import { useBusinessStore } from "@/hooks/use-business";
+import { extractStepsFromContent } from "@/lib/checklists/extract-steps";
 import type { JSONContent } from "@tiptap/react";
 
 const SOPEditor = dynamic(
@@ -61,11 +63,76 @@ export default function SOPDetailPage() {
   const [loading, setLoading] = useState(true);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [creatingChecklist, setCreatingChecklist] = useState(false);
+  const [signedOff, setSignedOff] = useState(false);
+  const [signingOff, setSigningOff] = useState(false);
+  const [readBy, setReadBy] = useState<{ id: string; full_name: string | null; signed: boolean }[]>([]);
+  const [teamSize, setTeamSize] = useState(0);
 
   const router = useRouter();
   const params = useParams();
   const supabase = createClient();
   const sopId = params.id as string;
+  const currentBusiness = useBusinessStore((s) => s.currentBusiness);
+
+  const loadReadTracking = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Record the read (upsert — don't duplicate)
+    const { data: existing } = await supabase
+      .from("sop_reads")
+      .select("id, signed")
+      .eq("sop_id", sopId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existing) {
+      setSignedOff(existing.signed ?? false);
+    } else {
+      await supabase.from("sop_reads").insert({
+        sop_id: sopId,
+        user_id: user.id,
+        read_at: new Date().toISOString(),
+        signed: false,
+      });
+    }
+
+    // Fetch all reads for this SOP with profile names
+    const { data: reads } = await supabase
+      .from("sop_reads")
+      .select("user_id, signed")
+      .eq("sop_id", sopId);
+
+    if (reads && reads.length > 0) {
+      const userIds = reads.map((r) => r.user_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", userIds);
+
+      const profileMap = new Map(
+        (profiles ?? []).map((p) => [p.id, p.full_name])
+      );
+
+      setReadBy(
+        reads.map((r) => ({
+          id: r.user_id,
+          full_name: profileMap.get(r.user_id) ?? null,
+          signed: r.signed ?? false,
+        }))
+      );
+    }
+
+    // Get team size for "read by X/Y" display
+    if (currentBusiness?.id) {
+      const { data: members } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("business_id", currentBusiness.id);
+      setTeamSize(members?.length ?? 1);
+    }
+  }, [sopId, supabase, currentBusiness?.id]);
 
   useEffect(() => {
     async function fetchSOP() {
@@ -86,6 +153,13 @@ export default function SOPDetailPage() {
     fetchSOP();
   }, [sopId, supabase, router]);
 
+  // Track read after SOP loads
+  useEffect(() => {
+    if (!loading && sop) {
+      loadReadTracking();
+    }
+  }, [loading, sop, loadReadTracking]);
+
   async function handleDelete() {
     setDeleting(true);
     const { error } = await supabase.from("sops").delete().eq("id", sopId);
@@ -99,6 +173,82 @@ export default function SOPDetailPage() {
     toast.success("SOP deleted");
     router.push("/dashboard/sops");
     router.refresh();
+  }
+
+  async function handleCreateChecklist() {
+    if (!sop || !sop.content) {
+      toast.error("SOP has no content to create a checklist from");
+      return;
+    }
+
+    const businessId = currentBusiness?.id;
+    if (!businessId) {
+      toast.error("No business found");
+      return;
+    }
+
+    setCreatingChecklist(true);
+
+    const steps = extractStepsFromContent(sop.content);
+    if (steps.length === 0) {
+      toast.error("Could not extract any steps from this SOP. Try adding numbered or bulleted steps.");
+      setCreatingChecklist(false);
+      return;
+    }
+
+    const { data: user } = await supabase.auth.getUser();
+
+    const { data, error } = await supabase
+      .from("checklists")
+      .insert({
+        business_id: businessId,
+        sop_id: sop.id,
+        title: `${sop.title} — Checklist`,
+        items: steps,
+        status: "pending",
+        created_by: user.user?.id,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      toast.error(error.message);
+      setCreatingChecklist(false);
+      return;
+    }
+
+    toast.success(`Checklist created with ${steps.length} items`);
+    router.push(`/dashboard/checklists/${data.id}`);
+  }
+
+  async function handleSignOff() {
+    setSigningOff(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setSigningOff(false);
+      return;
+    }
+
+    const newSigned = !signedOff;
+
+    const { error } = await supabase
+      .from("sop_reads")
+      .update({ signed: newSigned })
+      .eq("sop_id", sopId)
+      .eq("user_id", user.id);
+
+    if (error) {
+      toast.error(error.message);
+      setSigningOff(false);
+      return;
+    }
+
+    setSignedOff(newSigned);
+    setReadBy((prev) =>
+      prev.map((r) => (r.id === user.id ? { ...r, signed: newSigned } : r))
+    );
+    toast.success(newSigned ? "Signed off" : "Sign-off removed");
+    setSigningOff(false);
   }
 
   if (loading) {
@@ -145,6 +295,21 @@ export default function SOPDetailPage() {
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {sop.content && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCreateChecklist}
+              disabled={creatingChecklist}
+            >
+              {creatingChecklist ? (
+                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+              ) : (
+                <CheckSquare className="mr-1 h-4 w-4" />
+              )}
+              Create Checklist
+            </Button>
+          )}
           <Link href={`/dashboard/sops/${sop.id}/edit`}>
             <Button variant="outline" size="sm">
               <Edit className="mr-1 h-4 w-4" /> Edit
@@ -218,6 +383,64 @@ export default function SOPDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Read Tracking & Sign-off */}
+      <div className="space-y-4">
+        {/* Read by count + avatars */}
+        {readBy.length > 0 && (
+          <div className="flex items-center gap-3">
+            <Eye className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              Read by{" "}
+              <span className="font-mono font-semibold text-foreground">
+                {readBy.length}/{teamSize}
+              </span>{" "}
+              team {teamSize === 1 ? "member" : "members"}
+            </span>
+            <div className="flex -space-x-2">
+              {readBy.slice(0, 8).map((reader) => (
+                <div
+                  key={reader.id}
+                  className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-card text-[10px] font-bold"
+                  style={{ backgroundColor: "#232840", color: "#E8ECF4" }}
+                  title={`${reader.full_name ?? "User"}${reader.signed ? " (signed off)" : ""}`}
+                >
+                  {reader.full_name
+                    ? reader.full_name.charAt(0).toUpperCase()
+                    : "?"}
+                </div>
+              ))}
+              {readBy.length > 8 && (
+                <div
+                  className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-card text-[10px] font-medium"
+                  style={{ backgroundColor: "#1C2033", color: "#8B95B0" }}
+                >
+                  +{readBy.length - 8}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Sign-off button */}
+        <Button
+          variant={signedOff ? "secondary" : "outline"}
+          size="sm"
+          onClick={handleSignOff}
+          disabled={signingOff}
+          className="gap-2"
+        >
+          {signingOff ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <ShieldCheck
+              className="h-4 w-4"
+              style={signedOff ? { color: "#34D399" } : undefined}
+            />
+          )}
+          {signedOff ? "Signed Off" : "Sign Off"}
+        </Button>
+      </div>
     </div>
   );
 }

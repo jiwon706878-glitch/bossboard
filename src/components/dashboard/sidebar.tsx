@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
   FileText,
+  CheckSquare,
   Users,
   Settings,
   LogOut,
@@ -19,6 +20,7 @@ import { toast } from "sonner";
 const navLinks = [
   { key: "dashboard", href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { key: "sops", href: "/dashboard/sops", label: "SOP Wiki", icon: FileText },
+  { key: "checklists", href: "/dashboard/checklists", label: "Checklists", icon: CheckSquare },
   { key: "team", href: "/dashboard/settings", label: "Team", icon: Users },
   { key: "settings", href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];

@@ -28,6 +28,7 @@ interface SOP {
   version: number;
   created_at: string;
   updated_at: string;
+  isUnread?: boolean;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -83,7 +84,27 @@ export default function SOPsPage() {
       }
 
       const { data } = await query;
-      setSops(data ?? []);
+      if (!data) {
+        setSops([]);
+        setLoading(false);
+        return;
+      }
+
+      // Check which SOPs the current user has read
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const sopIds = data.map((s) => s.id);
+        const { data: reads } = await supabase
+          .from("sop_reads")
+          .select("sop_id")
+          .eq("user_id", user.id)
+          .in("sop_id", sopIds);
+
+        const readSopIds = new Set((reads ?? []).map((r) => r.sop_id));
+        setSops(data.map((s) => ({ ...s, isUnread: !readSopIds.has(s.id) })));
+      } else {
+        setSops(data);
+      }
       setLoading(false);
     }
     fetchSOPs();
@@ -177,6 +198,13 @@ export default function SOPsPage() {
               <CardContent className="flex items-center justify-between py-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
+                    {sop.isUnread && (
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: "#4F8BFF" }}
+                        title="Unread"
+                      />
+                    )}
                     <h3 className="truncate font-medium">{sop.title}</h3>
                     <Badge
                       variant="secondary"

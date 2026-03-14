@@ -14,6 +14,8 @@ import {
   CheckCircle2,
   FilePlus2,
   Sparkles,
+  CheckSquare,
+  AlertTriangle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
@@ -53,6 +55,9 @@ export default function DashboardPage() {
   const [creditsUsed, setCreditsUsed] = useState(0);
   const [creditsLimit, setCreditsLimit] = useState(30);
   const [unlimitedCredits, setUnlimitedCredits] = useState(false);
+  const [checklistsDueToday, setChecklistsDueToday] = useState(0);
+  const [checklistsOverdue, setChecklistsOverdue] = useState(0);
+  const [unreadSops, setUnreadSops] = useState(0);
 
   // Activity
   const [activities, setActivities] = useState<ActivityItem[]>([]);
@@ -158,6 +163,42 @@ export default function DashboardPage() {
           setPendingInvites(pending);
         } else {
           setTeamCount(1);
+        }
+
+        // Fetch active checklists for due today / overdue counts
+        const { data: activeChecklists } = await supabase
+          .from("checklists")
+          .select("id, due_date, status")
+          .eq("business_id", businessId)
+          .neq("status", "completed");
+
+        if (activeChecklists) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const todayStr = today.toISOString().split("T")[0];
+
+          let dueToday = 0;
+          let overdue = 0;
+          for (const cl of activeChecklists) {
+            if (!cl.due_date) continue;
+            if (cl.due_date === todayStr) dueToday++;
+            else if (cl.due_date < todayStr) overdue++;
+          }
+          setChecklistsDueToday(dueToday);
+          setChecklistsOverdue(overdue);
+        }
+
+        // Count unread SOPs for current user
+        if (sops && sops.length > 0) {
+          const sopIds = sops.map((s) => s.id);
+          const { data: myReads } = await supabase
+            .from("sop_reads")
+            .select("sop_id")
+            .eq("user_id", user.id)
+            .in("sop_id", sopIds);
+
+          const readIds = new Set((myReads ?? []).map((r) => r.sop_id));
+          setUnreadSops(sopIds.filter((id) => !readIds.has(id)).length);
         }
       } catch {
         // Silently handle errors — dashboard will show zeros
@@ -372,6 +413,67 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Alerts: Checklists & Unread SOPs */}
+      {(checklistsDueToday > 0 || checklistsOverdue > 0 || unreadSops > 0) && (
+        <div className="flex flex-wrap gap-3">
+          {unreadSops > 0 && (
+            <Link href="/dashboard/sops">
+              <div
+                className="flex items-center gap-2 rounded-md px-4 py-2.5 text-sm transition-colors duration-150 hover:opacity-90"
+                style={{
+                  backgroundColor: "#232840",
+                  border: "1px solid #2A3050",
+                  borderLeftWidth: "3px",
+                  borderLeftColor: "#FBBF24",
+                }}
+              >
+                <FileText className="h-4 w-4" style={{ color: "#FBBF24" }} />
+                <span className="font-mono font-semibold">{unreadSops}</span>
+                <span className="text-muted-foreground">
+                  {unreadSops === 1 ? "SOP needs" : "SOPs need"} your review
+                </span>
+              </div>
+            </Link>
+          )}
+          {checklistsDueToday > 0 && (
+            <Link href="/dashboard/checklists">
+              <div
+                className="flex items-center gap-2 rounded-md px-4 py-2.5 text-sm transition-colors duration-150 hover:opacity-90"
+                style={{
+                  backgroundColor: "#232840",
+                  border: "1px solid #2A3050",
+                  borderLeftWidth: "3px",
+                  borderLeftColor: "#4F8BFF",
+                }}
+              >
+                <CheckSquare className="h-4 w-4" style={{ color: "#4F8BFF" }} />
+                <span className="font-mono font-semibold">{checklistsDueToday}</span>
+                <span className="text-muted-foreground">
+                  {checklistsDueToday === 1 ? "checklist" : "checklists"} due today
+                </span>
+              </div>
+            </Link>
+          )}
+          {checklistsOverdue > 0 && (
+            <Link href="/dashboard/checklists">
+              <div
+                className="flex items-center gap-2 rounded-md px-4 py-2.5 text-sm transition-colors duration-150 hover:opacity-90"
+                style={{
+                  backgroundColor: "#232840",
+                  border: "1px solid #2A3050",
+                  borderLeftWidth: "3px",
+                  borderLeftColor: "#F87171",
+                }}
+              >
+                <AlertTriangle className="h-4 w-4" style={{ color: "#F87171" }} />
+                <span className="font-mono font-semibold">{checklistsOverdue}</span>
+                <span className="text-muted-foreground">overdue</span>
+              </div>
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* AI Insights Card */}
       <Card className="rounded-md shadow-none" style={{ borderLeftColor: "#FBBF24", borderLeftWidth: "3px" }}>

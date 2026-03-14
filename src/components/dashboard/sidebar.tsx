@@ -123,10 +123,7 @@ export function DashboardSidebar({ className }: { className?: string }) {
     >
       {/* Logo */}
       <div className="flex h-16 items-center gap-2 border-b px-6">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" className="h-10 w-10" style={{ userSelect: "none" }} onContextMenu={(e) => e.preventDefault()}>
-          <rect x="8" y="8" width="48" height="48" rx="12" fill="#4F8BFF"/>
-          <path d="M22 18h12c4.4 0 8 3.6 8 8 0 2.5-1.2 4.8-3 6.2 2.5 1.5 4 4.2 4 7.3 0 4.7-3.8 8.5-8.5 8.5H22V18zm6 5v8h6c1.7 0 3-1.3 3-3v-2c0-1.7-1.3-3-3-3h-6zm0 13v8h7.5c1.9 0 3.5-1.6 3.5-3.5v-1c0-1.9-1.6-3.5-3.5-3.5H28z" fill="#FFFFFF"/>
-        </svg>
+        <img src="/logo.svg" alt="BossBoard" width={32} height={32} className="h-8 w-8" style={{ userSelect: "none" }} draggable={false} onContextMenu={(e) => e.preventDefault()} />
         <span className="text-lg font-bold">BossBoard</span>
       </div>
 

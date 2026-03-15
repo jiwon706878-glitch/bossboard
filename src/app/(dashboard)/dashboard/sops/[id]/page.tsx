@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Edit, Trash2, Clock, Tag, FileText, CheckSquare, Loader2, Eye, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Clock, Tag, FileText, CheckSquare, Loader2, Eye, ShieldCheck, Printer, LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
@@ -310,6 +310,23 @@ export default function SOPDetailPage() {
               Create Checklist
             </Button>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.print()}
+          >
+            <Printer className="mr-1 h-4 w-4" /> Print / PDF
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.href);
+              toast.success("Link copied!");
+            }}
+          >
+            <LinkIcon className="mr-1 h-4 w-4" /> Share
+          </Button>
           <Link href={`/dashboard/sops/${sop.id}/edit`}>
             <Button variant="outline" size="sm">
               <Edit className="mr-1 h-4 w-4" /> Edit

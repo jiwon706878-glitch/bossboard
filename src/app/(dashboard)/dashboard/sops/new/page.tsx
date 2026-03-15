@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, Loader2, Save, ArrowLeft, Upload, FileUp } from "lucide-react";
+import { Sparkles, Loader2, Save, ArrowLeft, Upload, FileUp, ExternalLink, Send } from "lucide-react";
 import { toast } from "sonner";
 import type { JSONContent } from "@tiptap/react";
 import Link from "next/link";
@@ -73,11 +73,14 @@ export default function NewSOPPage() {
   const [editorContent, setEditorContent] = useState<JSONContent | null>(null);
   const [generatedText, setGeneratedText] = useState("");
   const [generating, setGenerating] = useState(false);
-  const [saving, setSaving] = useState(false);
 
   // Upload & reformat state
   const [uploadText, setUploadText] = useState("");
   const [reformatting, setReformatting] = useState(false);
+
+  // Auto-save state
+  const [savedSopId, setSavedSopId] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
 
   const resultRef = useRef<HTMLDivElement>(null);
 
@@ -91,19 +94,57 @@ export default function NewSOPPage() {
     return data?.[0]?.id || null;
   }
 
+  function extractTitle(text: string): string {
+    const firstLine = text.split("\n").find((l: string) => l.trim());
+    if (!firstLine) return "Untitled SOP";
+    const cleaned = firstLine
+      .replace(/^\d+\.\s*/, "")
+      .replace(/^Title:\s*/i, "")
+      .trim();
+    return cleaned.length > 80 ? cleaned.substring(0, 80) : cleaned;
+  }
+
+  async function autoSaveDraft(titleText: string, content: JSONContent, text: string) {
+    const bizId = await getBusinessId();
+    if (!bizId) return;
+
+    const summary = text.substring(0, 200).replace(/\n/g, " ").trim();
+    const { data: user } = await supabase.auth.getUser();
+
+    const { data, error } = await supabase
+      .from("sops")
+      .insert({
+        business_id: bizId,
+        title: titleText.trim() || "Untitled SOP",
+        content,
+        summary: summary || null,
+        category: category || null,
+        status: "draft",
+        version: 1,
+        created_by: user.user?.id,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error("Auto-save failed:", error.message);
+      return;
+    }
+
+    setSavedSopId(data.id);
+    toast.success("SOP saved as draft. Edit and publish when ready.");
+  }
+
   function handleResult(text: string) {
     setGeneratedText(text);
     const json = textToTipTapJSON(text);
     setEditorContent(json);
 
-    const firstLine = text.split("\n").find((l: string) => l.trim());
-    if (firstLine) {
-      const cleaned = firstLine
-        .replace(/^\d+\.\s*/, "")
-        .replace(/^Title:\s*/i, "")
-        .trim();
-      setTitle(cleaned.length > 80 ? cleaned.substring(0, 80) : cleaned);
-    }
+    const titleText = extractTitle(text);
+    setTitle(titleText);
+
+    // Auto-save as draft
+    autoSaveDraft(titleText, json, text);
 
     // Auto-scroll to result
     setTimeout(() => {
@@ -150,7 +191,6 @@ export default function NewSOPPage() {
       }
 
       handleResult(text);
-      toast.success("SOP generated! Review and save below.");
     } catch (error) {
       console.error("SOP generation error:", error);
       toast.error(
@@ -273,7 +313,7 @@ export default function NewSOPPage() {
     }, 50);
   }
 
-  async function handleSave() {
+  async function handlePublish() {
     if (!title.trim()) {
       toast.error("Please enter a title");
       return;
@@ -283,44 +323,69 @@ export default function NewSOPPage() {
       return;
     }
 
-    setSaving(true);
+    setPublishing(true);
 
-    const bizId = await getBusinessId();
-    if (!bizId) {
-      toast.error("No business found. Please complete onboarding first.");
-      setSaving(false);
-      return;
+    if (savedSopId) {
+      // Update the auto-saved draft to published
+      const { error } = await supabase
+        .from("sops")
+        .update({
+          title: title.trim(),
+          content: editorContent,
+          category: category || null,
+          status: "published",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", savedSopId);
+
+      if (error) {
+        toast.error(error.message);
+        setPublishing(false);
+        return;
+      }
+
+      toast.success("SOP published!");
+      router.push(`/dashboard/sops/${savedSopId}`);
+      router.refresh();
+    } else {
+      // Manual tab — no auto-save happened, insert as published
+      const bizId = await getBusinessId();
+      if (!bizId) {
+        toast.error("No business found. Please complete onboarding first.");
+        setPublishing(false);
+        return;
+      }
+
+      let summary = "";
+      if (generatedText) {
+        summary = generatedText.substring(0, 200).replace(/\n/g, " ").trim();
+      }
+
+      const { data, error } = await supabase
+        .from("sops")
+        .insert({
+          business_id: bizId,
+          title: title.trim(),
+          content: editorContent,
+          summary: summary || null,
+          category: category || null,
+          status: "published",
+          version: 1,
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+        })
+        .select("id")
+        .single();
+
+      if (error) {
+        toast.error(error.message);
+        setPublishing(false);
+        return;
+      }
+
+      toast.success("SOP published!");
+      router.push(`/dashboard/sops/${data.id}`);
+      router.refresh();
     }
-
-    let summary = "";
-    if (generatedText) {
-      summary = generatedText.substring(0, 200).replace(/\n/g, " ").trim();
-    }
-
-    const { data, error } = await supabase
-      .from("sops")
-      .insert({
-        business_id: bizId,
-        title: title.trim(),
-        content: editorContent,
-        summary: summary || null,
-        category: category || null,
-        status: "draft",
-        version: 1,
-        created_by: (await supabase.auth.getUser()).data.user?.id,
-      })
-      .select("id")
-      .single();
-
-    if (error) {
-      toast.error(error.message);
-      setSaving(false);
-      return;
-    }
-
-    toast.success("SOP created!");
-    router.push(`/dashboard/sops/${data.id}`);
-    router.refresh();
   }
 
   const isProcessing = generating || reformatting;
@@ -465,10 +530,23 @@ export default function NewSOPPage() {
                       />
                     </Suspense>
                   </div>
-                  <Button onClick={handleSave} disabled={saving}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {saving ? "Saving..." : "Save SOP"}
-                  </Button>
+                  <div className="flex items-center gap-3">
+                    <Button onClick={handlePublish} disabled={publishing}>
+                      {publishing ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="mr-2 h-4 w-4" />
+                      )}
+                      {publishing ? "Publishing..." : "Publish SOP"}
+                    </Button>
+                    {savedSopId && (
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/dashboard/sops/${savedSopId}`}>
+                          <ExternalLink className="mr-1 h-4 w-4" /> View Draft
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -599,10 +677,23 @@ export default function NewSOPPage() {
                       />
                     </Suspense>
                   </div>
-                  <Button onClick={handleSave} disabled={saving}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {saving ? "Saving..." : "Save SOP"}
-                  </Button>
+                  <div className="flex items-center gap-3">
+                    <Button onClick={handlePublish} disabled={publishing}>
+                      {publishing ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="mr-2 h-4 w-4" />
+                      )}
+                      {publishing ? "Publishing..." : "Publish SOP"}
+                    </Button>
+                    {savedSopId && (
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/dashboard/sops/${savedSopId}`}>
+                          <ExternalLink className="mr-1 h-4 w-4" /> View Draft
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -654,9 +745,13 @@ export default function NewSOPPage() {
                   />
                 </Suspense>
               </div>
-              <Button onClick={handleSave} disabled={saving}>
-                <Save className="mr-2 h-4 w-4" />
-                {saving ? "Saving..." : "Save SOP"}
+              <Button onClick={handlePublish} disabled={publishing}>
+                {publishing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                {publishing ? "Publishing..." : "Save & Publish SOP"}
               </Button>
             </CardContent>
           </Card>

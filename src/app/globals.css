@@ -204,3 +204,53 @@
     font-weight: 600;
   }
 }
+
+@media print {
+  /* Hide everything except the SOP content */
+  aside,
+  nav,
+  header,
+  [data-slot="button"],
+  button,
+  .no-print,
+  [class*="topbar"],
+  [class*="sidebar"],
+  [class*="Toaster"] {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Make the content area full width */
+  .flex.h-screen {
+    display: block !important;
+  }
+
+  /* Ensure card borders print well */
+  [class*="Card"],
+  [class*="card"] {
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
+
+  /* Ensure prose content is readable */
+  .prose {
+    max-width: 100% !important;
+    color: black !important;
+  }
+
+  a {
+    color: black !important;
+    text-decoration: none !important;
+  }
+}

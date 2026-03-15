@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, FileText, Search, Clock, Folder, ChevronRight, Pin, StickyNote, ScrollText } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface SOP {
   id: string;
@@ -51,6 +52,11 @@ function SOPCard({ sop, router }: { sop: SOP; router: ReturnType<typeof useRoute
   return (
     <Card
       className="cursor-pointer border bg-card transition-colors duration-150 hover:bg-muted/50"
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData("text/plain", sop.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
       onClick={() => router.push(`/dashboard/sops/${sop.id}`)}
     >
       <CardContent className="flex items-center justify-between py-4">
@@ -113,6 +119,7 @@ export default function SOPsPage() {
   const [docTypeFilter, setDocTypeFilter] = useState("all");
   const [tagFilter, setTagFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
 
   const supabase = createClient();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
@@ -205,6 +212,26 @@ export default function SOPsPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  async function handleDropOnFolder(folderId: string, e: React.DragEvent) {
+    e.preventDefault();
+    setDragOverFolder(null);
+    const sopId = e.dataTransfer.getData("text/plain");
+    if (!sopId) return;
+
+    const { error } = await supabase
+      .from("sops")
+      .update({ folder_id: folderId })
+      .eq("id", sopId);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success("SOP moved to folder");
+    fetchData();
+  }
 
   // Get subfolders of current folder
   const subfolders = folderId && folderId !== "unfiled"
@@ -385,7 +412,15 @@ export default function SOPsPage() {
               key={sf.id}
               type="button"
               onClick={() => router.push(`/dashboard/sops?folder=${sf.id}`)}
-              className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors duration-150 hover:bg-muted/50 border-border text-foreground"
+              onDragOver={(e) => { e.preventDefault(); setDragOverFolder(sf.id); }}
+              onDragLeave={() => setDragOverFolder(null)}
+              onDrop={(e) => handleDropOnFolder(sf.id, e)}
+              className={cn(
+                "flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-all duration-150 border-border text-foreground",
+                dragOverFolder === sf.id
+                  ? "border-primary bg-primary/10 scale-105"
+                  : "hover:bg-muted/50"
+              )}
             >
               <Folder className="h-4 w-4 text-muted-foreground" />
               {sf.name}

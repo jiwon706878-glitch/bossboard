@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { FolderTree } from "@/components/sops/folder-tree";
+import { QuickNoteSidebarButton } from "@/components/dashboard/quick-note";
 
 const navLinks = [
   { key: "dashboard", href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -177,6 +178,11 @@ export function DashboardSidebar({ className }: { className?: string }) {
             <Suspense fallback={null}>
               <FolderTree />
             </Suspense>
+          </div>
+
+          {/* Quick Note */}
+          <div className="py-1">
+            <QuickNoteSidebarButton />
           </div>
 
           {/* Other nav links */}

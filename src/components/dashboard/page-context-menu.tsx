@@ -80,6 +80,11 @@ export function PageContextMenu() {
         return; // Let browser show native copy/paste menu
       }
 
+      // Skip if a child element has its own context menu (SOP rows, folders, etc.)
+      if (target.closest("[data-has-context-menu]")) {
+        return;
+      }
+
       e.preventDefault();
       setMenu({ x: e.clientX, y: e.clientY });
     }

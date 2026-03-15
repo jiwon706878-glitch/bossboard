@@ -442,6 +442,7 @@ function SopRow({
 }) {
   return (
     <div
+      data-has-context-menu
       className={cn(
         "group flex h-9 cursor-default items-center gap-1.5 border-b border-border/30 px-4 text-sm transition-colors duration-75",
         isSelected ? "bg-primary/5 border-l-2 border-l-primary" : "hover:bg-muted/30"

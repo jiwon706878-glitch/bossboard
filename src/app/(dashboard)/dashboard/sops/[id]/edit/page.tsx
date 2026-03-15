@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
+import { TagInput } from "@/components/sops/tag-input";
 import type { JSONContent } from "@tiptap/react";
 
 const SOPEditor = dynamic(
@@ -48,6 +49,8 @@ export default function EditSOPPage() {
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("draft");
   const [folderId, setFolderId] = useState("");
+  const [docType, setDocType] = useState("sop");
+  const [tags, setTags] = useState<string[]>([]);
   const [availableFolders, setAvailableFolders] = useState<{ id: string; name: string }[]>([]);
   const [editorContent, setEditorContent] = useState<JSONContent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,6 +79,8 @@ export default function EditSOPPage() {
       setCategory(data.category || "");
       setStatus(data.status || "draft");
       setFolderId(data.folder_id || "");
+      setDocType(data.doc_type || "sop");
+      setTags(data.tags || []);
       setEditorContent(data.content || null);
 
       // Load folders for this business
@@ -107,6 +112,8 @@ export default function EditSOPPage() {
         content: editorContent,
         category: category && category !== "none" ? category : null,
         folder_id: folderId && folderId !== "none" ? folderId : null,
+        doc_type: docType,
+        tags: tags.length > 0 ? tags : [],
         status,
         updated_at: new Date().toISOString(),
       })
@@ -210,6 +217,11 @@ export default function EditSOPPage() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-foreground">Tags</Label>
+            <TagInput tags={tags} onChange={setTags} />
           </div>
 
           <div className="space-y-2">

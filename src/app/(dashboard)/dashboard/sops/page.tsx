@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, FileText, Search, Clock, Folder, ChevronRight } from "lucide-react";
+import { Plus, FileText, Search, Clock, Folder, ChevronRight, Pin, StickyNote, ScrollText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SOP {
@@ -27,6 +27,9 @@ interface SOP {
   status: string;
   version: number;
   folder_id: string | null;
+  doc_type: string;
+  tags: string[];
+  pinned: boolean;
   created_at: string;
   updated_at: string;
   isUnread?: boolean;
@@ -44,6 +47,55 @@ const STATUS_COLORS: Record<string, string> = {
   archived: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
 };
 
+function SOPCard({ sop, router }: { sop: SOP; router: ReturnType<typeof useRouter> }) {
+  return (
+    <Card
+      className="cursor-pointer border bg-card transition-colors duration-150 hover:bg-muted/50"
+      onClick={() => router.push(`/dashboard/sops/${sop.id}`)}
+    >
+      <CardContent className="flex items-center justify-between py-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            {sop.isUnread && (
+              <span className="h-2 w-2 shrink-0 rounded-full bg-primary" title="Unread" />
+            )}
+            {sop.pinned && <Pin className="h-3 w-3 shrink-0 text-amber-400" />}
+            <h3 className="truncate font-medium">{sop.title}</h3>
+            <Badge variant="secondary" className={cn("text-xs", STATUS_COLORS[sop.status])}>
+              {sop.status}
+            </Badge>
+            {sop.doc_type && sop.doc_type !== "sop" && (
+              <Badge variant="outline" className="text-xs capitalize">{sop.doc_type}</Badge>
+            )}
+            {sop.category && (
+              <Badge variant="outline" className="text-xs">{sop.category}</Badge>
+            )}
+          </div>
+          <div className="mt-1 flex items-center gap-2">
+            {sop.summary && (
+              <p className="truncate text-sm text-muted-foreground">{sop.summary}</p>
+            )}
+          </div>
+          {sop.tags && sop.tags.length > 0 && (
+            <div className="mt-1 flex gap-1">
+              {sop.tags.slice(0, 4).map((tag) => (
+                <span key={tag} className="rounded bg-accent px-1.5 py-0 text-[10px] text-accent-foreground">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="ml-4 flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          {formatDate(sop.updated_at || sop.created_at)}
+          <span className="ml-1 font-mono text-[11px]">v{sop.version}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
   return d.toLocaleDateString("en-US", {
@@ -58,6 +110,8 @@ export default function SOPsPage() {
   const [folders, setFolders] = useState<FolderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [docTypeFilter, setDocTypeFilter] = useState("all");
+  const [tagFilter, setTagFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
   const supabase = createClient();
@@ -104,7 +158,7 @@ export default function SOPsPage() {
     // Build SOP query
     let query = supabase
       .from("sops")
-      .select("id, title, summary, category, status, version, folder_id, created_at, updated_at")
+      .select("id, title, summary, category, status, version, folder_id, doc_type, tags, pinned, created_at, updated_at")
       .eq("business_id", currentBusiness.id)
       .order("updated_at", { ascending: false });
 
@@ -159,15 +213,40 @@ export default function SOPsPage() {
       ? [] // Don't show subfolders in "all" view
       : [];
 
-  // Client-side search filter
-  const filteredSops = searchQuery
-    ? sops.filter(
-        (s) =>
-          s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          s.summary?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          s.category?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : sops;
+  // Client-side filtering
+  let filteredSops = sops;
+
+  if (docTypeFilter !== "all") {
+    filteredSops = filteredSops.filter((s) => (s.doc_type || "sop") === docTypeFilter);
+  }
+
+  if (tagFilter) {
+    filteredSops = filteredSops.filter((s) => s.tags?.includes(tagFilter));
+  }
+
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    filteredSops = filteredSops.filter(
+      (s) =>
+        s.title.toLowerCase().includes(q) ||
+        s.summary?.toLowerCase().includes(q) ||
+        s.category?.toLowerCase().includes(q) ||
+        s.tags?.some((t) => t.toLowerCase().includes(q))
+    );
+  }
+
+  // Separate pinned and unpinned
+  const pinnedSops = filteredSops.filter((s) => s.pinned);
+  const unpinnedSops = filteredSops.filter((s) => !s.pinned);
+
+  // Collect all tags for filter chips
+  const allTags: Record<string, number> = {};
+  for (const s of sops) {
+    for (const t of s.tags ?? []) {
+      allTags[t] = (allTags[t] ?? 0) + 1;
+    }
+  }
+  const popularTags = Object.entries(allTags).sort((a, b) => b[1] - a[1]).slice(0, 8);
 
   const breadcrumbs = getBreadcrumbs();
   const currentFolderName = folderId
@@ -242,6 +321,62 @@ export default function SOPsPage() {
         </Select>
       </div>
 
+      {/* Doc type tabs */}
+      <div className="flex items-center gap-2">
+        {[
+          { value: "all", label: "All" },
+          { value: "sop", label: "SOPs" },
+          { value: "note", label: "Notes" },
+          { value: "policy", label: "Policies" },
+        ].map((dt) => (
+          <button
+            key={dt.value}
+            type="button"
+            onClick={() => setDocTypeFilter(dt.value)}
+            className={cn(
+              "rounded-md px-3 py-1 text-xs font-medium transition-colors duration-100",
+              docTypeFilter === dt.value
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+            )}
+          >
+            {dt.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tag chips */}
+      {popularTags.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-muted-foreground mr-1">Tags:</span>
+          {popularTags.map(([tag, count]) => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => setTagFilter(tagFilter === tag ? "" : tag)}
+              className={cn(
+                "rounded-md px-2 py-0.5 text-[11px] transition-colors duration-100",
+                tagFilter === tag
+                  ? "bg-primary/15 text-primary"
+                  : "bg-accent text-accent-foreground hover:bg-muted"
+              )}
+            >
+              #{tag}
+              <span className="ml-1 text-muted-foreground">({count})</span>
+            </button>
+          ))}
+          {tagFilter && (
+            <button
+              type="button"
+              onClick={() => setTagFilter("")}
+              className="text-[11px] text-muted-foreground hover:text-foreground"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Subfolders */}
       {subfolders.length > 0 && !searchQuery && (
         <div className="flex flex-wrap gap-2">
@@ -269,7 +404,7 @@ export default function SOPsPage() {
             />
           ))}
         </div>
-      ) : filteredSops.length === 0 ? (
+      ) : pinnedSops.length === 0 && unpinnedSops.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <FileText className="mb-4 h-12 w-12 text-muted-foreground/50" />
@@ -296,47 +431,21 @@ export default function SOPsPage() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {filteredSops.map((sop) => (
-            <Card
-              key={sop.id}
-              className="cursor-pointer border bg-card transition-colors duration-150 hover:bg-muted/50"
-              onClick={() => router.push(`/dashboard/sops/${sop.id}`)}
-            >
-              <CardContent className="flex items-center justify-between py-4">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    {sop.isUnread && (
-                      <span
-                        className="h-2 w-2 shrink-0 rounded-full bg-primary"
-                        title="Unread"
-                      />
-                    )}
-                    <h3 className="truncate font-medium">{sop.title}</h3>
-                    <Badge
-                      variant="secondary"
-                      className={cn("text-xs", STATUS_COLORS[sop.status])}
-                    >
-                      {sop.status}
-                    </Badge>
-                    {sop.category && (
-                      <Badge variant="outline" className="text-xs">
-                        {sop.category}
-                      </Badge>
-                    )}
-                  </div>
-                  {sop.summary && (
-                    <p className="mt-1 truncate text-sm text-muted-foreground">
-                      {sop.summary}
-                    </p>
-                  )}
-                </div>
-                <div className="ml-4 flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
-                  <Clock className="h-3 w-3" />
-                  {formatDate(sop.updated_at || sop.created_at)}
-                  <span className="ml-1 font-mono text-[11px]">v{sop.version}</span>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Pinned SOPs */}
+          {pinnedSops.length > 0 && (
+            <>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Pin className="h-3 w-3 text-amber-400" />
+                <span>Pinned ({pinnedSops.length})</span>
+              </div>
+              {pinnedSops.map((sop) => (
+                <SOPCard key={sop.id} sop={sop} router={router} />
+              ))}
+              {unpinnedSops.length > 0 && <div className="h-2" />}
+            </>
+          )}
+          {unpinnedSops.map((sop) => (
+            <SOPCard key={sop.id} sop={sop} router={router} />
           ))}
         </div>
       )}

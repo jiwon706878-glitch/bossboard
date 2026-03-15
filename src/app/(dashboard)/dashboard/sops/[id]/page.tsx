@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Edit, Trash2, Clock, Tag, FileText, CheckSquare, Loader2, Eye, ShieldCheck, Printer, LinkIcon } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Clock, Tag, FileText, CheckSquare, Loader2, Eye, ShieldCheck, Printer, LinkIcon, Pin } from "lucide-react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
@@ -37,6 +37,9 @@ interface SOP {
   category: string | null;
   status: string;
   version: number;
+  doc_type: string;
+  tags: string[];
+  pinned: boolean;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -251,6 +254,21 @@ export default function SOPDetailPage() {
     setSigningOff(false);
   }
 
+  async function handleTogglePin() {
+    if (!sop) return;
+    const newPinned = !sop.pinned;
+    const { error } = await supabase
+      .from("sops")
+      .update({ pinned: newPinned })
+      .eq("id", sopId);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setSop({ ...sop, pinned: newPinned });
+    toast.success(newPinned ? "SOP pinned" : "SOP unpinned");
+  }
+
   if (loading) {
     return (
       <div className="mx-auto max-w-3xl space-y-4">
@@ -291,13 +309,38 @@ export default function SOPDetailPage() {
                   {sop.category}
                 </Badge>
               )}
+              {sop.doc_type && sop.doc_type !== "sop" && (
+                <Badge variant="outline" className="text-xs capitalize">
+                  {sop.doc_type}
+                </Badge>
+              )}
+              {sop.pinned && (
+                <Pin className="h-3 w-3 text-amber-400" />
+              )}
               <span className="font-mono text-xs text-muted-foreground">
                 v{sop.version}
               </span>
             </div>
+            {sop.tags && sop.tags.length > 0 && (
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {sop.tags.map((tag) => (
+                  <span key={tag} className="rounded bg-accent px-1.5 py-0.5 text-[10px] text-accent-foreground">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleTogglePin}
+          >
+            <Pin className={cn("mr-1 h-4 w-4", sop.pinned && "text-amber-400")} />
+            {sop.pinned ? "Unpin" : "Pin"}
+          </Button>
           {sop.content && (
             <Button
               variant="outline"

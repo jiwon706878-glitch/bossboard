@@ -11,6 +11,7 @@ import {
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { DashboardSidebar } from "./sidebar";
 import { BusinessSwitcher } from "./business-switcher";
+import { NotificationBell } from "./notification-bell";
 
 export function DashboardTopbar() {
   return (
@@ -30,7 +31,10 @@ export function DashboardTopbar() {
         </Sheet>
         <BusinessSwitcher />
       </div>
-      <ThemeToggle />
+      <div className="flex items-center gap-1">
+        <NotificationBell />
+        <ThemeToggle />
+      </div>
     </header>
   );
 }

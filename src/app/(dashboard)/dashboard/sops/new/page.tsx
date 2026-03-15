@@ -21,6 +21,7 @@ import { Sparkles, Loader2, Save, ArrowLeft, Upload, FileUp, ExternalLink, Send 
 import { toast } from "sonner";
 import type { JSONContent } from "@tiptap/react";
 import Link from "next/link";
+import { TagInput } from "@/components/sops/tag-input";
 
 const SOPEditor = lazy(() =>
   import("@/components/sops/sop-editor").then((m) => ({ default: m.SOPEditor }))
@@ -75,6 +76,8 @@ export default function NewSOPPage() {
   const [generating, setGenerating] = useState(false);
 
   const [folderId, setFolderId] = useState("");
+  const [docType, setDocType] = useState("sop");
+  const [tags, setTags] = useState<string[]>([]);
   const [availableFolders, setAvailableFolders] = useState<{ id: string; name: string }[]>([]);
 
   // Upload & reformat state
@@ -138,6 +141,8 @@ export default function NewSOPPage() {
         summary: summary || null,
         category: category || null,
         folder_id: folderId && folderId !== "none" ? folderId : null,
+        doc_type: docType,
+        tags: tags.length > 0 ? tags : [],
         status: "draft",
         version: 1,
         created_by: user.user?.id,
@@ -353,6 +358,8 @@ export default function NewSOPPage() {
           content: editorContent,
           category: category || null,
           folder_id: folderId && folderId !== "none" ? folderId : null,
+          doc_type: docType,
+          tags: tags.length > 0 ? tags : [],
           status: "published",
           updated_at: new Date().toISOString(),
         })
@@ -390,6 +397,8 @@ export default function NewSOPPage() {
           summary: summary || null,
           category: category || null,
           folder_id: folderId && folderId !== "none" ? folderId : null,
+          doc_type: docType,
+          tags: tags.length > 0 ? tags : [],
           status: "published",
           version: 1,
           created_by: (await supabase.auth.getUser()).data.user?.id,

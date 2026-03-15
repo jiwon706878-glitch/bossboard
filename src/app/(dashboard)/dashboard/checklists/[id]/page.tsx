@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import {
   ArrowLeft,
   Check,
@@ -11,6 +11,7 @@ import {
   Square,
   Clock,
   Loader2,
+  UserPlus,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,9 @@ import { toast } from "sonner";
 interface ChecklistItem {
   text: string;
   required: boolean;
+  assigned_to?: string | null;
+  assigned_name?: string | null;
+  status?: string; // unassigned, assigned, completed
 }
 
 interface Checklist {
@@ -57,6 +61,9 @@ export default function ChecklistDetailPage() {
   const [checked, setChecked] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserName, setCurrentUserName] = useState<string>("");
 
   const loadChecklist = useCallback(async () => {
     const { data, error } = await supabase
@@ -73,11 +80,18 @@ export default function ChecklistDetailPage() {
 
     setChecklist(data);
 
-    // Load existing completion if any
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      setCurrentUserId(user.id);
+
+      // Get user name
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .single();
+      setCurrentUserName(profile?.full_name || user.email?.split("@")[0] || "You");
+
       const { data: completion } = await supabase
         .from("checklist_completions")
         .select("items_completed")
@@ -89,9 +103,7 @@ export default function ChecklistDetailPage() {
 
       if (completion?.items_completed) {
         const indices = new Set<number>(
-          (
-            completion.items_completed as { item_index: number }[]
-          ).map((ic) => ic.item_index)
+          (completion.items_completed as { item_index: number }[]).map((ic) => ic.item_index)
         );
         setChecked(indices);
       }
@@ -104,6 +116,31 @@ export default function ChecklistDetailPage() {
     loadChecklist();
   }, [loadChecklist]);
 
+  // Realtime subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel(`checklist:${checklistId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "checklists",
+          filter: `id=eq.${checklistId}`,
+        },
+        (payload) => {
+          const updated = payload.new as Checklist;
+          setChecklist(updated);
+          setLastUpdated(new Date());
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [checklistId, supabase]);
+
   async function toggleItem(index: number) {
     if (!checklist || checklist.status === "completed") return;
 
@@ -115,7 +152,6 @@ export default function ChecklistDetailPage() {
     }
     setChecked(next);
 
-    // Update status based on progress
     const totalItems = checklist.items.length;
     let newStatus = checklist.status;
     if (next.size === 0) {
@@ -133,13 +169,36 @@ export default function ChecklistDetailPage() {
     }
   }
 
+  async function assignToMe(index: number) {
+    if (!checklist || !currentUserId) return;
+
+    const updatedItems = [...checklist.items];
+    updatedItems[index] = {
+      ...updatedItems[index],
+      assigned_to: currentUserId,
+      assigned_name: currentUserName,
+      status: "assigned",
+    };
+
+    const { error } = await supabase
+      .from("checklists")
+      .update({ items: updatedItems, updated_at: new Date().toISOString() })
+      .eq("id", checklistId);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    setChecklist({ ...checklist, items: updatedItems });
+    toast.success("Assigned to you");
+  }
+
   async function handleComplete() {
     if (!checklist) return;
     setSaving(true);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast.error("Not authenticated");
       setSaving(false);
@@ -151,7 +210,6 @@ export default function ChecklistDetailPage() {
       completed_at: new Date().toISOString(),
     }));
 
-    // Save completion record
     const { error: completionError } = await supabase
       .from("checklist_completions")
       .insert({
@@ -167,13 +225,9 @@ export default function ChecklistDetailPage() {
       return;
     }
 
-    // Update checklist status
     const { error: updateError } = await supabase
       .from("checklists")
-      .update({
-        status: "completed",
-        updated_at: new Date().toISOString(),
-      })
+      .update({ status: "completed", updated_at: new Date().toISOString() })
       .eq("id", checklistId);
 
     if (updateError) {
@@ -214,14 +268,9 @@ export default function ChecklistDetailPage() {
           </Button>
         </Link>
         <div className="min-w-0 flex-1">
-          <h1 className="text-3xl font-bold text-foreground">
-            {checklist.title}
-          </h1>
+          <h1 className="text-3xl font-bold text-foreground">{checklist.title}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Badge
-              variant="secondary"
-              className={cn("text-xs", STATUS_COLORS[checklist.status])}
-            >
+            <Badge variant="secondary" className={cn("text-xs", STATUS_COLORS[checklist.status])}>
               {STATUS_LABELS[checklist.status] ?? checklist.status}
             </Badge>
             {checklist.due_date && (
@@ -238,6 +287,11 @@ export default function ChecklistDetailPage() {
                 View source SOP
               </Link>
             )}
+            {lastUpdated && (
+              <span className="text-[10px] text-muted-foreground">
+                Updated {formatDistanceToNow(lastUpdated, { addSuffix: true })}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -246,9 +300,7 @@ export default function ChecklistDetailPage() {
       <div>
         <div className="mb-1 flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Progress</span>
-          <span className="font-mono text-sm font-semibold">
-            {checkedCount}/{totalItems}
-          </span>
+          <span className="font-mono text-sm font-semibold">{checkedCount}/{totalItems}</span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
           <div
@@ -269,38 +321,55 @@ export default function ChecklistDetailPage() {
         <CardContent className="space-y-1">
           {(checklist.items ?? []).map((item, index) => {
             const isChecked = checked.has(index) || isCompleted;
+            const isAssignedToMe = item.assigned_to === currentUserId;
+            const isAssigned = !!item.assigned_to;
+
             return (
-              <button
+              <div
                 key={index}
-                type="button"
-                disabled={isCompleted}
-                onClick={() => toggleItem(index)}
                 className={cn(
-                  "flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left transition-colors duration-150",
-                  isCompleted
-                    ? "cursor-default opacity-75"
-                    : "hover:bg-muted/50",
-                  isChecked && !isCompleted && "opacity-60"
+                  "flex items-start gap-3 rounded-md px-3 py-2.5 transition-colors duration-150",
+                  isCompleted ? "opacity-75" : "hover:bg-muted/50"
                 )}
               >
-                <div className="mt-0.5 shrink-0">
+                {/* Checkbox */}
+                <button
+                  type="button"
+                  disabled={isCompleted}
+                  onClick={() => toggleItem(index)}
+                  className="mt-0.5 shrink-0"
+                >
                   {isChecked ? (
-                    <CheckSquare
-                      className="h-4 w-4 text-emerald-400"
-                    />
+                    <CheckSquare className="h-4 w-4 text-emerald-400" />
                   ) : (
                     <Square className="h-4 w-4 text-muted-foreground" />
                   )}
-                </div>
-                <span
-                  className={cn(
-                    "text-sm",
-                    isChecked && "line-through text-muted-foreground"
+                </button>
+
+                {/* Text + assignment info */}
+                <div className="min-w-0 flex-1">
+                  <span className={cn("text-sm", isChecked && "line-through text-muted-foreground")}>
+                    {item.text}
+                  </span>
+                  {isAssigned && (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      ({item.assigned_name ?? "Assigned"}{item.status === "assigned" ? " - in progress" : ""})
+                    </span>
                   )}
-                >
-                  {item.text}
-                </span>
-              </button>
+                </div>
+
+                {/* Assign to me button */}
+                {!isCompleted && !isAssigned && !isChecked && (
+                  <button
+                    type="button"
+                    onClick={() => assignToMe(index)}
+                    className="flex shrink-0 items-center gap-1 rounded px-2 py-0.5 text-[10px] text-muted-foreground transition-colors duration-100 hover:bg-muted hover:text-foreground"
+                    title="Assign to me"
+                  >
+                    <UserPlus className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
             );
           })}
         </CardContent>
@@ -309,22 +378,12 @@ export default function ChecklistDetailPage() {
       {/* Complete button */}
       {!isCompleted && (
         <div className="flex items-center gap-3">
-          <Button
-            onClick={handleComplete}
-            disabled={!allChecked || saving}
-            className="gap-2"
-          >
-            {saving ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Check className="h-4 w-4" />
-            )}
+          <Button onClick={handleComplete} disabled={!allChecked || saving} className="gap-2">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             {saving ? "Saving..." : "Mark as Completed"}
           </Button>
           {!allChecked && (
-            <p className="text-xs text-muted-foreground">
-              Check all items to complete
-            </p>
+            <p className="text-xs text-muted-foreground">Check all items to complete</p>
           )}
         </div>
       )}

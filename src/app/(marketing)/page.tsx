@@ -135,7 +135,7 @@ export default function HomePage() {
                   style={{
                     width: "50px",
                     backgroundColor: "var(--background)",
-                    borderRight: "1px solid #2A3050",
+                    borderRight: "1px solid var(--border)",
                     padding: "14px 10px",
                     display: "flex",
                     flexDirection: "column",
@@ -144,44 +144,44 @@ export default function HomePage() {
                   }}
                 >
                   <div style={{ width: "22px", height: "22px", borderRadius: "4px", backgroundColor: "#4F8BFF", marginBottom: "8px", opacity: 0.8 }} />
-                  <div style={{ width: "30px", height: "6px", borderRadius: "3px", backgroundColor: "#4F8BFF", opacity: 0.7 }} />
-                  <div style={{ width: "30px", height: "6px", borderRadius: "3px", backgroundColor: "#2A3050" }} />
-                  <div style={{ width: "30px", height: "6px", borderRadius: "3px", backgroundColor: "#2A3050" }} />
-                  <div style={{ width: "30px", height: "6px", borderRadius: "3px", backgroundColor: "#2A3050" }} />
+                  <div style={{ width: "30px", height: "6px", borderRadius: "3px", backgroundColor: "var(--primary)", opacity: 0.7 }} />
+                  <div style={{ width: "30px", height: "6px", borderRadius: "3px", backgroundColor: "var(--border)" }} />
+                  <div style={{ width: "30px", height: "6px", borderRadius: "3px", backgroundColor: "var(--border)" }} />
+                  <div style={{ width: "30px", height: "6px", borderRadius: "3px", backgroundColor: "var(--border)" }} />
                 </div>
                 {/* Main */}
                 <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                  <div style={{ height: "28px", backgroundColor: "var(--background)", borderBottom: "1px solid #2A3050", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px" }}>
-                    <div style={{ width: "60px", height: "5px", borderRadius: "2px", backgroundColor: "#2A3050" }} />
+                  <div style={{ height: "28px", backgroundColor: "var(--background)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px" }}>
+                    <div style={{ width: "60px", height: "5px", borderRadius: "2px", backgroundColor: "var(--border)" }} />
                     <div style={{ display: "flex", gap: "6px" }}>
-                      <div style={{ width: "14px", height: "5px", borderRadius: "2px", backgroundColor: "#2A3050" }} />
+                      <div style={{ width: "14px", height: "5px", borderRadius: "2px", backgroundColor: "var(--border)" }} />
                       <div style={{ width: "14px", height: "14px", borderRadius: "50%", backgroundColor: "var(--muted)", border: "1px solid var(--border)" }} />
                     </div>
                   </div>
                   <div style={{ padding: "16px 18px", flex: 1 }}>
-                    <div style={{ width: "55%", height: "8px", borderRadius: "4px", backgroundColor: "#2A3050", marginBottom: "4px" }} />
+                    <div style={{ width: "55%", height: "8px", borderRadius: "4px", backgroundColor: "var(--border)", marginBottom: "4px" }} />
                     <div style={{ width: "30%", height: "5px", borderRadius: "2px", backgroundColor: "var(--muted)", marginBottom: "16px" }} />
                     <div style={{ display: "flex", gap: "10px", marginBottom: "14px" }}>
                       <div style={{ flex: 1.4, backgroundColor: "var(--muted)", border: "1px solid var(--border)", borderRadius: "6px", padding: "12px" }}>
-                        <div style={{ width: "40%", height: "4px", borderRadius: "2px", backgroundColor: "#2A3050", marginBottom: "8px" }} />
+                        <div style={{ width: "40%", height: "4px", borderRadius: "2px", backgroundColor: "var(--border)", marginBottom: "8px" }} />
                         <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "18px", fontWeight: 600, color: "var(--foreground)", lineHeight: 1 }}>24</div>
-                        <div style={{ width: "50%", height: "3px", borderRadius: "2px", backgroundColor: "#2A3050", marginTop: "6px" }} />
+                        <div style={{ width: "50%", height: "3px", borderRadius: "2px", backgroundColor: "var(--border)", marginTop: "6px" }} />
                       </div>
                       <div style={{ flex: 1, backgroundColor: "var(--muted)", border: "1px solid var(--border)", borderRadius: "6px", padding: "12px" }}>
-                        <div style={{ width: "50%", height: "4px", borderRadius: "2px", backgroundColor: "#2A3050", marginBottom: "8px" }} />
+                        <div style={{ width: "50%", height: "4px", borderRadius: "2px", backgroundColor: "var(--border)", marginBottom: "8px" }} />
                         <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "18px", fontWeight: 600, color: "#34D399", lineHeight: 1 }}>89%</div>
-                        <div style={{ width: "60%", height: "3px", borderRadius: "2px", backgroundColor: "#2A3050", marginTop: "6px" }} />
+                        <div style={{ width: "60%", height: "3px", borderRadius: "2px", backgroundColor: "var(--border)", marginTop: "6px" }} />
                       </div>
                       <div style={{ flex: 0.8, backgroundColor: "var(--muted)", border: "1px solid var(--border)", borderRadius: "6px", padding: "12px" }}>
-                        <div style={{ width: "55%", height: "4px", borderRadius: "2px", backgroundColor: "#2A3050", marginBottom: "8px" }} />
+                        <div style={{ width: "55%", height: "4px", borderRadius: "2px", backgroundColor: "var(--border)", marginBottom: "8px" }} />
                         <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "18px", fontWeight: 600, color: "#4F8BFF", lineHeight: 1 }}>7</div>
-                        <div style={{ width: "45%", height: "3px", borderRadius: "2px", backgroundColor: "#2A3050", marginTop: "6px" }} />
+                        <div style={{ width: "45%", height: "3px", borderRadius: "2px", backgroundColor: "var(--border)", marginTop: "6px" }} />
                       </div>
                     </div>
                     <div style={{ backgroundColor: "var(--muted)", border: "1px solid var(--border)", borderLeft: "3px solid #FBBF24", borderRadius: "6px", padding: "12px 14px", marginBottom: "14px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
                         <div style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#FBBF24" }} />
-                        <div style={{ width: "35%", height: "5px", borderRadius: "2px", backgroundColor: "#2A3050" }} />
+                        <div style={{ width: "35%", height: "5px", borderRadius: "2px", backgroundColor: "var(--border)" }} />
                       </div>
                       <div style={{ width: "90%", height: "4px", borderRadius: "2px", backgroundColor: "var(--accent)", marginBottom: "5px" }} />
                       <div style={{ width: "70%", height: "4px", borderRadius: "2px", backgroundColor: "var(--accent)" }} />

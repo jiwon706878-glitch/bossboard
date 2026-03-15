@@ -390,18 +390,6 @@ export default function SettingsPage() {
           </form>
         </CardContent>
       </Card>
-
-      {/* Team link */}
-      <Card>
-        <CardContent className="py-4">
-          <p className="text-sm text-muted-foreground">
-            Team management has moved to the{" "}
-            <a href="/dashboard/team" className="text-primary hover:underline">
-              Team page
-            </a>.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 }

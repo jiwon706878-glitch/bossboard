@@ -183,6 +183,7 @@ export default function SOPsPage() {
   const [docTypeFilter, setDocTypeFilter] = useState("all");
   const [tagFilter, setTagFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("updated");
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
 
   const supabase = createClient();
@@ -348,9 +349,19 @@ export default function SOPsPage() {
     );
   }
 
+  // Sort
+  const sortedSops = [...filteredSops].sort((a, b) => {
+    switch (sortBy) {
+      case "title": return a.title.localeCompare(b.title);
+      case "created": return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      case "status": return a.status.localeCompare(b.status);
+      default: return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    }
+  });
+
   // Separate pinned and unpinned
-  const pinnedSops = filteredSops.filter((s) => s.pinned);
-  const unpinnedSops = filteredSops.filter((s) => !s.pinned);
+  const pinnedSops = sortedSops.filter((s) => s.pinned);
+  const unpinnedSops = sortedSops.filter((s) => !s.pinned);
 
   // Collect all tags for filter chips
   const allTags: Record<string, number> = {};
@@ -430,6 +441,17 @@ export default function SOPsPage() {
             <SelectItem value="draft">Draft</SelectItem>
             <SelectItem value="published">Published</SelectItem>
             <SelectItem value="archived">Archived</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="updated">Last Updated</SelectItem>
+            <SelectItem value="title">Title A-Z</SelectItem>
+            <SelectItem value="created">Created Date</SelectItem>
+            <SelectItem value="status">Status</SelectItem>
           </SelectContent>
         </Select>
       </div>

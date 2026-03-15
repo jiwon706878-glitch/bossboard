@@ -2,20 +2,24 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { format, formatDistanceToNow } from "date-fns";
+import { useRouter } from "next/navigation";
+import { format, formatDistanceToNow, isToday, isPast, differenceInDays } from "date-fns";
 import {
   FileText,
   Users,
   Zap,
   Lightbulb,
   Plus,
-  UserPlus,
   Clock,
   CheckCircle2,
-  FilePlus2,
-  Sparkles,
   CheckSquare,
   AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+  Send,
+  Trash2,
+  PenLine,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
@@ -23,85 +27,87 @@ import { plans, type PlanId } from "@/config/plans";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
-interface SopRow {
+interface ChecklistRow {
   id: string;
   title: string;
   status: string;
+  due_date: string | null;
+  items: { text: string }[];
+  assigned_to: string | null;
+}
+
+interface NoteRow {
+  id: string;
+  title: string;
+  summary: string | null;
   created_at: string;
-  updated_at: string;
 }
 
 interface ActivityItem {
   id: string;
   text: string;
   time: string;
-  icon: "created" | "updated";
+  icon: "checklist" | "sop" | "note" | "read";
+  link?: string;
 }
 
 export default function DashboardPage() {
   const supabase = createClient();
   const { currentBusiness } = useBusinessStore();
+  const router = useRouter();
 
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Stats
+  // Data
+  const [overdueChecklists, setOverdueChecklists] = useState<ChecklistRow[]>([]);
+  const [todayChecklists, setTodayChecklists] = useState<ChecklistRow[]>([]);
+  const [todayNotes, setTodayNotes] = useState<NoteRow[]>([]);
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [quickNote, setQuickNote] = useState("");
+  const [addingNote, setAddingNote] = useState(false);
+
+  // Stats (collapsed section)
+  const [statsOpen, setStatsOpen] = useState(false);
   const [totalSops, setTotalSops] = useState(0);
   const [draftSops, setDraftSops] = useState(0);
   const [publishedSops, setPublishedSops] = useState(0);
   const [teamCount, setTeamCount] = useState(0);
-  const [pendingInvites, setPendingInvites] = useState(0);
   const [creditsUsed, setCreditsUsed] = useState(0);
   const [creditsLimit, setCreditsLimit] = useState(30);
   const [unlimitedCredits, setUnlimitedCredits] = useState(false);
-  const [checklistsDueToday, setChecklistsDueToday] = useState(0);
-  const [checklistsOverdue, setChecklistsOverdue] = useState(0);
-  const [unreadSops, setUnreadSops] = useState(0);
 
-  // Activity
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
-
-  // Greeting
   const hour = new Date().getHours();
-  const greeting =
-    hour < 12
-      ? "Good morning"
-      : hour < 18
-        ? "Good afternoon"
-        : "Good evening";
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const todayFormatted = format(new Date(), "EEEE, MMMM d, yyyy");
+  const todayStr = format(new Date(), "yyyy-MM-dd");
 
   useEffect(() => {
     async function loadDashboard() {
       setLoading(true);
       try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+        const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        // Get profile for name and plan
+        // Profile
         const { data: profile } = await supabase
           .from("profiles")
           .select("full_name, plan_id")
           .eq("id", user.id)
           .single();
 
-        const name =
-          profile?.full_name || user.email?.split("@")[0] || "User";
-        setUserName(name);
+        setUserName(profile?.full_name || user.email?.split("@")[0] || "User");
 
         const planId = (profile?.plan_id as PlanId) ?? "free";
         const plan = plans[planId];
         const limit = plan.limits.aiCredits;
-        if (limit === -1) {
-          setUnlimitedCredits(true);
-        } else {
-          setCreditsLimit(limit);
-        }
+        if (limit === -1) setUnlimitedCredits(true);
+        else setCreditsLimit(limit);
 
-        // Get monthly AI usage
+        // AI usage
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const { data: usage } = await supabase
@@ -109,15 +115,47 @@ export default function DashboardPage() {
           .select("credits_used")
           .eq("user_id", user.id)
           .gte("created_at", startOfMonth.toISOString());
-
-        const totalUsed =
-          usage?.reduce((sum, row) => sum + row.credits_used, 0) ?? 0;
-        setCreditsUsed(totalUsed);
+        setCreditsUsed(usage?.reduce((sum, r) => sum + r.credits_used, 0) ?? 0);
 
         const businessId = currentBusiness?.id;
         if (!businessId) return;
 
-        // Fetch SOPs
+        // Checklists
+        const { data: allChecklists } = await supabase
+          .from("checklists")
+          .select("id, title, status, due_date, items, assigned_to")
+          .eq("business_id", businessId)
+          .neq("status", "completed")
+          .order("due_date");
+
+        if (allChecklists) {
+          const overdue: ChecklistRow[] = [];
+          const today: ChecklistRow[] = [];
+
+          for (const cl of allChecklists) {
+            if (!cl.due_date) { today.push(cl); continue; }
+            if (cl.due_date === todayStr) today.push(cl);
+            else if (cl.due_date < todayStr) overdue.push(cl);
+          }
+
+          setOverdueChecklists(overdue);
+          setTodayChecklists(today);
+        }
+
+        // Today's notes
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        const { data: notes } = await supabase
+          .from("sops")
+          .select("id, title, summary, created_at")
+          .eq("business_id", businessId)
+          .eq("doc_type", "note")
+          .gte("created_at", startOfDay.toISOString())
+          .order("created_at", { ascending: false })
+          .limit(10);
+        setTodayNotes(notes ?? []);
+
+        // SOPs for stats
         const { data: sops } = await supabase
           .from("sops")
           .select("id, title, status, created_at, updated_at")
@@ -129,78 +167,36 @@ export default function DashboardPage() {
           setDraftSops(sops.filter((s) => s.status === "draft").length);
           setPublishedSops(sops.filter((s) => s.status === "published").length);
 
-          // Build activity feed from recent SOPs
+          // Build activity from recent SOPs + completions
+          const activityItems: ActivityItem[] = [];
+
+          // Recent SOP activity
           const recentSops = sops.slice(0, 5);
-          const activityItems: ActivityItem[] = recentSops.map((sop) => {
-            const isNew =
-              new Date(sop.created_at).getTime() ===
-              new Date(sop.updated_at).getTime();
-            return {
+          for (const sop of recentSops) {
+            const isNew = new Date(sop.created_at).getTime() === new Date(sop.updated_at).getTime();
+            activityItems.push({
               id: sop.id,
-              text: isNew
-                ? `Created SOP: "${sop.title}"`
-                : `Updated SOP: "${sop.title}"`,
-              time: formatDistanceToNow(new Date(sop.updated_at), {
-                addSuffix: true,
-              }),
-              icon: isNew ? "created" : "updated",
-            };
-          });
-          setActivities(activityItems);
+              text: isNew ? `Created: "${sop.title}"` : `Updated: "${sop.title}"`,
+              time: formatDistanceToNow(new Date(sop.updated_at), { addSuffix: true }),
+              icon: isNew ? "note" : "sop",
+              link: `/dashboard/sops/${sop.id}`,
+            });
+          }
+          setActivity(activityItems.slice(0, 10));
         }
 
-        // Fetch team count
+        // Team count
         const { data: invites } = await supabase
           .from("invites")
           .select("id, accepted")
           .eq("workspace_id", businessId);
-
         if (invites) {
-          const accepted = invites.filter((i) => i.accepted).length;
-          const pending = invites.filter((i) => !i.accepted).length;
-          setTeamCount(accepted + 1); // +1 for owner
-          setPendingInvites(pending);
+          setTeamCount(invites.filter((i) => i.accepted).length + 1);
         } else {
           setTeamCount(1);
         }
-
-        // Fetch active checklists for due today / overdue counts
-        const { data: activeChecklists } = await supabase
-          .from("checklists")
-          .select("id, due_date, status")
-          .eq("business_id", businessId)
-          .neq("status", "completed");
-
-        if (activeChecklists) {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const todayStr = today.toISOString().split("T")[0];
-
-          let dueToday = 0;
-          let overdue = 0;
-          for (const cl of activeChecklists) {
-            if (!cl.due_date) continue;
-            if (cl.due_date === todayStr) dueToday++;
-            else if (cl.due_date < todayStr) overdue++;
-          }
-          setChecklistsDueToday(dueToday);
-          setChecklistsOverdue(overdue);
-        }
-
-        // Count unread SOPs for current user
-        if (sops && sops.length > 0) {
-          const sopIds = sops.map((s) => s.id);
-          const { data: myReads } = await supabase
-            .from("sop_reads")
-            .select("sop_id")
-            .eq("user_id", user.id)
-            .in("sop_id", sopIds);
-
-          const readIds = new Set((myReads ?? []).map((r) => r.sop_id));
-          setUnreadSops(sopIds.filter((id) => !readIds.has(id)).length);
-        }
       } catch {
-        // Silently handle errors — dashboard will show zeros
+        // Dashboard will show zeros
       } finally {
         setLoading(false);
       }
@@ -209,324 +205,292 @@ export default function DashboardPage() {
     loadDashboard();
   }, [supabase, currentBusiness?.id]);
 
-  const creditsPercent = unlimitedCredits
-    ? 0
-    : Math.min(100, Math.round((creditsUsed / creditsLimit) * 100));
+  async function handleQuickNote() {
+    if (!quickNote.trim() || !currentBusiness?.id) return;
+    setAddingNote(true);
 
-  // Generate insight text based on data
-  const insights: string[] = [];
-  if (totalSops > 0) {
-    insights.push(
-      `You have ${totalSops} SOPs. ${draftSops > 0 ? `${draftSops} are still in draft.` : 'All SOPs are published.'}`
-    );
-  } else {
-    insights.push(
-      "No SOPs yet. Create your first SOP to start organizing your team's operations."
-    );
-  }
-  if (!unlimitedCredits) {
-    const remaining = creditsLimit - creditsUsed;
-    if (remaining > creditsLimit * 0.5) {
-      insights.push(
-        `You have ${remaining} AI credits remaining. Plenty of room to keep generating.`
-      );
-    } else if (remaining > 0) {
-      insights.push(
-        `You have ${remaining} AI credits remaining. Keep an eye on your usage this month.`
-      );
-    } else {
-      insights.push(
-        "You've used all your AI credits this month. Consider upgrading your plan."
-      );
+    const { data: { user } } = await supabase.auth.getUser();
+    const content = {
+      type: "doc",
+      content: [{ type: "paragraph", content: [{ type: "text", text: quickNote.trim() }] }],
+    };
+
+    const { data, error } = await supabase
+      .from("sops")
+      .insert({
+        business_id: currentBusiness.id,
+        title: `Note - ${format(new Date(), "MMM d, h:mm a")}`,
+        content,
+        summary: quickNote.trim().substring(0, 200),
+        doc_type: "note",
+        status: "published",
+        version: 1,
+        created_by: user?.id,
+      })
+      .select("id, title, summary, created_at")
+      .single();
+
+    if (error) {
+      toast.error(error.message);
+    } else if (data) {
+      setTodayNotes((prev) => [data, ...prev]);
+      setQuickNote("");
+      toast.success("Note added");
     }
+    setAddingNote(false);
   }
+
+  async function handleDeleteNote(noteId: string) {
+    await supabase.from("sops").delete().eq("id", noteId);
+    setTodayNotes((prev) => prev.filter((n) => n.id !== noteId));
+  }
+
+  const summaryParts: string[] = [];
+  if (todayChecklists.length > 0) summaryParts.push(`${todayChecklists.length} checklist${todayChecklists.length > 1 ? "s" : ""} today`);
+  if (overdueChecklists.length > 0) summaryParts.push(`${overdueChecklists.length} overdue`);
+  if (todayNotes.length > 0) summaryParts.push(`${todayNotes.length} note${todayNotes.length > 1 ? "s" : ""}`);
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-[1080px] space-y-8">
-        {/* Skeleton greeting */}
+      <div className="mx-auto max-w-[1080px] space-y-6">
         <div className="space-y-2">
           <div className="h-7 w-64 animate-pulse rounded-md bg-muted" />
           <div className="h-5 w-48 animate-pulse rounded-md bg-muted" />
         </div>
-        {/* Skeleton stat cards */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-          <div className="col-span-2 h-32 animate-pulse rounded-md border bg-card" />
-          <div className="h-32 animate-pulse rounded-md border bg-card" />
-          <div className="h-32 animate-pulse rounded-md border bg-card" />
-        </div>
-        {/* Skeleton insights */}
-        <div className="h-28 animate-pulse rounded-md border bg-card" />
-        {/* Skeleton activity */}
+        <div className="h-32 animate-pulse rounded-md border bg-card" />
         <div className="h-48 animate-pulse rounded-md border bg-card" />
+        <div className="h-32 animate-pulse rounded-md border bg-card" />
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-[1080px] space-y-8">
-      {/* Greeting Section */}
+    <div className="mx-auto max-w-[1080px] space-y-6">
+      {/* Greeting */}
       <div className="space-y-1">
-        <h2
-          className="text-2xl font-semibold tracking-tight text-foreground"
-        >
+        <h2 className="text-2xl font-semibold tracking-tight text-foreground">
           {greeting}, {userName}
         </h2>
-        <p
-          className="text-sm text-muted-foreground"
-        >
-          {todayFormatted}
-        </p>
+        <p className="text-sm text-muted-foreground">{todayFormatted}</p>
+        {summaryParts.length > 0 && (
+          <p className="text-xs text-muted-foreground">{summaryParts.join(" · ")}</p>
+        )}
       </div>
 
-      {/* Welcome Banner — shown only when user has no SOPs */}
-      {totalSops === 0 && (
-        <div
-          className="rounded-md border border-l-[3px] border-l-primary border-border bg-card p-6"
-        >
-          <h3 className="text-lg font-semibold text-foreground">
-            Welcome to BossBoard!
-          </h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Create your first AI-generated SOP in 30 seconds. Just describe a topic
-            and the AI handles the rest.
-          </p>
-          <Button asChild className="mt-4 gap-2">
-            <Link href="/dashboard/sops/new">
-              <Sparkles className="h-4 w-4" />
-              Create Your First SOP
-            </Link>
-          </Button>
-        </div>
-      )}
-
-      {/* Stat Cards — mixed sizes */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        {/* SOP Stats — wider card (col-span-2) */}
-        <Card className="col-span-1 gap-4 rounded-md shadow-none md:col-span-2">
-          <CardHeader className="flex flex-row items-center gap-2 pb-0">
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-md bg-accent"
-            >
-              <FileText className="h-4 w-4 text-primary" />
-            </div>
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              SOP Overview
+      {/* SECTION 1: Overdue */}
+      {overdueChecklists.length > 0 && (
+        <Card className="rounded-md border-l-[3px] border-l-destructive shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm font-medium">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              Overdue ({overdueChecklists.length})
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline gap-6">
-              <div>
-                <span className="font-mono text-3xl font-bold">{totalSops}</span>
-                <span className="ml-1.5 text-xs text-muted-foreground">total</span>
-              </div>
-              <div className="flex gap-4 text-sm">
-                <div>
-                  <span className="font-mono font-semibold">{publishedSops}</span>
-                  <span className="ml-1 text-muted-foreground">published</span>
-                </div>
-                <div>
-                  <span className="font-mono font-semibold">{draftSops}</span>
-                  <span className="ml-1 text-muted-foreground">drafts</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Team Stats */}
-        <Card className="gap-4 rounded-md shadow-none">
-          <CardHeader className="flex flex-row items-center gap-2 pb-0">
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-md bg-accent"
-            >
-              <Users className="h-4 w-4 text-primary" />
-            </div>
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Team
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div>
-              <span className="font-mono text-3xl font-bold">{teamCount}</span>
-              <span className="ml-1.5 text-xs text-muted-foreground">members</span>
-            </div>
-            {pendingInvites > 0 && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                {pendingInvites} pending
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* AI Credits */}
-        <Card className="gap-4 rounded-md shadow-none">
-          <CardHeader className="flex flex-row items-center gap-2 pb-0">
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-md bg-accent"
-            >
-              <Zap className="h-4 w-4 text-primary" />
-            </div>
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              AI Generations
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {unlimitedCredits ? (
-              <div>
-                <span className="font-mono text-3xl font-bold">{creditsUsed}</span>
-                <span className="ml-1.5 text-xs text-muted-foreground">used</span>
-                <p className="mt-1 text-xs text-muted-foreground">Unlimited</p>
-              </div>
-            ) : (
-              <div>
-                <div>
-                  <span className="font-mono text-3xl font-bold">{creditsUsed}</span>
-                  <span className="ml-1 text-xs text-muted-foreground">
-                    / {creditsLimit}
+          <CardContent className="space-y-2">
+            {overdueChecklists.map((cl) => {
+              const daysOverdue = cl.due_date ? differenceInDays(new Date(), new Date(cl.due_date)) : 0;
+              return (
+                <Link key={cl.id} href={`/dashboard/checklists/${cl.id}`} className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted/50 transition-colors">
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-destructive" />
+                  <span className="flex-1 text-sm">{cl.title}</span>
+                  <span className="text-xs text-destructive">
+                    {daysOverdue === 1 ? "overdue from yesterday" : `overdue ${daysOverdue} days`}
                   </span>
-                </div>
-                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className={cn(
-                      "h-full rounded-full transition-all duration-500",
-                      creditsPercent >= 90
-                        ? "bg-red-400"
-                        : creditsPercent >= 70
-                          ? "bg-amber-400"
-                          : "bg-emerald-400"
-                    )}
-                    style={{ width: `${creditsPercent}%` }}
-                  />
-                </div>
-              </div>
-            )}
+                </Link>
+              );
+            })}
           </CardContent>
         </Card>
-      </div>
-
-      {/* Alerts: Checklists & Unread SOPs */}
-      {(checklistsDueToday > 0 || checklistsOverdue > 0 || unreadSops > 0) && (
-        <div className="flex flex-wrap gap-3">
-          {unreadSops > 0 && (
-            <Link href="/dashboard/sops">
-              <div className="flex items-center gap-2 rounded-md border border-l-[3px] border-border border-l-amber-400 bg-accent px-4 py-2.5 text-sm transition-colors duration-150 hover:opacity-90">
-                <FileText className="h-4 w-4 text-amber-400" />
-                <span className="font-mono font-semibold">{unreadSops}</span>
-                <span className="text-muted-foreground">
-                  {unreadSops === 1 ? "SOP needs" : "SOPs need"} your review
-                </span>
-              </div>
-            </Link>
-          )}
-          {checklistsDueToday > 0 && (
-            <Link href="/dashboard/checklists">
-              <div className="flex items-center gap-2 rounded-md border border-l-[3px] border-border border-l-primary bg-accent px-4 py-2.5 text-sm transition-colors duration-150 hover:opacity-90">
-                <CheckSquare className="h-4 w-4 text-primary" />
-                <span className="font-mono font-semibold">{checklistsDueToday}</span>
-                <span className="text-muted-foreground">
-                  {checklistsDueToday === 1 ? "checklist" : "checklists"} due today
-                </span>
-              </div>
-            </Link>
-          )}
-          {checklistsOverdue > 0 && (
-            <Link href="/dashboard/checklists">
-              <div className="flex items-center gap-2 rounded-md border border-l-[3px] border-border border-l-destructive bg-accent px-4 py-2.5 text-sm transition-colors duration-150 hover:opacity-90">
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-                <span className="font-mono font-semibold">{checklistsOverdue}</span>
-                <span className="text-muted-foreground">overdue</span>
-              </div>
-            </Link>
-          )}
-        </div>
       )}
 
-      {/* AI Insights Card */}
-      <Card className="rounded-md border-l-[3px] border-l-amber-400 shadow-none">
-        <CardHeader className="flex flex-row items-center gap-2">
-          <Lightbulb className="h-4 w-4 text-amber-400" />
-          <CardTitle className="text-sm font-medium">AI Insights</CardTitle>
+      {/* SECTION 2: Today's Checklists */}
+      <Card className="rounded-md border-l-[3px] border-l-primary shadow-none">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm font-medium">
+            <CheckSquare className="h-4 w-4 text-primary" />
+            Today&apos;s Checklists ({todayChecklists.length})
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {insights.map((insight, i) => (
-            <p
-              key={i}
-              className="text-sm leading-relaxed text-muted-foreground"
-            >
-              {insight}
+        <CardContent>
+          {todayChecklists.length === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              No checklists due today. <Link href="/dashboard/sops" className="text-primary hover:underline">Create one from an SOP</Link>.
             </p>
-          ))}
+          ) : (
+            <div className="space-y-2">
+              {todayChecklists.map((cl) => {
+                const itemCount = cl.items?.length ?? 0;
+                const isInProgress = cl.status === "in_progress";
+                return (
+                  <Link key={cl.id} href={`/dashboard/checklists/${cl.id}`} className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted/50 transition-colors">
+                    {cl.status === "completed" ? (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                    ) : isInProgress ? (
+                      <Clock className="h-4 w-4 shrink-0 text-primary" />
+                    ) : (
+                      <CheckSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    )}
+                    <span className="flex-1 text-sm">{cl.title}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {itemCount} items · {cl.status === "pending" ? "not started" : cl.status.replace("_", " ")}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Recent Activity */}
+      {/* SECTION 3: Today's Notes & Todos */}
       <Card className="rounded-md shadow-none">
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm font-medium">
+            <PenLine className="h-4 w-4 text-muted-foreground" />
+            Today&apos;s Notes
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          {activities.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Clock
-                className="mb-3 h-8 w-8 text-muted-foreground"
-              />
-              <p className="text-sm text-muted-foreground">
-                No activity yet. Create your first SOP to get started!
-              </p>
-            </div>
+        <CardContent className="space-y-3">
+          {/* Inline add */}
+          <form
+            onSubmit={(e) => { e.preventDefault(); handleQuickNote(); }}
+            className="flex items-center gap-2"
+          >
+            <Input
+              value={quickNote}
+              onChange={(e) => setQuickNote(e.target.value)}
+              placeholder="Add a note..."
+              className="h-8 text-sm"
+            />
+            <Button type="submit" size="sm" variant="ghost" disabled={addingNote || !quickNote.trim()} className="shrink-0 h-8 w-8 p-0">
+              {addingNote ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </Button>
+          </form>
+
+          {/* Notes list */}
+          {todayNotes.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No notes today.</p>
           ) : (
-            <ul className="space-y-3">
-              {activities.map((item) => (
-                <li key={item.id} className="flex items-start gap-3">
-                  <div className="mt-0.5 flex-shrink-0">
-                    {item.icon === "created" ? (
-                      <FilePlus2
-                        className="h-4 w-4 text-emerald-400"
-                      />
+            <div className="space-y-1">
+              {todayNotes.map((note) => (
+                <div key={note.id} className="group flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/50">
+                  <Link href={`/dashboard/sops/${note.id}`} className="flex-1 text-sm truncate">
+                    {note.summary || note.title}
+                  </Link>
+                  <span className="text-[10px] text-muted-foreground shrink-0">
+                    {format(new Date(note.created_at), "h:mm a")}
+                  </span>
+                  <button
+                    type="button"
+                    className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                    onClick={() => handleDeleteNote(note.id)}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* SECTION 4: Team Activity */}
+      {activity.length > 0 && (
+        <Card className="rounded-md shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm font-medium">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {activity.map((item) => (
+                <div key={item.id} className="flex items-start gap-3">
+                  <div className="mt-0.5 shrink-0">
+                    {item.icon === "checklist" ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                    ) : item.icon === "read" ? (
+                      <FileText className="h-3.5 w-3.5 text-primary" />
                     ) : (
-                      <CheckCircle2
-                        className="h-4 w-4 text-primary"
-                      />
+                      <PenLine className="h-3.5 w-3.5 text-muted-foreground" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm">{item.text}</p>
+                    {item.link ? (
+                      <Link href={item.link} className="text-sm hover:underline truncate block">
+                        {item.text}
+                      </Link>
+                    ) : (
+                      <p className="text-sm truncate">{item.text}</p>
+                    )}
                   </div>
-                  <span
-                    className="flex-shrink-0 text-xs text-muted-foreground"
-                  >
-                    {item.time}
-                  </span>
-                </li>
+                  <span className="shrink-0 text-[10px] text-muted-foreground">{item.time}</span>
+                </div>
               ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Quick Actions */}
-      <div className="space-y-3">
-        <h3
-          className="text-sm font-medium text-muted-foreground"
+      {/* SECTION 5: Statistics (collapsed by default) */}
+      <Card className="rounded-md shadow-none">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between px-6 py-4 text-left"
+          onClick={() => setStatsOpen(!statsOpen)}
         >
-          Quick Actions
-        </h3>
-        <div className="flex flex-wrap gap-3">
-          <Button asChild variant="outline" className="gap-2 rounded-md">
-            <Link href="/dashboard/sops/new">
-              <Plus className="h-4 w-4" />
-              New SOP
-            </Link>
-          </Button>
-          <Button asChild variant="outline" className="gap-2 rounded-md">
-            <Link href="/dashboard/settings">
-              <UserPlus className="h-4 w-4" />
-              Invite Team
-            </Link>
-          </Button>
-        </div>
-      </div>
+          <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <Lightbulb className="h-4 w-4" />
+            Statistics
+          </span>
+          {statsOpen ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          )}
+        </button>
+        {statsOpen && (
+          <CardContent className="pt-0">
+            <div className="grid gap-4 md:grid-cols-3">
+              {/* SOPs */}
+              <div className="rounded-md border p-4">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                  <FileText className="h-3.5 w-3.5 text-primary" />
+                  SOP Overview
+                </div>
+                <div className="flex items-baseline gap-4">
+                  <span className="font-mono text-2xl font-bold">{totalSops}</span>
+                  <span className="text-xs text-muted-foreground">{publishedSops} published · {draftSops} drafts</span>
+                </div>
+              </div>
+
+              {/* Team */}
+              <div className="rounded-md border p-4">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                  <Users className="h-3.5 w-3.5 text-primary" />
+                  Team
+                </div>
+                <span className="font-mono text-2xl font-bold">{teamCount}</span>
+                <span className="ml-2 text-xs text-muted-foreground">members</span>
+              </div>
+
+              {/* AI Credits */}
+              <div className="rounded-md border p-4">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                  <Zap className="h-3.5 w-3.5 text-primary" />
+                  AI Generations
+                </div>
+                <span className="font-mono text-2xl font-bold">{creditsUsed}</span>
+                {!unlimitedCredits && (
+                  <span className="ml-1 text-xs text-muted-foreground">/ {creditsLimit}</span>
+                )}
+                <span className="ml-2 text-xs text-muted-foreground">this month</span>
+              </div>
+            </div>
+          </CardContent>
+        )}
+      </Card>
     </div>
   );
 }

@@ -97,12 +97,14 @@ export default function OnboardingPathDetailPage() {
       .eq("path_id", pathId);
 
     // Load team members for assignment dropdown
+    let members: { id: string; full_name: string | null }[] = [];
     if (currentBusiness?.id) {
-      const { data: members } = await supabase
+      const { data: memberData } = await supabase
         .from("profiles")
         .select("id, full_name")
         .eq("business_id", currentBusiness.id);
-      setTeamMembers(members ?? []);
+      members = memberData ?? [];
+      setTeamMembers(members);
     }
 
     // Calculate progress for each assigned member
@@ -136,11 +138,8 @@ export default function OnboardingPathDetailPage() {
         }
       }
 
-      const member = teamMembers.length > 0
-        ? teamMembers.find((m) => m.id === assignment.user_id)
-        : null;
-
-      // Fetch name if not in team members yet
+      // Find name from local members array (not state, avoids stale closure)
+      const member = members.find((m) => m.id === assignment.user_id);
       let name = member?.full_name ?? "";
       if (!name) {
         const { data: profile } = await supabase
@@ -161,7 +160,7 @@ export default function OnboardingPathDetailPage() {
 
     setMemberProgress(progressList);
     setLoading(false);
-  }, [pathId, supabase, router, currentBusiness?.id, teamMembers.length]);
+  }, [pathId, supabase, router, currentBusiness?.id]);
 
   useEffect(() => {
     loadData();

@@ -46,6 +46,23 @@ interface NoteRow {
   created_at: string;
 }
 
+interface TodoRow {
+  id: string;
+  text: string;
+  completed: boolean;
+  completed_at: string | null;
+  priority: string;
+  created_at: string;
+}
+
+interface WorkLogRow {
+  id: string;
+  action: string;
+  title: string;
+  target_type: string | null;
+  created_at: string;
+}
+
 interface ActivityItem {
   id: string;
   text: string;
@@ -66,9 +83,13 @@ export default function DashboardPage() {
   const [overdueChecklists, setOverdueChecklists] = useState<ChecklistRow[]>([]);
   const [todayChecklists, setTodayChecklists] = useState<ChecklistRow[]>([]);
   const [todayNotes, setTodayNotes] = useState<NoteRow[]>([]);
+  const [todos, setTodos] = useState<TodoRow[]>([]);
+  const [workLog, setWorkLog] = useState<WorkLogRow[]>([]);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [quickNote, setQuickNote] = useState("");
   const [addingNote, setAddingNote] = useState(false);
+  const [todoText, setTodoText] = useState("");
+  const [addingTodo, setAddingTodo] = useState(false);
 
   // Stats (collapsed section)
   const [statsOpen, setStatsOpen] = useState(false);
@@ -154,6 +175,69 @@ export default function DashboardPage() {
           .order("created_at", { ascending: false })
           .limit(10);
         setTodayNotes(notes ?? []);
+
+        // Todos
+        const { data: todoData } = await supabase
+          .from("todos")
+          .select("id, text, completed, completed_at, priority, created_at")
+          .eq("user_id", user.id)
+          .eq("completed", false)
+          .order("sort_order")
+          .limit(20);
+        setTodos(todoData ?? []);
+
+        // Work log (today)
+        const { data: logData } = await supabase
+          .from("work_log")
+          .select("id, action, title, target_type, created_at")
+          .eq("business_id", businessId)
+          .gte("created_at", startOfDay.toISOString())
+          .order("created_at", { ascending: false })
+          .limit(15);
+        setWorkLog(logData ?? []);
+
+        // Auto-generate recurring checklist instances
+        const { data: recurringTemplates } = await supabase
+          .from("checklists")
+          .select("*")
+          .eq("business_id", businessId)
+          .eq("is_template", true)
+          .neq("recurrence_type", "none");
+
+        if (recurringTemplates) {
+          for (const tmpl of recurringTemplates) {
+            const lastGen = tmpl.last_generated_at ? new Date(tmpl.last_generated_at) : null;
+            let shouldGenerate = false;
+
+            if (!lastGen) {
+              shouldGenerate = true;
+            } else if (tmpl.recurrence_type === "daily" && lastGen < startOfDay) {
+              shouldGenerate = true;
+            } else if (tmpl.recurrence_type === "weekly") {
+              const daysSince = differenceInDays(new Date(), lastGen);
+              if (daysSince >= 7) shouldGenerate = true;
+            } else if (tmpl.recurrence_type === "monthly") {
+              const daysSince = differenceInDays(new Date(), lastGen);
+              if (daysSince >= 28) shouldGenerate = true;
+            }
+
+            if (shouldGenerate) {
+              await supabase.from("checklists").insert({
+                business_id: businessId,
+                sop_id: tmpl.sop_id,
+                title: tmpl.title,
+                items: tmpl.items,
+                status: "pending",
+                due_date: todayStr,
+                created_by: tmpl.created_by,
+              });
+              await supabase
+                .from("checklists")
+                .update({ last_generated_at: new Date().toISOString() })
+                .eq("id", tmpl.id);
+            }
+          }
+        }
 
         // SOPs for stats
         const { data: sops } = await supabase
@@ -245,9 +329,77 @@ export default function DashboardPage() {
     setTodayNotes((prev) => prev.filter((n) => n.id !== noteId));
   }
 
+  async function handleAddTodo() {
+    if (!todoText.trim() || !currentBusiness?.id) return;
+    setAddingTodo(true);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { data, error } = await supabase
+      .from("todos")
+      .insert({
+        business_id: currentBusiness.id,
+        user_id: user?.id,
+        text: todoText.trim(),
+        priority: "normal",
+        sort_order: todos.length,
+      })
+      .select("id, text, completed, completed_at, priority, created_at")
+      .single();
+
+    if (error) { toast.error(error.message); }
+    else if (data) {
+      setTodos((prev) => [...prev, data]);
+      setTodoText("");
+    }
+    setAddingTodo(false);
+  }
+
+  async function handleToggleTodo(todoId: string, completed: boolean) {
+    const now = new Date().toISOString();
+    await supabase
+      .from("todos")
+      .update({ completed, completed_at: completed ? now : null })
+      .eq("id", todoId);
+
+    if (completed) {
+      const todo = todos.find((t) => t.id === todoId);
+      setTodos((prev) => prev.filter((t) => t.id !== todoId));
+
+      // Log to work log
+      if (todo && currentBusiness?.id) {
+        const { data: { user } } = await supabase.auth.getUser();
+        await supabase.from("work_log").insert({
+          business_id: currentBusiness.id,
+          user_id: user?.id,
+          action: "todo_completed",
+          title: todo.text,
+          target_id: todoId,
+          target_type: "todo",
+        });
+        setWorkLog((prev) => [{
+          id: crypto.randomUUID(),
+          action: "todo_completed",
+          title: todo.text,
+          target_type: "todo",
+          created_at: now,
+        }, ...prev]);
+      }
+
+      toast.success("Todo completed");
+    } else {
+      setTodos((prev) => prev.map((t) => t.id === todoId ? { ...t, completed, completed_at: null } : t));
+    }
+  }
+
+  async function handleDeleteTodo(todoId: string) {
+    await supabase.from("todos").delete().eq("id", todoId);
+    setTodos((prev) => prev.filter((t) => t.id !== todoId));
+  }
+
   const summaryParts: string[] = [];
   if (todayChecklists.length > 0) summaryParts.push(`${todayChecklists.length} checklist${todayChecklists.length > 1 ? "s" : ""} today`);
   if (overdueChecklists.length > 0) summaryParts.push(`${overdueChecklists.length} overdue`);
+  if (todos.length > 0) summaryParts.push(`${todos.length} todo${todos.length > 1 ? "s" : ""}`);
   if (todayNotes.length > 0) summaryParts.push(`${todayNotes.length} note${todayNotes.length > 1 ? "s" : ""}`);
 
   if (loading) {
@@ -342,7 +494,51 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* SECTION 3: Today's Notes & Todos */}
+      {/* SECTION 3a: Todos */}
+      <Card className="rounded-md shadow-none">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm font-medium">
+            <CheckSquare className="h-4 w-4 text-muted-foreground" />
+            Todos ({todos.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {/* Add todo */}
+          <form onSubmit={(e) => { e.preventDefault(); handleAddTodo(); }} className="flex items-center gap-2">
+            <Input
+              value={todoText}
+              onChange={(e) => setTodoText(e.target.value)}
+              placeholder="Add a todo..."
+              className="h-8 text-sm"
+            />
+            <Button type="submit" size="sm" variant="ghost" disabled={addingTodo || !todoText.trim()} className="shrink-0 h-8 w-8 p-0">
+              {addingTodo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            </Button>
+          </form>
+
+          {todos.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-2">No todos. Add one above.</p>
+          ) : (
+            <div className="space-y-1">
+              {todos.map((todo) => (
+                <div key={todo.id} className="group flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/50">
+                  <button type="button" onClick={() => handleToggleTodo(todo.id, true)} className="shrink-0 text-muted-foreground hover:text-emerald-400">
+                    <CheckSquare className="h-4 w-4" />
+                  </button>
+                  <span className="flex-1 text-sm">{todo.text}</span>
+                  {todo.priority === "high" && <span className="text-[10px] text-amber-400">high</span>}
+                  {todo.priority === "urgent" && <span className="text-[10px] text-destructive">urgent</span>}
+                  <button type="button" className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteTodo(todo.id)}>
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* SECTION 3b: Today's Notes */}
       <Card className="rounded-md shadow-none">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm font-medium">
@@ -393,6 +589,37 @@ export default function DashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* SECTION 3c: Work Log */}
+      {workLog.length > 0 && (
+        <Card className="rounded-md border-l-[3px] border-l-emerald-400 shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm font-medium">
+              <Clock className="h-4 w-4 text-emerald-400" />
+              Today&apos;s Work Log ({workLog.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1.5">
+              {workLog.map((entry) => (
+                <div key={entry.id} className="flex items-center gap-3 text-sm">
+                  <span className="text-[10px] text-muted-foreground shrink-0">
+                    {format(new Date(entry.created_at), "h:mm a")}
+                  </span>
+                  <span className="flex-1 truncate">
+                    {entry.action === "todo_completed" && "Completed todo: "}
+                    {entry.action === "checklist_completed" && "Completed checklist: "}
+                    {entry.action === "sop_read" && "Read SOP: "}
+                    {entry.action === "sop_signed" && "Signed off: "}
+                    {entry.action === "note_created" && "Added note: "}
+                    {entry.title}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* SECTION 4: Team Activity */}
       {activity.length > 0 && (

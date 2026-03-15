@@ -105,6 +105,42 @@ export default function EditSOPPage() {
     }
     setSaving(true);
 
+    // Save current version before updating
+    const { data: currentSop } = await supabase
+      .from("sops")
+      .select("content, version")
+      .eq("id", sopId)
+      .single();
+
+    if (currentSop) {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user?.id ?? "")
+        .single();
+
+      await supabase.from("sop_versions").insert({
+        sop_id: sopId,
+        version: currentSop.version ?? 1,
+        content: currentSop.content,
+        changed_by: user?.id,
+        change_summary: `Edited by ${profile?.full_name || "user"}`,
+      });
+
+      // Keep only last 3 versions
+      const { data: versions } = await supabase
+        .from("sop_versions")
+        .select("id")
+        .eq("sop_id", sopId)
+        .order("created_at", { ascending: false });
+
+      if (versions && versions.length > 3) {
+        const toDelete = versions.slice(3).map((v) => v.id);
+        await supabase.from("sop_versions").delete().in("id", toDelete);
+      }
+    }
+
     const { error } = await supabase
       .from("sops")
       .update({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -16,12 +16,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Edit, Trash2, Clock, Tag, FileText, CheckSquare, Loader2, Eye, ShieldCheck, Printer, LinkIcon, Pin } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Clock, Tag, FileText, CheckSquare, Loader2, Eye, ShieldCheck, Printer, LinkIcon, Pin, History, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
 import { useBusinessStore } from "@/hooks/use-business";
 import { extractStepsFromContent } from "@/lib/checklists/extract-steps";
+import { format } from "date-fns";
 import type { JSONContent } from "@tiptap/react";
 
 const SOPEditor = dynamic(
@@ -71,6 +72,9 @@ export default function SOPDetailPage() {
   const [signingOff, setSigningOff] = useState(false);
   const [readBy, setReadBy] = useState<{ id: string; full_name: string | null; signed: boolean }[]>([]);
   const [teamSize, setTeamSize] = useState(0);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [versions, setVersions] = useState<{ id: string; version: number; content: JSONContent; change_summary: string | null; created_at: string }[]>([]);
+  const [previewVersion, setPreviewVersion] = useState<JSONContent | null>(null);
 
   const router = useRouter();
   const params = useParams();
@@ -269,6 +273,52 @@ export default function SOPDetailPage() {
     toast.success(newPinned ? "SOP pinned" : "SOP unpinned");
   }
 
+  async function loadHistory() {
+    const { data } = await supabase
+      .from("sop_versions")
+      .select("id, version, content, change_summary, created_at")
+      .eq("sop_id", sopId)
+      .order("created_at", { ascending: false })
+      .limit(3);
+
+    setVersions(data ?? []);
+    setPreviewVersion(null);
+    setHistoryOpen(true);
+  }
+
+  async function restoreVersion(versionContent: JSONContent, versionNum: number) {
+    if (!sop) return;
+
+    // Save current as version first
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from("sop_versions").insert({
+      sop_id: sopId,
+      version: sop.version,
+      content: sop.content,
+      changed_by: user?.id,
+      change_summary: "Before restore",
+    });
+
+    // Update SOP with restored content
+    const { error } = await supabase
+      .from("sops")
+      .update({
+        content: versionContent,
+        version: (sop.version ?? 1) + 1,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", sopId);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    setSop({ ...sop, content: versionContent, version: (sop.version ?? 1) + 1 });
+    setHistoryOpen(false);
+    toast.success(`Restored to version ${versionNum}`);
+  }
+
   if (loading) {
     return (
       <div className="mx-auto max-w-3xl space-y-4">
@@ -372,6 +422,9 @@ export default function SOPDetailPage() {
             }}
           >
             <LinkIcon className="mr-1 h-4 w-4" /> Share
+          </Button>
+          <Button variant="outline" size="sm" onClick={loadHistory}>
+            <History className="mr-1 h-4 w-4" /> History
           </Button>
           <Link href={`/dashboard/sops/${sop.id}/edit`}>
             <Button variant="outline" size="sm">
@@ -501,6 +554,61 @@ export default function SOPDetailPage() {
           {signedOff ? "Signed Off" : "Sign Off"}
         </Button>
       </div>
+
+      {/* Version History Dialog */}
+      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Version History</DialogTitle>
+          </DialogHeader>
+          {versions.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4">No previous versions found.</p>
+          ) : (
+            <div className="space-y-3 pt-2">
+              {versions.map((v) => (
+                <div key={v.id} className="rounded-md border p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-mono text-sm font-semibold">v{v.version}</span>
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {v.change_summary}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">
+                      {format(new Date(v.created_at), "MMM d, h:mm a")}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => setPreviewVersion(previewVersion === v.content ? null : v.content)}
+                    >
+                      {previewVersion === v.content ? "Hide Preview" : "Preview"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs gap-1"
+                      onClick={() => restoreVersion(v.content, v.version)}
+                    >
+                      <RotateCcw className="h-3 w-3" /> Restore
+                    </Button>
+                  </div>
+                  {previewVersion === v.content && (
+                    <div className="mt-3 rounded border p-3">
+                      <Suspense fallback={<div className="text-sm text-muted-foreground">Loading...</div>}>
+                        <SOPEditor content={v.content} editable={false} />
+                      </Suspense>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

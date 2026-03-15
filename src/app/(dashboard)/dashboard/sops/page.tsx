@@ -285,6 +285,7 @@ export default function SOPsPage() {
   const [sortBy, setSortBy] = useState("updated");
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; sop: SOP } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; timer: ReturnType<typeof setTimeout> } | null>(null);
 
   const supabase = createClient();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
@@ -385,11 +386,34 @@ export default function SOPsPage() {
     fetchData();
   }
 
-  async function handleDeleteSop(sopId: string) {
-    const { error } = await supabase.from("sops").delete().eq("id", sopId);
-    if (error) { toast.error(error.message); return; }
-    toast.success("SOP deleted");
-    fetchData();
+  function handleDeleteSop(sopId: string) {
+    // Hide from UI immediately
+    setSops((prev) => prev.filter((s) => s.id !== sopId));
+
+    // Cancel any previous pending delete
+    if (pendingDelete) {
+      clearTimeout(pendingDelete.timer);
+    }
+
+    // Set 5-second timer before actual delete
+    const timer = setTimeout(async () => {
+      await supabase.from("sops").delete().eq("id", sopId);
+      setPendingDelete(null);
+    }, 5000);
+
+    setPendingDelete({ id: sopId, timer });
+
+    toast.success("SOP deleted", {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          clearTimeout(timer);
+          setPendingDelete(null);
+          fetchData(); // Refresh to bring it back
+        },
+      },
+      duration: 5000,
+    });
   }
 
   async function handleMoveSop(sopId: string, targetFolderId: string) {

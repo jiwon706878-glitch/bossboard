@@ -18,7 +18,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 interface TeamMember {
@@ -392,129 +391,15 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Team Section */}
+      {/* Team link */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Team</CardTitle>
-              <CardDescription>
-                Manage team members and invitations.
-              </CardDescription>
-            </div>
-            <Badge variant="outline" className="text-sm">
-              {totalUsed}/{maxMembers} members
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Current Team Members */}
-          {teamMembers.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                Current Members
-              </h3>
-              <div className="space-y-2">
-                {teamMembers.map((member) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center justify-between rounded-md border px-4 py-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-medium truncate">
-                        {member.full_name || "Unnamed"}
-                      </p>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {member.email}
-                      </p>
-                    </div>
-                    <Badge variant="secondary" className="ml-2 shrink-0">
-                      {member.role || "member"}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Pending Invites */}
-          {pendingInvites.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                Pending Invites
-              </h3>
-              <div className="space-y-2">
-                {pendingInvites.map((invite) => (
-                  <div
-                    key={invite.id}
-                    className="flex items-center justify-between rounded-md border border-dashed px-4 py-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {invite.email}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Invited as {invite.role}
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="ml-2 shrink-0 text-destructive hover:text-destructive"
-                      onClick={() => handleRevokeInvite(invite.id)}
-                      disabled={revokeLoadingId === invite.id}
-                    >
-                      {revokeLoadingId === invite.id ? "Revoking..." : "Revoke"}
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <Separator />
-
-          {/* Invite Form */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-muted-foreground">
-              Invite a Team Member
-            </h3>
-            {totalUsed >= maxMembers ? (
-              <p className="text-sm text-muted-foreground">
-                You've reached the team member limit for your {plan.name} plan.
-                Upgrade to invite more members.
-              </p>
-            ) : (
-              <form onSubmit={handleSendInvite} className="space-y-3">
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <Input
-                      type="email"
-                      placeholder="colleague@business.com"
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Select value={inviteRole} onValueChange={setInviteRole}>
-                    <SelectTrigger className="w-[120px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="member">Member</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  type="submit"
-                  disabled={inviteLoading || !currentBusiness}
-                >
-                  {inviteLoading ? "Sending..." : "Send Invite"}
-                </Button>
-              </form>
-            )}
-          </div>
+        <CardContent className="py-4">
+          <p className="text-sm text-muted-foreground">
+            Team management has moved to the{" "}
+            <a href="/dashboard/team" className="text-primary hover:underline">
+              Team page
+            </a>.
+          </p>
         </CardContent>
       </Card>
     </div>

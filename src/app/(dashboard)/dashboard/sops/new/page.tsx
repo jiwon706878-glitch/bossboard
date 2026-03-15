@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { Button } from "@/components/ui/button";
@@ -91,8 +91,17 @@ export default function NewSOPPage() {
   const resultRef = useRef<HTMLDivElement>(null);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
+
+  // Pre-select folder from URL query param
+  useEffect(() => {
+    const folderParam = searchParams.get("folder");
+    if (folderParam && !folderId) {
+      setFolderId(folderParam);
+    }
+  }, [searchParams, folderId]);
 
   // Load available folders
   useEffect(() => {

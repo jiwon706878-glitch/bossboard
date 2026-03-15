@@ -125,12 +125,28 @@ export default function NewSOPPage() {
   }
 
   function extractTitle(text: string): string {
-    const firstLine = text.split("\n").find((l: string) => l.trim());
-    if (!firstLine) return "Untitled SOP";
+    const lines = text.split("\n").filter((l: string) => l.trim());
+    if (lines.length === 0) return "Untitled SOP";
+
+    // Check first line — if it's just "1. Title" or "Title", the actual title is on the next line
+    const firstLine = lines[0].trim();
     const cleaned = firstLine
       .replace(/^\d+\.\s*/, "")
       .replace(/^Title:\s*/i, "")
       .trim();
+
+    // If after cleaning we get just "Title" or empty, use the next line
+    if (!cleaned || /^title$/i.test(cleaned)) {
+      if (lines.length > 1) {
+        const secondLine = lines[1].trim();
+        const title = secondLine.replace(/^\d+\.\s*/, "").replace(/^Title:\s*/i, "").trim();
+        console.log("[extractTitle] Using second line:", title);
+        return title.length > 80 ? title.substring(0, 80) : title;
+      }
+      return "Untitled SOP";
+    }
+
+    console.log("[extractTitle] Using first line:", cleaned);
     return cleaned.length > 80 ? cleaned.substring(0, 80) : cleaned;
   }
 

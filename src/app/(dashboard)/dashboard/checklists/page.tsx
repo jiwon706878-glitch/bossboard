@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -121,10 +121,10 @@ export default function ChecklistsPage() {
             Daily executable checklists from your SOPs.
           </p>
         </div>
-        <Button asChild variant="outline" className="gap-2">
-          <Link href="/dashboard/sops">
+        <Button asChild className="gap-2">
+          <Link href="/dashboard/checklists/new">
             <Plus className="h-4 w-4" />
-            Create from SOP
+            New Checklist
           </Link>
         </Button>
       </div>
@@ -154,14 +154,8 @@ export default function ChecklistsPage() {
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <CheckSquare className="mb-3 h-10 w-10 text-muted-foreground/50" />
             <p className="text-sm text-muted-foreground">
-              No checklists yet. Create one from any SOP.
+              No checklists yet. Create one using the button above.
             </p>
-            <Button asChild variant="outline" className="mt-4 gap-2">
-              <Link href="/dashboard/sops">
-                <Plus className="h-4 w-4" />
-                Browse SOPs
-              </Link>
-            </Button>
           </CardContent>
         </Card>
       ) : (

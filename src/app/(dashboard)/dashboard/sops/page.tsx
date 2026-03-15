@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, FileText, Search, Clock, Folder, ChevronRight, Pin, MoreHorizontal, Pencil, Trash2, FolderInput, GripVertical } from "lucide-react";
+import { Plus, FileText, Search, Clock, Folder, ChevronRight, Pin, MoreHorizontal, Pencil, Trash2, FolderInput, GripVertical, FolderPlus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -170,96 +170,90 @@ function SOPCard({
         }
       }}
     >
-      <CardContent className="flex items-center gap-3 py-3">
+      <CardContent className="flex items-center gap-2 px-3 py-2.5">
         {/* Drag handle */}
-        <div className="p-1 cursor-grab active:cursor-grabbing shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="p-1.5 cursor-grab active:cursor-grabbing shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
           <GripVertical className="h-5 w-5 text-muted-foreground/40" />
         </div>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            {sop.isUnread && (
-              <span className="h-2 w-2 shrink-0 rounded-full bg-primary" title="Unread" />
-            )}
-            {sop.pinned && <Pin className="h-3 w-3 shrink-0 text-amber-400" />}
-            <h3 className="truncate font-medium">{sop.title}</h3>
-            <Badge variant="secondary" className={cn("text-xs", STATUS_COLORS[sop.status])}>
-              {sop.status}
-            </Badge>
-            {sop.doc_type && sop.doc_type !== "sop" && (
-              <Badge variant="outline" className="text-xs capitalize">{sop.doc_type}</Badge>
-            )}
-          </div>
-          {sop.summary && (
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {sop.summary.length > 60 ? sop.summary.slice(0, 60) + "..." : sop.summary}
-            </p>
-          )}
-        </div>
+        {sop.isUnread && (
+          <span className="h-2 w-2 shrink-0 rounded-full bg-primary" title="Unread" />
+        )}
+        {sop.pinned && <Pin className="h-3 w-3 shrink-0 text-amber-400" />}
+        <h3 className="min-w-0 truncate text-sm font-medium" style={{ maxWidth: "40ch" }}>{sop.title}</h3>
+        <Badge variant="secondary" className={cn("shrink-0 text-[11px] px-1.5 py-0", STATUS_COLORS[sop.status])}>
+          {sop.status}
+        </Badge>
+        {sop.doc_type && sop.doc_type !== "sop" && (
+          <Badge variant="outline" className="shrink-0 text-[11px] px-1.5 py-0 capitalize">{sop.doc_type}</Badge>
+        )}
+        {sop.tags?.slice(0, 2).map((tag) => (
+          <span key={tag} className="hidden shrink-0 text-[10px] text-muted-foreground lg:inline">#{tag}</span>
+        ))}
+
+        <div className="flex-1" />
 
         {/* Inline action icons (hover) */}
         <div className="flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
           <button type="button" title="Edit" className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/sops/${sop.id}/edit`); }}>
-            <Pencil className="h-3.5 w-3.5" />
+            <Pencil className="h-4 w-4" />
           </button>
           {onPin && (
             <button type="button" title={sop.pinned ? "Unpin" : "Pin"} className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted" onClick={(e) => { e.stopPropagation(); onPin(sop.id, !sop.pinned); }}>
-              <Pin className={cn("h-3.5 w-3.5", sop.pinned && "text-amber-400")} />
+              <Pin className={cn("h-4 w-4", sop.pinned && "text-amber-400")} />
             </button>
           )}
           {onDelete && (
             <button type="button" title="Delete" className="rounded p-1 text-muted-foreground hover:text-destructive hover:bg-muted" onClick={(e) => { e.stopPropagation(); onDelete(sop.id); }}>
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-4 w-4" />
             </button>
           )}
         </div>
 
-        {/* Date + more menu */}
-        <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
-          <span className="hidden sm:inline">{formatDate(sop.updated_at || sop.created_at)}</span>
-          <span className="font-mono text-[11px]">v{sop.version}</span>
+        {/* Date + version */}
+        <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">{formatDate(sop.updated_at || sop.created_at)}</span>
+        <span className="shrink-0 font-mono text-[11px] text-muted-foreground">v{sop.version}</span>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button type="button" className="flex h-7 w-7 items-center justify-center rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity" onClick={(e) => e.stopPropagation()}>
-                <MoreHorizontal className="h-4 w-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/sops/${sop.id}/edit`); }}>
-                <Pencil className="mr-2 h-3 w-3" /> Edit
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button type="button" className="flex h-6 w-6 items-center justify-center rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity" onClick={(e) => e.stopPropagation()}>
+              <MoreHorizontal className="h-3.5 w-3.5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/sops/${sop.id}/edit`); }}>
+              <Pencil className="mr-2 h-3 w-3" /> Edit
+            </DropdownMenuItem>
+            {onPin && (
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onPin(sop.id, !sop.pinned); }}>
+                <Pin className="mr-2 h-3 w-3" /> {sop.pinned ? "Unpin" : "Pin"}
               </DropdownMenuItem>
-              {onPin && (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onPin(sop.id, !sop.pinned); }}>
-                  <Pin className="mr-2 h-3 w-3" /> {sop.pinned ? "Unpin" : "Pin"}
-                </DropdownMenuItem>
-              )}
-              {onDuplicate && (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate(sop.id); }}>
-                  <FileText className="mr-2 h-3 w-3" /> Duplicate
-                </DropdownMenuItem>
-              )}
-              {onMove && folders && folders.length > 0 && (
-                <>
-                  <DropdownMenuSeparator />
-                  {folders.slice(0, 8).map((f) => (
-                    <DropdownMenuItem key={f.id} onClick={(e) => { e.stopPropagation(); onMove(sop.id, f.id); }}>
-                      <FolderInput className="mr-2 h-3 w-3" /> {f.name}
-                    </DropdownMenuItem>
-                  ))}
-                </>
-              )}
-              {onDelete && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(sop.id); }}>
-                    <Trash2 className="mr-2 h-3 w-3" /> Delete
+            )}
+            {onDuplicate && (
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate(sop.id); }}>
+                <FileText className="mr-2 h-3 w-3" /> Duplicate
+              </DropdownMenuItem>
+            )}
+            {onMove && folders && folders.length > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                {folders.slice(0, 8).map((f) => (
+                  <DropdownMenuItem key={f.id} onClick={(e) => { e.stopPropagation(); onMove(sop.id, f.id); }}>
+                    <FolderInput className="mr-2 h-3 w-3" /> {f.name}
                   </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+                ))}
+              </>
+            )}
+            {onDelete && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(sop.id); }}>
+                  <Trash2 className="mr-2 h-3 w-3" /> Delete
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </CardContent>
     </Card>
   );
@@ -296,7 +290,7 @@ export default function SOPsPage() {
   // Build breadcrumb path
   function getBreadcrumbs(): { id: string | null; name: string }[] {
     const crumbs: { id: string | null; name: string }[] = [
-      { id: null, name: "SOP Wiki" },
+      { id: null, name: "Wiki" },
     ];
     if (!folderId || folderId === "unfiled") {
       if (folderId === "unfiled") crumbs.push({ id: "unfiled", name: "Unfiled SOPs" });
@@ -456,6 +450,21 @@ export default function SOPsPage() {
     fetchData();
   }
 
+  async function handleCreateFolder(name: string) {
+    if (!currentBusiness?.id) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from("folders").insert({
+      business_id: currentBusiness.id,
+      name,
+      parent_id: null,
+      sort_order: folders.length,
+      created_by: user?.id,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Folder "${name}" created`);
+    fetchData();
+  }
+
   async function handleDropOnFolder(folderId: string, e: React.DragEvent) {
     e.preventDefault();
     setDragOverFolder(null);
@@ -479,9 +488,26 @@ export default function SOPsPage() {
   // Get subfolders of current folder
   const subfolders = folderId && folderId !== "unfiled"
     ? folders.filter((f) => f.parent_id === folderId)
-    : !folderId
-      ? [] // Don't show subfolders in "all" view
-      : [];
+    : [];
+
+  // Root-level folders (when no folder is selected)
+  const rootFolders = !folderId
+    ? folders.filter((f) => !f.parent_id)
+    : [];
+
+  // Count SOPs per folder for the root grid
+  const folderSopCounts: Record<string, number> = {};
+  if (!folderId && sops.length > 0) {
+    for (const s of sops) {
+      if (s.folder_id) {
+        folderSopCounts[s.folder_id] = (folderSopCounts[s.folder_id] ?? 0) + 1;
+      }
+    }
+  }
+  const unfiledSopCount = !folderId ? sops.filter((s) => !s.folder_id).length : 0;
+
+  // When at root, show folders-first view
+  const showFoldersGrid = !folderId && !searchQuery && rootFolders.length > 0;
 
   // Client-side filtering
   let filteredSops = sops;
@@ -556,7 +582,7 @@ export default function SOPsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">
-            {folderId ? currentFolderName : "Standard Operating Procedures"}
+            {folderId ? currentFolderName : "Wiki"}
           </h1>
 
           {/* Breadcrumbs */}
@@ -586,183 +612,238 @@ export default function SOPsPage() {
             </p>
           )}
         </div>
-        <Link href="/dashboard/sops/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" /> New SOP
-          </Button>
-        </Link>
-      </div>
-
-      {/* Search + Filters */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search SOPs by title or content..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex items-center gap-2">
+          {!folderId && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                const name = prompt("New folder name:");
+                if (name?.trim()) handleCreateFolder(name.trim());
+              }}
+            >
+              <FolderPlus className="mr-2 h-4 w-4" /> New Folder
+            </Button>
+          )}
+          <Link href={folderId && folderId !== "unfiled" ? `/dashboard/sops/new?folder=${folderId}` : "/dashboard/sops/new"}>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" /> New SOP
+            </Button>
+          </Link>
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="published">Published</SelectItem>
-            <SelectItem value="archived">Archived</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={sortBy} onValueChange={setSortBy}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Sort by" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="updated">Last Updated</SelectItem>
-            <SelectItem value="title">Title A-Z</SelectItem>
-            <SelectItem value="created">Created Date</SelectItem>
-            <SelectItem value="status">Status</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
-      {/* Doc type tabs */}
-      <div className="flex items-center gap-2">
-        {[
-          { value: "all", label: "All" },
-          { value: "sop", label: "SOPs" },
-          { value: "note", label: "Notes" },
-          { value: "policy", label: "Policies" },
-        ].map((dt) => (
-          <button
-            key={dt.value}
-            type="button"
-            onClick={() => setDocTypeFilter(dt.value)}
-            className={cn(
-              "rounded-md px-3 py-1 text-xs font-medium transition-colors duration-100",
-              docTypeFilter === dt.value
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-            )}
-          >
-            {dt.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tag chips */}
-      {popularTags.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-muted-foreground mr-1">Tags:</span>
-          {popularTags.map(([tag, count]) => (
+      {/* Root view: folder grid only */}
+      {showFoldersGrid && (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+          {rootFolders.map((f) => (
             <button
-              key={tag}
+              key={f.id}
               type="button"
-              onClick={() => setTagFilter(tagFilter === tag ? "" : tag)}
+              onClick={() => router.push(`/dashboard/sops?folder=${f.id}`)}
+              onDragOver={(e) => { e.preventDefault(); setDragOverFolder(f.id); }}
+              onDragLeave={() => setDragOverFolder(null)}
+              onDrop={(e) => handleDropOnFolder(f.id, e)}
               className={cn(
-                "rounded-md px-2 py-0.5 text-[11px] transition-colors duration-100",
-                tagFilter === tag
-                  ? "bg-primary/15 text-primary"
-                  : "bg-accent text-accent-foreground hover:bg-muted"
+                "flex items-center gap-3 rounded-md border px-4 py-3 text-left transition-all duration-150",
+                dragOverFolder === f.id
+                  ? "border-primary bg-primary/10 scale-[1.02]"
+                  : "border-border hover:bg-muted/50"
               )}
             >
-              #{tag}
-              <span className="ml-1 text-muted-foreground">({count})</span>
+              <Folder className="h-5 w-5 shrink-0 text-muted-foreground" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{f.name}</p>
+                <p className="text-xs text-muted-foreground">{folderSopCounts[f.id] ?? 0} docs</p>
+              </div>
             </button>
           ))}
-          {tagFilter && (
+          {unfiledSopCount > 0 && (
             <button
               type="button"
-              onClick={() => setTagFilter("")}
-              className="text-[11px] text-muted-foreground hover:text-foreground"
+              onClick={() => router.push("/dashboard/sops?folder=unfiled")}
+              className="flex items-center gap-3 rounded-md border border-border px-4 py-3 text-left transition-all duration-150 hover:bg-muted/50"
             >
-              Clear
+              <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">Unfiled</p>
+                <p className="text-xs text-muted-foreground">{unfiledSopCount} docs</p>
+              </div>
             </button>
           )}
         </div>
       )}
 
-      {/* Subfolders */}
-      {subfolders.length > 0 && !searchQuery && (
-        <div className="flex flex-wrap gap-2">
-          {subfolders.map((sf) => (
-            <button
-              key={sf.id}
-              type="button"
-              onClick={() => router.push(`/dashboard/sops?folder=${sf.id}`)}
-              onDragOver={(e) => { e.preventDefault(); setDragOverFolder(sf.id); }}
-              onDragLeave={() => setDragOverFolder(null)}
-              onDrop={(e) => handleDropOnFolder(sf.id, e)}
-              className={cn(
-                "flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-all duration-150 border-border text-foreground",
-                dragOverFolder === sf.id
-                  ? "border-primary bg-primary/10 scale-105"
-                  : "hover:bg-muted/50"
-              )}
-            >
-              <Folder className="h-4 w-4 text-muted-foreground" />
-              {sf.name}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Inside a folder: show search, filters, subfolders, SOP cards */}
+      {folderId && (
+        <>
+          {/* Search + Filters */}
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search SOPs..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="published">Published</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="updated">Last Updated</SelectItem>
+                <SelectItem value="title">Title A-Z</SelectItem>
+                <SelectItem value="created">Created Date</SelectItem>
+                <SelectItem value="status">Status</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-      {/* SOP list */}
-      {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-24 animate-pulse rounded-md border bg-muted/40"
-            />
-          ))}
-        </div>
-      ) : pinnedSops.length === 0 && unpinnedSops.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <FileText className="mb-4 h-12 w-12 text-muted-foreground/50" />
-            <h3 className="mb-1 text-lg font-medium">
-              {searchQuery || statusFilter !== "all"
-                ? "No SOPs match your filters"
-                : folderId
-                  ? "This folder is empty"
-                  : "No SOPs yet"}
-            </h3>
-            <p className="mb-4 text-sm text-muted-foreground">
-              {searchQuery || statusFilter !== "all"
-                ? "Try adjusting your search or filters."
-                : "Create your first SOP to get started. AI can help you generate one in seconds."}
-            </p>
-            {!searchQuery && statusFilter === "all" && (
-              <Link href="/dashboard/sops/new">
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" /> Create your first SOP
-                </Button>
-              </Link>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-2">
-          {/* Pinned SOPs */}
-          {pinnedSops.length > 0 && (
-            <>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Pin className="h-3 w-3 text-amber-400" />
-                <span>Pinned ({pinnedSops.length})</span>
-              </div>
-              {pinnedSops.map((sop) => (
+          {/* Doc type tabs */}
+          <div className="flex items-center gap-2">
+            {[
+              { value: "all", label: "All" },
+              { value: "sop", label: "SOPs" },
+              { value: "note", label: "Notes" },
+              { value: "policy", label: "Policies" },
+            ].map((dt) => (
+              <button
+                key={dt.value}
+                type="button"
+                onClick={() => setDocTypeFilter(dt.value)}
+                className={cn(
+                  "rounded-md px-3 py-1 text-xs font-medium transition-colors duration-100",
+                  docTypeFilter === dt.value
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                )}
+              >
+                {dt.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Tag chips */}
+          {popularTags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-muted-foreground mr-1">Tags:</span>
+              {popularTags.map(([tag, count]) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setTagFilter(tagFilter === tag ? "" : tag)}
+                  className={cn(
+                    "rounded-md px-2 py-0.5 text-[11px] transition-colors duration-100",
+                    tagFilter === tag
+                      ? "bg-primary/15 text-primary"
+                      : "bg-accent text-accent-foreground hover:bg-muted"
+                  )}
+                >
+                  #{tag}
+                  <span className="ml-1 text-muted-foreground">({count})</span>
+                </button>
+              ))}
+              {tagFilter && (
+                <button
+                  type="button"
+                  onClick={() => setTagFilter("")}
+                  className="text-[11px] text-muted-foreground hover:text-foreground"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Subfolders */}
+          {subfolders.length > 0 && !searchQuery && (
+            <div className="flex flex-wrap gap-2">
+              {subfolders.map((sf) => (
+                <button
+                  key={sf.id}
+                  type="button"
+                  onClick={() => router.push(`/dashboard/sops?folder=${sf.id}`)}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverFolder(sf.id); }}
+                  onDragLeave={() => setDragOverFolder(null)}
+                  onDrop={(e) => handleDropOnFolder(sf.id, e)}
+                  className={cn(
+                    "flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-all duration-150 border-border text-foreground",
+                    dragOverFolder === sf.id
+                      ? "border-primary bg-primary/10 scale-105"
+                      : "hover:bg-muted/50"
+                  )}
+                >
+                  <Folder className="h-4 w-4 text-muted-foreground" />
+                  {sf.name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* SOP list */}
+          {loading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="h-12 animate-pulse rounded-md border bg-muted/40"
+                />
+              ))}
+            </div>
+          ) : pinnedSops.length === 0 && unpinnedSops.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                <FileText className="mb-4 h-12 w-12 text-muted-foreground/50" />
+                <h3 className="mb-1 text-lg font-medium">
+                  {searchQuery || statusFilter !== "all"
+                    ? "No SOPs match your filters"
+                    : "This folder is empty"}
+                </h3>
+                <p className="mb-4 text-sm text-muted-foreground">
+                  {searchQuery || statusFilter !== "all"
+                    ? "Try adjusting your search or filters."
+                    : "Create your first SOP to get started."}
+                </p>
+                <Link href={`/dashboard/sops/new${folderId && folderId !== "unfiled" ? `?folder=${folderId}` : ""}`}>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" /> Create SOP
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-1">
+              {/* Pinned SOPs */}
+              {pinnedSops.length > 0 && (
+                <>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                    <Pin className="h-3 w-3 text-amber-400" />
+                    <span>Pinned ({pinnedSops.length})</span>
+                  </div>
+                  {pinnedSops.map((sop) => (
+                    <SOPCard key={sop.id} sop={sop} router={router} onPin={handlePin} onDelete={handleDeleteSop} onDuplicate={handleDuplicate} folders={folders} onMove={handleMoveSop} onContextMenu={(e, s) => setCtxMenu({ x: e.clientX, y: e.clientY, sop: s })} />
+                  ))}
+                  {unpinnedSops.length > 0 && <div className="h-1" />}
+                </>
+              )}
+              {unpinnedSops.map((sop) => (
                 <SOPCard key={sop.id} sop={sop} router={router} onPin={handlePin} onDelete={handleDeleteSop} onDuplicate={handleDuplicate} folders={folders} onMove={handleMoveSop} onContextMenu={(e, s) => setCtxMenu({ x: e.clientX, y: e.clientY, sop: s })} />
               ))}
-              {unpinnedSops.length > 0 && <div className="h-2" />}
-            </>
+            </div>
           )}
-          {unpinnedSops.map((sop) => (
-            <SOPCard key={sop.id} sop={sop} router={router} onPin={handlePin} onDelete={handleDeleteSop} onDuplicate={handleDuplicate} folders={folders} onMove={handleMoveSop} onContextMenu={(e, s) => setCtxMenu({ x: e.clientX, y: e.clientY, sop: s })} />
-          ))}
-        </div>
+        </>
       )}
     </div>
   );

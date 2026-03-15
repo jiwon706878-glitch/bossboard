@@ -1,143 +1,131 @@
 "use client";
 
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import TaskList from "@tiptap/extension-task-list";
-import TaskItem from "@tiptap/extension-task-item";
-import Placeholder from "@tiptap/extension-placeholder";
-import { useImperativeHandle, forwardRef } from "react";
+import { useState, useImperativeHandle, forwardRef, useRef, useCallback } from "react";
+import { Trash2 } from "lucide-react";
 
 export interface ChecklistEditorRef {
   getItems: () => { text: string; required: boolean }[];
 }
 
 const ChecklistEditor = forwardRef<ChecklistEditorRef>(function ChecklistEditor(_props, ref) {
-  const editor = useEditor({
-    immediatelyRender: false,
-    extensions: [
-      StarterKit.configure({
-        bulletList: false,
-        orderedList: false,
-        listItem: false,
-      }),
-      TaskList,
-      TaskItem.configure({ nested: true }),
-      Placeholder.configure({
-        placeholder: "Type a checklist item and press Enter...",
-        emptyNodeClass: "is-empty",
-      }),
-    ],
-    content: '<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><p></p></li></ul>',
-    editorProps: {
-      attributes: {
-        class: "min-h-[300px] max-w-none p-4 text-sm focus:outline-none",
-      },
-    },
-  });
+  const [items, setItems] = useState<string[]>([""]);
+  const [checked, setChecked] = useState<Set<number>>(new Set());
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const focusInput = useCallback((index: number) => {
+    setTimeout(() => inputRefs.current[index]?.focus(), 10);
+  }, []);
 
   useImperativeHandle(ref, () => ({
     getItems() {
-      if (!editor) return [];
-      const items: { text: string; required: boolean }[] = [];
-      editor.state.doc.descendants((node) => {
-        if (node.type.name === "taskItem") {
-          const text = node.textContent.trim();
-          if (text) {
-            items.push({ text, required: true });
-          }
-        }
-      });
-      return items;
+      return items
+        .filter((t) => t.trim())
+        .map((t) => ({ text: t.trim(), required: true }));
     },
-  }), [editor]);
+  }), [items]);
 
-  if (!editor) {
-    return <div className="min-h-[300px] rounded-md border bg-card p-4 text-sm text-muted-foreground">Loading editor...</div>;
+  function handleKeyDown(index: number, e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const next = [...items];
+      next.splice(index + 1, 0, "");
+      setItems(next);
+      focusInput(index + 1);
+    }
+    if (e.key === "Backspace" && items[index] === "" && items.length > 1) {
+      e.preventDefault();
+      const next = items.filter((_, i) => i !== index);
+      setItems(next);
+      // Update checked indices
+      const newChecked = new Set<number>();
+      checked.forEach((ci) => {
+        if (ci < index) newChecked.add(ci);
+        else if (ci > index) newChecked.add(ci - 1);
+      });
+      setChecked(newChecked);
+      focusInput(Math.max(0, index - 1));
+    }
+    if (e.key === "ArrowDown" && index < items.length - 1) {
+      e.preventDefault();
+      focusInput(index + 1);
+    }
+    if (e.key === "ArrowUp" && index > 0) {
+      e.preventDefault();
+      focusInput(index - 1);
+    }
+  }
+
+  function toggleCheck(index: number) {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  }
+
+  function removeItem(index: number) {
+    if (items.length <= 1) return;
+    setItems(items.filter((_, i) => i !== index));
+    const newChecked = new Set<number>();
+    checked.forEach((ci) => {
+      if (ci < index) newChecked.add(ci);
+      else if (ci > index) newChecked.add(ci - 1);
+    });
+    setChecked(newChecked);
   }
 
   return (
-    <>
-      <style>{`
-        .checklist-editor ul[data-type="taskList"] {
-          list-style: none !important;
-          padding: 0 !important;
-          margin: 0 !important;
-        }
-        .checklist-editor li[data-type="taskItem"] {
-          display: flex !important;
-          flex-direction: row !important;
-          align-items: flex-start !important;
-          gap: 8px !important;
-          padding: 4px 0 !important;
-          margin: 0 !important;
-        }
-        .checklist-editor li[data-type="taskItem"] > label {
-          display: inline-flex !important;
-          align-items: center !important;
-          flex-shrink: 0 !important;
-          margin-top: 2px !important;
-          cursor: pointer !important;
-          user-select: none !important;
-        }
-        .checklist-editor li[data-type="taskItem"] > label > input[type="checkbox"] {
-          appearance: none !important;
-          -webkit-appearance: none !important;
-          width: 18px !important;
-          height: 18px !important;
-          border: 2px solid var(--border) !important;
-          border-radius: 5px !important;
-          background: transparent !important;
-          cursor: pointer !important;
-          position: relative !important;
-          flex-shrink: 0 !important;
-          transition: all 0.15s ease !important;
-        }
-        .checklist-editor li[data-type="taskItem"] > label > input[type="checkbox"]:hover {
-          border-color: var(--primary) !important;
-        }
-        .checklist-editor li[data-type="taskItem"] > label > input[type="checkbox"]:checked {
-          background: var(--primary) !important;
-          border-color: var(--primary) !important;
-        }
-        .checklist-editor li[data-type="taskItem"] > label > input[type="checkbox"]:checked::after {
-          content: "" !important;
-          position: absolute !important;
-          left: 4px !important;
-          top: 1px !important;
-          width: 6px !important;
-          height: 10px !important;
-          border: solid white !important;
-          border-width: 0 2px 2px 0 !important;
-          transform: rotate(45deg) !important;
-        }
-        .checklist-editor li[data-type="taskItem"] > div {
-          flex: 1 !important;
-          min-width: 0 !important;
-          line-height: 1.6 !important;
-        }
-        .checklist-editor li[data-type="taskItem"] > div p {
-          margin: 0 !important;
-        }
-        .checklist-editor li[data-type="taskItem"][data-checked="true"] > div {
-          text-decoration: line-through !important;
-          opacity: 0.5 !important;
-        }
-        .checklist-editor ul[data-type="taskList"] ul[data-type="taskList"] {
-          padding-left: 28px !important;
-        }
-        .checklist-editor .is-empty::before {
-          content: attr(data-placeholder);
-          color: var(--muted-foreground);
-          opacity: 0.4;
-          float: left;
-          height: 0;
-          pointer-events: none;
-        }
-      `}</style>
-      <div className="checklist-editor rounded-md border bg-card overflow-hidden">
-        <EditorContent editor={editor} />
+    <div className="rounded-md border bg-card">
+      <div className="min-h-[300px] p-4 space-y-0.5">
+        {items.map((item, i) => (
+          <div key={i} className="group flex items-center gap-3 rounded-md px-1 py-1.5 hover:bg-muted/30 transition-colors">
+            {/* Checkbox */}
+            <button
+              type="button"
+              onClick={() => toggleCheck(i)}
+              className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded border-2 transition-all duration-150 ${
+                checked.has(i)
+                  ? "border-primary bg-primary"
+                  : "border-border hover:border-primary"
+              }`}
+            >
+              {checked.has(i) && (
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="text-white">
+                  <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </button>
+            {/* Text input */}
+            <input
+              ref={(el) => { inputRefs.current[i] = el; }}
+              type="text"
+              value={item}
+              onChange={(e) => {
+                const next = [...items];
+                next[i] = e.target.value;
+                setItems(next);
+              }}
+              onKeyDown={(e) => handleKeyDown(i, e)}
+              placeholder={i === 0 && items.length === 1 ? "Type a checklist item and press Enter..." : ""}
+              className={`flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/40 ${
+                checked.has(i) ? "line-through text-muted-foreground/50" : "text-foreground"
+              }`}
+            />
+            {/* Delete button */}
+            {items.length > 1 && (
+              <button
+                type="button"
+                onClick={() => removeItem(i)}
+                className="shrink-0 text-muted-foreground/30 opacity-0 group-hover:opacity-100 hover:text-destructive transition-all"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        ))}
       </div>
-    </>
+    </div>
   );
 });
 

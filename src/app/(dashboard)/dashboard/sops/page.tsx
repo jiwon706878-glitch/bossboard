@@ -104,6 +104,39 @@ function SOPContextMenu({
   );
 }
 
+function FolderContextMenu({
+  menu,
+  onClose,
+  onRename,
+  onDelete,
+  onNewSop,
+}: {
+  menu: { x: number; y: number };
+  onClose: () => void;
+  onRename: () => void;
+  onDelete: () => void;
+  onNewSop: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const h1 = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+    const h2 = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("mousedown", h1);
+    document.addEventListener("keydown", h2);
+    return () => { document.removeEventListener("mousedown", h1); document.removeEventListener("keydown", h2); };
+  }, [onClose]);
+
+  const cls = "flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs cursor-pointer hover:bg-muted text-foreground";
+  return (
+    <div ref={ref} className="fixed z-50 w-44 rounded-md border bg-popover p-1 shadow-md" style={{ left: Math.min(menu.x, window.innerWidth - 180), top: Math.min(menu.y, window.innerHeight - 120) }}>
+      <button type="button" className={cls} onClick={onNewSop}><Plus className="h-3 w-3" /> New SOP here</button>
+      <div className="my-1 h-px bg-border" />
+      <button type="button" className={cls} onClick={onRename}><Pencil className="h-3 w-3" /> Rename</button>
+      <button type="button" className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs cursor-pointer hover:bg-destructive/10 text-destructive" onClick={onDelete}><Trash2 className="h-3 w-3" /> Delete folder</button>
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function SOPsPage() {
@@ -114,6 +147,7 @@ export default function SOPsPage() {
   const [selectedSopId, setSelectedSopId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; sop: SOP } | null>(null);
+  const [folderCtxMenu, setFolderCtxMenu] = useState<{ x: number; y: number; folderId: string } | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; timer: ReturnType<typeof setTimeout> } | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"updated" | "title">("updated");
@@ -166,13 +200,16 @@ export default function SOPsPage() {
         e.preventDefault();
         clearTimeout(pendingDelete.timer);
         setPendingDelete(null);
-        fetchData();
+        if (deletedSopRef.current) {
+          setAllSops((prev) => [deletedSopRef.current!, ...prev]);
+          deletedSopRef.current = null;
+        }
         toast.success("Delete undone");
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [pendingDelete, fetchData]);
+  }, [pendingDelete]);
 
   // Listen for events from PageContextMenu
   useEffect(() => {
@@ -238,23 +275,51 @@ export default function SOPsPage() {
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
+  // Store deleted SOP for undo (so we don't need to refetch)
+  const deletedSopRef = useRef<SOP | null>(null);
+
   async function handlePin(sopId: string, pinned: boolean) {
-    await supabase.from("sops").update({ pinned }).eq("id", sopId);
-    fetchData();
+    // Optimistic
+    setAllSops((prev) => prev.map((s) => s.id === sopId ? { ...s, pinned } : s));
+    const { error } = await supabase.from("sops").update({ pinned }).eq("id", sopId);
+    if (error) fetchData(); // Rollback on error
   }
 
   function handleDelete(sopId: string) {
+    const sop = allSops.find((s) => s.id === sopId);
+    if (sop) deletedSopRef.current = sop;
+    // Optimistic: remove from UI immediately
     setAllSops((prev) => prev.filter((s) => s.id !== sopId));
     if (pendingDelete) clearTimeout(pendingDelete.timer);
-    const timer = setTimeout(async () => { await supabase.from("sops").delete().eq("id", sopId); setPendingDelete(null); }, 5000);
+    const timer = setTimeout(async () => {
+      await supabase.from("sops").delete().eq("id", sopId);
+      setPendingDelete(null);
+      deletedSopRef.current = null;
+    }, 5000);
     setPendingDelete({ id: sopId, timer });
-    toast.success("SOP deleted", { action: { label: "Undo", onClick: () => { clearTimeout(timer); setPendingDelete(null); fetchData(); } }, duration: 5000 });
+    toast.success("SOP deleted", {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          clearTimeout(timer);
+          setPendingDelete(null);
+          // Optimistic: restore to UI immediately
+          if (deletedSopRef.current) {
+            setAllSops((prev) => [deletedSopRef.current!, ...prev]);
+            deletedSopRef.current = null;
+          }
+        },
+      },
+      duration: 5000,
+    });
   }
 
-  async function handleMove(sopId: string, folderId: string) {
-    await supabase.from("sops").update({ folder_id: folderId }).eq("id", sopId);
-    toast.success(`Moved to ${folders.find((f) => f.id === folderId)?.name ?? "folder"}`);
-    fetchData();
+  async function handleMove(sopId: string, targetFolderId: string) {
+    // Optimistic: update folder_id in local state
+    setAllSops((prev) => prev.map((s) => s.id === sopId ? { ...s, folder_id: targetFolderId } : s));
+    toast.success(`Moved to ${folders.find((f) => f.id === targetFolderId)?.name ?? "folder"}`);
+    const { error } = await supabase.from("sops").update({ folder_id: targetFolderId }).eq("id", sopId);
+    if (error) fetchData(); // Rollback
   }
 
   async function handleDuplicate(sopId: string) {
@@ -274,14 +339,35 @@ export default function SOPsPage() {
     fetchData();
   }
 
-  async function handleDropOnFolder(folderId: string, e: React.DragEvent) {
+  async function handleRenameFolder(folderId: string) {
+    const folder = folders.find((f) => f.id === folderId);
+    if (!folder) return;
+    const name = prompt("Rename folder:", folder.name);
+    if (!name?.trim() || name.trim() === folder.name) return;
+    setFolders((prev) => prev.map((f) => f.id === folderId ? { ...f, name: name.trim() } : f));
+    await supabase.from("folders").update({ name: name.trim() }).eq("id", folderId);
+  }
+
+  async function handleDeleteFolder(folderId: string) {
+    // Move SOPs to unfiled, then delete folder
+    setAllSops((prev) => prev.map((s) => s.folder_id === folderId ? { ...s, folder_id: null } : s));
+    setFolders((prev) => prev.filter((f) => f.id !== folderId));
+    if (selectedFolder === folderId) setSelectedFolder("unfiled");
+    await supabase.from("sops").update({ folder_id: null }).eq("folder_id", folderId);
+    await supabase.from("folders").delete().eq("id", folderId);
+    toast.success("Folder deleted. SOPs moved to Unfiled.");
+  }
+
+  async function handleDropOnFolder(targetFolderId: string, e: React.DragEvent) {
     e.preventDefault();
     setDragOverFolder(null);
     const sopId = e.dataTransfer.getData("text/plain");
     if (!sopId) return;
-    await supabase.from("sops").update({ folder_id: folderId }).eq("id", sopId);
+    // Optimistic
+    setAllSops((prev) => prev.map((s) => s.id === sopId ? { ...s, folder_id: targetFolderId } : s));
     toast.success("SOP moved");
-    fetchData();
+    const { error } = await supabase.from("sops").update({ folder_id: targetFolderId }).eq("id", sopId);
+    if (error) fetchData();
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -304,6 +390,17 @@ export default function SOPsPage() {
         />
       )}
 
+      {/* Folder context menu */}
+      {folderCtxMenu && (
+        <FolderContextMenu
+          menu={folderCtxMenu}
+          onClose={() => setFolderCtxMenu(null)}
+          onRename={() => { handleRenameFolder(folderCtxMenu.folderId); setFolderCtxMenu(null); }}
+          onDelete={() => { handleDeleteFolder(folderCtxMenu.folderId); setFolderCtxMenu(null); }}
+          onNewSop={() => { router.push(`/dashboard/sops/new?folder=${folderCtxMenu.folderId}`); setFolderCtxMenu(null); }}
+        />
+      )}
+
       {/* ── LEFT PANEL: folder list ──────────────────────────────────────── */}
       <div className="flex w-64 shrink-0 flex-col border-r bg-card">
         <div className="flex items-center justify-between border-b px-3 py-2">
@@ -316,6 +413,7 @@ export default function SOPsPage() {
               type="button"
               data-has-context-menu
               onClick={() => { setSelectedFolder(f.id); setSelectedSopId(null); }}
+              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setFolderCtxMenu({ x: e.clientX, y: e.clientY, folderId: f.id }); }}
               onDragOver={(e) => { e.preventDefault(); setDragOverFolder(f.id); }}
               onDragLeave={() => setDragOverFolder(null)}
               onDrop={(e) => handleDropOnFolder(f.id, e)}

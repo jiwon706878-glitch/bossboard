@@ -209,20 +209,59 @@ export default function NewSOPPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 500_000) {
-      toast.error("File too large. Max 500KB.");
+    if (file.size > 2_000_000) {
+      toast.error("File too large. Max 2MB.");
       return;
     }
 
     const ext = file.name.split(".").pop()?.toLowerCase();
-    if (ext !== "txt") {
-      toast.error("Only .txt files are supported for now.");
+    const supported = ["txt", "md", "csv", "docx", "pdf"];
+
+    if (!ext || !supported.includes(ext)) {
+      toast.error("Unsupported file format. Please use TXT, MD, DOCX, PDF, or CSV.");
       return;
     }
 
-    const text = await file.text();
-    setUploadText(text);
-    toast.success(`Loaded ${file.name}`);
+    try {
+      if (ext === "txt" || ext === "md" || ext === "csv") {
+        const text = await file.text();
+        setUploadText(text);
+        toast.success(`Loaded ${file.name}`);
+      } else if (ext === "docx") {
+        const mammoth = await import("mammoth");
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        if (!result.value.trim()) {
+          toast.error("Could not extract text from this DOCX file.");
+          return;
+        }
+        setUploadText(result.value);
+        toast.success(`Loaded ${file.name}`);
+      } else if (ext === "pdf") {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/api/extract-text", {
+          method: "POST",
+          body: formData,
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          throw new Error(data?.error || "Failed to extract text from PDF");
+        }
+        const data = await res.json();
+        if (!data.text?.trim()) {
+          toast.error("Could not extract text from this PDF.");
+          return;
+        }
+        setUploadText(data.text);
+        toast.success(`Loaded ${file.name}`);
+      }
+    } catch (error) {
+      console.error("File upload error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to read file"
+      );
+    }
   }
 
   function handleTemplateClick(templateTopic: string) {
@@ -455,26 +494,31 @@ export default function NewSOPPage() {
                   rows={8}
                 />
               </div>
-              <div className="flex items-center gap-3">
-                <Label
-                  htmlFor="file-upload"
-                  className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-4 py-2 text-sm text-muted-foreground transition-colors duration-150 hover:bg-muted/50 border-border"
-                >
-                  <FileUp className="h-4 w-4" />
-                  Upload .txt file
-                </Label>
-                <input
-                  id="file-upload"
-                  type="file"
-                  accept=".txt"
-                  className="hidden"
-                  onChange={handleFileUpload}
-                />
-                {uploadText && (
-                  <span className="text-xs text-muted-foreground">
-                    {uploadText.length.toLocaleString()} characters loaded
-                  </span>
-                )}
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <Label
+                    htmlFor="file-upload"
+                    className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-4 py-2 text-sm text-muted-foreground transition-colors duration-150 hover:bg-muted/50 border-border"
+                  >
+                    <FileUp className="h-4 w-4" />
+                    Upload file
+                  </Label>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    accept=".txt,.md,.docx,.pdf,.csv"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                  {uploadText && (
+                    <span className="text-xs text-muted-foreground">
+                      {uploadText.length.toLocaleString()} characters loaded
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Supports: TXT, MD, DOCX, PDF, CSV (Notion, Obsidian, Google Docs, Word compatible)
+                </p>
               </div>
               <div className="space-y-2">
                 <Label>Category (optional)</Label>

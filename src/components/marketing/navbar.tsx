@@ -3,22 +3,23 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
 
 export function MarketingNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navLinks = [
-    { href: "#features", label: "Features" },
-    { href: "#how-it-works", label: "How It Works" },
-    { href: "#pricing", label: "Pricing" },
-    { href: "#faq", label: "FAQ" },
+    { href: "/#features", label: "Features" },
+    { href: "/#how-it-works", label: "How It Works" },
+    { href: "/#pricing", label: "Pricing" },
+    { href: "/#faq", label: "FAQ" },
   ];
 
   return (
     <header
       className="sticky top-0 z-50 w-full"
       style={{
-        backgroundColor: "rgba(12, 15, 23, 0.95)",
+        backgroundColor: "rgba(16, 20, 32, 0.95)",
         borderBottom: "1px solid #2A3050",
         backdropFilter: "blur(12px)",
       }}
@@ -60,6 +61,7 @@ export function MarketingNavbar() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <Link
             href="/signup"
             className="hidden sm:inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors duration-150"
@@ -97,7 +99,7 @@ export function MarketingNavbar() {
       {mobileOpen && (
         <div
           className="md:hidden px-4 pb-4"
-          style={{ backgroundColor: "#0C0F17" }}
+          style={{ backgroundColor: "#101420" }}
         >
           <nav className="flex flex-col gap-3">
             {navLinks.map((link) => (

@@ -8,7 +8,7 @@ import { useBusinessStore } from "@/hooks/use-business";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, FileText, Search, Folder, ChevronRight, Pin, MoreHorizontal, Pencil, Trash2, FolderInput, FolderPlus } from "lucide-react";
+import { Plus, FileText, Search, Folder, ChevronRight, Pin, MoreHorizontal, Pencil, Trash2, FolderInput, FolderPlus, GripVertical } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -159,6 +159,21 @@ export default function SOPsPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Ctrl+Z undo delete
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && pendingDelete) {
+        e.preventDefault();
+        clearTimeout(pendingDelete.timer);
+        setPendingDelete(null);
+        fetchData();
+        toast.success("Delete undone");
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [pendingDelete, fetchData]);
+
   // Listen for events from PageContextMenu
   useEffect(() => {
     function onCreateFolder(e: Event) {
@@ -299,6 +314,7 @@ export default function SOPsPage() {
             <button
               key={f.id}
               type="button"
+              data-has-context-menu
               onClick={() => { setSelectedFolder(f.id); setSelectedSopId(null); }}
               onDragOver={(e) => { e.preventDefault(); setDragOverFolder(f.id); }}
               onDragLeave={() => setDragOverFolder(null)}
@@ -306,7 +322,7 @@ export default function SOPsPage() {
               className={cn(
                 "flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors duration-100",
                 selectedFolder === f.id ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted/50",
-                dragOverFolder === f.id && "bg-primary/10"
+                dragOverFolder === f.id && "ring-2 ring-primary bg-primary/10"
               )}
             >
               <Folder className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -453,6 +469,7 @@ function SopRow({
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
     >
+      <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground/20 opacity-0 group-hover:opacity-100 transition-opacity" />
       <FileText className="h-4 w-4 shrink-0 text-muted-foreground/40" />
       {sop.isUnread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
       {sop.pinned && <Pin className="h-3 w-3 shrink-0 text-amber-400" />}

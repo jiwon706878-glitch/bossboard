@@ -24,7 +24,7 @@ const ChecklistEditor = forwardRef<ChecklistEditorRef>(function ChecklistEditor(
       TaskItem.configure({ nested: true }),
       Placeholder.configure({
         placeholder: "Type a checklist item and press Enter...",
-        emptyNodeClass: "before:text-muted-foreground/40 before:content-[attr(data-placeholder)] before:float-left before:h-0 before:pointer-events-none",
+        emptyNodeClass: "is-empty",
       }),
     ],
     content: '<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><p></p></li></ul>',
@@ -56,9 +56,88 @@ const ChecklistEditor = forwardRef<ChecklistEditorRef>(function ChecklistEditor(
   }
 
   return (
-    <div className="rounded-md border bg-card overflow-hidden">
-      <EditorContent editor={editor} />
-    </div>
+    <>
+      <style>{`
+        .checklist-editor ul[data-type="taskList"] {
+          list-style: none !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+        .checklist-editor li[data-type="taskItem"] {
+          display: flex !important;
+          flex-direction: row !important;
+          align-items: flex-start !important;
+          gap: 8px !important;
+          padding: 4px 0 !important;
+          margin: 0 !important;
+        }
+        .checklist-editor li[data-type="taskItem"] > label {
+          display: inline-flex !important;
+          align-items: center !important;
+          flex-shrink: 0 !important;
+          margin-top: 2px !important;
+          cursor: pointer !important;
+          user-select: none !important;
+        }
+        .checklist-editor li[data-type="taskItem"] > label > input[type="checkbox"] {
+          appearance: none !important;
+          -webkit-appearance: none !important;
+          width: 18px !important;
+          height: 18px !important;
+          border: 2px solid var(--border) !important;
+          border-radius: 5px !important;
+          background: transparent !important;
+          cursor: pointer !important;
+          position: relative !important;
+          flex-shrink: 0 !important;
+          transition: all 0.15s ease !important;
+        }
+        .checklist-editor li[data-type="taskItem"] > label > input[type="checkbox"]:hover {
+          border-color: var(--primary) !important;
+        }
+        .checklist-editor li[data-type="taskItem"] > label > input[type="checkbox"]:checked {
+          background: var(--primary) !important;
+          border-color: var(--primary) !important;
+        }
+        .checklist-editor li[data-type="taskItem"] > label > input[type="checkbox"]:checked::after {
+          content: "" !important;
+          position: absolute !important;
+          left: 4px !important;
+          top: 1px !important;
+          width: 6px !important;
+          height: 10px !important;
+          border: solid white !important;
+          border-width: 0 2px 2px 0 !important;
+          transform: rotate(45deg) !important;
+        }
+        .checklist-editor li[data-type="taskItem"] > div {
+          flex: 1 !important;
+          min-width: 0 !important;
+          line-height: 1.6 !important;
+        }
+        .checklist-editor li[data-type="taskItem"] > div p {
+          margin: 0 !important;
+        }
+        .checklist-editor li[data-type="taskItem"][data-checked="true"] > div {
+          text-decoration: line-through !important;
+          opacity: 0.5 !important;
+        }
+        .checklist-editor ul[data-type="taskList"] ul[data-type="taskList"] {
+          padding-left: 28px !important;
+        }
+        .checklist-editor .is-empty::before {
+          content: attr(data-placeholder);
+          color: var(--muted-foreground);
+          opacity: 0.4;
+          float: left;
+          height: 0;
+          pointer-events: none;
+        }
+      `}</style>
+      <div className="checklist-editor rounded-md border bg-card overflow-hidden">
+        <EditorContent editor={editor} />
+      </div>
+    </>
   );
 });
 

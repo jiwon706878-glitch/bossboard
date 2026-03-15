@@ -82,6 +82,7 @@ export function PageContextMenu() {
 
       // Skip if a child element has its own context menu (SOP rows, folders, etc.)
       if (target.closest("[data-has-context-menu]")) {
+        setMenu(null); // Close any existing page menu
         return;
       }
 

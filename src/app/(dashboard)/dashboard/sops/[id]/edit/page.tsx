@@ -47,6 +47,8 @@ export default function EditSOPPage() {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("draft");
+  const [folderId, setFolderId] = useState("");
+  const [availableFolders, setAvailableFolders] = useState<{ id: string; name: string }[]>([]);
   const [editorContent, setEditorContent] = useState<JSONContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -73,7 +75,19 @@ export default function EditSOPPage() {
       setTitle(data.title || "");
       setCategory(data.category || "");
       setStatus(data.status || "draft");
+      setFolderId(data.folder_id || "");
       setEditorContent(data.content || null);
+
+      // Load folders for this business
+      if (data.business_id) {
+        const { data: folders } = await supabase
+          .from("folders")
+          .select("id, name")
+          .eq("business_id", data.business_id)
+          .order("sort_order");
+        setAvailableFolders(folders ?? []);
+      }
+
       setLoading(false);
     }
     fetchSOP();
@@ -92,6 +106,7 @@ export default function EditSOPPage() {
         title: title.trim(),
         content: editorContent,
         category: category && category !== "none" ? category : null,
+        folder_id: folderId && folderId !== "none" ? folderId : null,
         status,
         updated_at: new Date().toISOString(),
       })
@@ -147,7 +162,7 @@ export default function EditSOPPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label className="text-foreground">Category</Label>
               <Select value={category} onValueChange={setCategory}>
@@ -174,6 +189,22 @@ export default function EditSOPPage() {
                   {STATUSES.map((s) => (
                     <SelectItem key={s.value} value={s.value}>
                       {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-foreground">Folder</Label>
+              <Select value={folderId} onValueChange={setFolderId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a folder" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {availableFolders.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

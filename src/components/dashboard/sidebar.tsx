@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -9,17 +9,16 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
-  FileText,
   CheckSquare,
   Users,
   Settings,
   LogOut,
 } from "lucide-react";
 import { toast } from "sonner";
+import { FolderTree } from "@/components/sops/folder-tree";
 
 const navLinks = [
   { key: "dashboard", href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { key: "sops", href: "/dashboard/sops", label: "SOP Wiki", icon: FileText },
   { key: "checklists", href: "/dashboard/checklists", label: "Checklists", icon: CheckSquare },
   { key: "team", href: "/dashboard/settings", label: "Team", icon: Users },
   { key: "settings", href: "/dashboard/settings", label: "Settings", icon: Settings },
@@ -71,7 +70,6 @@ export function DashboardSidebar({ className }: { className?: string }) {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get profile
       const { data: profile } = await supabase
         .from("profiles")
         .select("full_name, plan_id")
@@ -90,7 +88,6 @@ export function DashboardSidebar({ className }: { className?: string }) {
         setCreditsLimit(limit);
       }
 
-      // Get monthly usage
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const { data: usage } = await supabase
@@ -165,6 +162,22 @@ export function DashboardSidebar({ className }: { className?: string }) {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-3">
         <div className="space-y-1">
+          {/* Dashboard link */}
+          <NavLink
+            href="/dashboard"
+            label="Dashboard"
+            icon={LayoutDashboard}
+            pathname={pathname}
+          />
+
+          {/* SOP Wiki folder tree */}
+          <div className="py-1">
+            <Suspense fallback={null}>
+              <FolderTree />
+            </Suspense>
+          </div>
+
+          {/* Other nav links */}
           {navLinks.map(({ key, ...link }) => (
             <NavLink key={key} {...link} pathname={pathname} />
           ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
@@ -74,6 +74,9 @@ export default function NewSOPPage() {
   const [generatedText, setGeneratedText] = useState("");
   const [generating, setGenerating] = useState(false);
 
+  const [folderId, setFolderId] = useState("");
+  const [availableFolders, setAvailableFolders] = useState<{ id: string; name: string }[]>([]);
+
   // Upload & reformat state
   const [uploadText, setUploadText] = useState("");
   const [reformatting, setReformatting] = useState(false);
@@ -87,6 +90,21 @@ export default function NewSOPPage() {
   const router = useRouter();
   const supabase = createClient();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
+
+  // Load available folders
+  useEffect(() => {
+    async function loadFolders() {
+      const bizId = currentBusiness?.id;
+      if (!bizId) return;
+      const { data } = await supabase
+        .from("folders")
+        .select("id, name")
+        .eq("business_id", bizId)
+        .order("sort_order");
+      setAvailableFolders(data ?? []);
+    }
+    loadFolders();
+  }, [currentBusiness?.id, supabase]);
 
   async function getBusinessId(): Promise<string | null> {
     if (currentBusiness?.id) return currentBusiness.id;
@@ -119,6 +137,7 @@ export default function NewSOPPage() {
         content,
         summary: summary || null,
         category: category || null,
+        folder_id: folderId && folderId !== "none" ? folderId : null,
         status: "draft",
         version: 1,
         created_by: user.user?.id,
@@ -333,6 +352,7 @@ export default function NewSOPPage() {
           title: title.trim(),
           content: editorContent,
           category: category || null,
+          folder_id: folderId && folderId !== "none" ? folderId : null,
           status: "published",
           updated_at: new Date().toISOString(),
         })
@@ -369,6 +389,7 @@ export default function NewSOPPage() {
           content: editorContent,
           summary: summary || null,
           category: category || null,
+          folder_id: folderId && folderId !== "none" ? folderId : null,
           status: "published",
           version: 1,
           created_by: (await supabase.auth.getUser()).data.user?.id,
@@ -444,6 +465,24 @@ export default function NewSOPPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {availableFolders.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Folder (optional)</Label>
+                  <Select value={folderId} onValueChange={setFolderId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a folder" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {availableFolders.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <Button
                 id="generate-btn"
                 onClick={handleGenerate}

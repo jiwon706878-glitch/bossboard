@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { DashboardTopbar } from "@/components/dashboard/topbar";
 import { QuickNoteButton } from "@/components/dashboard/quick-note";
+import { PageContextMenu } from "@/components/dashboard/page-context-menu";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -36,6 +37,7 @@ export default async function DashboardLayout({
           {children}
         </main>
         <QuickNoteButton />
+        <PageContextMenu />
       </div>
     </div>
   );

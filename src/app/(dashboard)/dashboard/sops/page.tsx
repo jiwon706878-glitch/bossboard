@@ -158,6 +158,16 @@ export default function SOPsPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Listen for create-folder event from PageContextMenu
+  useEffect(() => {
+    function onCreateFolder(e: Event) {
+      const name = (e as CustomEvent).detail;
+      if (name && currentBusiness?.id) handleCreateFolder(name);
+    }
+    window.addEventListener("create-folder", onCreateFolder);
+    return () => window.removeEventListener("create-folder", onCreateFolder);
+  }, [currentBusiness?.id]);
+
   // ── Folder computations ───────────────────────────────────────────────────
 
   const rootFolders = folders.filter((f) => !f.parent_id);

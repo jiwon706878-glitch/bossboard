@@ -4,7 +4,6 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
-import Placeholder from "@tiptap/extension-placeholder";
 import { useImperativeHandle, forwardRef } from "react";
 
 export interface ChecklistEditorRef {
@@ -13,36 +12,16 @@ export interface ChecklistEditorRef {
 
 const ChecklistEditor = forwardRef<ChecklistEditorRef>(function ChecklistEditor(_props, ref) {
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
-      StarterKit.configure({
-        bulletList: false,
-        orderedList: false,
-        listItem: false,
-      }),
+      StarterKit,
       TaskList,
       TaskItem.configure({ nested: true }),
-      Placeholder.configure({
-        placeholder: "Start typing checklist items... each line becomes a checkbox",
-      }),
     ],
-    content: {
-      type: "doc",
-      content: [
-        {
-          type: "taskList",
-          content: [
-            {
-              type: "taskItem",
-              attrs: { checked: false },
-              content: [{ type: "paragraph" }],
-            },
-          ],
-        },
-      ],
-    },
+    content: '<ul data-type="taskList"><li data-type="taskItem" data-checked="false">First item</li></ul>',
     editorProps: {
       attributes: {
-        class: "min-h-[300px] outline-none prose prose-sm dark:prose-invert max-w-none p-4 [&_ul[data-type=taskList]]:list-none [&_ul[data-type=taskList]]:pl-0 [&_li[data-type=taskItem]]:flex [&_li[data-type=taskItem]]:items-start [&_li[data-type=taskItem]]:gap-2 [&_li[data-type=taskItem]_label]:mt-0.5 [&_li[data-type=taskItem]_div]:flex-1 [&_li[data-type=taskItem]_p]:my-0.5",
+        class: "prose prose-sm dark:prose-invert min-h-[300px] max-w-none p-4 focus:outline-none [&_ul[data-type=taskList]]:list-none [&_ul[data-type=taskList]]:pl-0 [&_li[data-type=taskItem]]:flex [&_li[data-type=taskItem]]:items-start [&_li[data-type=taskItem]]:gap-2 [&_li[data-type=taskItem]_label]:mt-0.5 [&_li[data-type=taskItem]_div]:flex-1 [&_li[data-type=taskItem]_p]:my-0.5",
       },
     },
   });
@@ -62,6 +41,10 @@ const ChecklistEditor = forwardRef<ChecklistEditorRef>(function ChecklistEditor(
       return items;
     },
   }), [editor]);
+
+  if (!editor) {
+    return <div className="min-h-[300px] rounded-md border bg-card p-4 text-sm text-muted-foreground">Loading editor...</div>;
+  }
 
   return (
     <div className="rounded-md border bg-card">

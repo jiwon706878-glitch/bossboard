@@ -116,6 +116,7 @@ export default function SOPsPage() {
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; sop: SOP } | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; timer: ReturnType<typeof setTimeout> } | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<"updated" | "title">("updated");
 
   const supabase = createClient();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
@@ -158,15 +159,26 @@ export default function SOPsPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Listen for create-folder event from PageContextMenu
+  // Listen for events from PageContextMenu
   useEffect(() => {
     function onCreateFolder(e: Event) {
       const name = (e as CustomEvent).detail;
       if (name && currentBusiness?.id) handleCreateFolder(name);
     }
+    function onSort(e: Event) {
+      const sort = (e as CustomEvent).detail;
+      if (sort === "title" || sort === "updated") setSortBy(sort);
+    }
+    function onRefresh() { fetchData(); }
     window.addEventListener("create-folder", onCreateFolder);
-    return () => window.removeEventListener("create-folder", onCreateFolder);
-  }, [currentBusiness?.id]);
+    window.addEventListener("wiki-sort", onSort);
+    window.addEventListener("wiki-refresh", onRefresh);
+    return () => {
+      window.removeEventListener("create-folder", onCreateFolder);
+      window.removeEventListener("wiki-sort", onSort);
+      window.removeEventListener("wiki-refresh", onRefresh);
+    };
+  }, [currentBusiness?.id, fetchData]);
 
   // ── Folder computations ───────────────────────────────────────────────────
 
@@ -196,8 +208,14 @@ export default function SOPsPage() {
     );
   }
 
-  const pinnedSops = displaySops.filter((s) => s.pinned);
-  const unpinnedSops = displaySops.filter((s) => !s.pinned);
+  // Sort
+  const sortedDisplay = [...displaySops].sort((a, b) => {
+    if (sortBy === "title") return a.title.localeCompare(b.title);
+    return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+  });
+
+  const pinnedSops = sortedDisplay.filter((s) => s.pinned);
+  const unpinnedSops = sortedDisplay.filter((s) => !s.pinned);
 
   const currentFolderName = selectedFolder === "unfiled"
     ? "Unfiled"
@@ -381,13 +399,13 @@ export default function SOPsPage() {
                     <Pin className="h-3 w-3 text-amber-400" /> Pinned
                   </div>
                   {pinnedSops.map((sop) => (
-                    <SopRow key={sop.id} sop={sop} isSelected={selectedSopId === sop.id} onSelect={() => setSelectedSopId(sop.id)} onDoubleClick={() => router.push(`/dashboard/sops/${sop.id}`)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, sop }); }} router={router} onPin={handlePin} onDelete={handleDelete} folders={folders} onMove={handleMove} />
+                    <SopRow key={sop.id} sop={sop} isSelected={selectedSopId === sop.id} onSelect={() => setSelectedSopId(sop.id)} onDoubleClick={() => router.push(`/dashboard/sops/${sop.id}`)} onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, sop }); }} router={router} onPin={handlePin} onDelete={handleDelete} folders={folders} onMove={handleMove} />
                   ))}
                   {unpinnedSops.length > 0 && <div className="mx-4 my-0.5 h-px bg-border/50" />}
                 </>
               )}
               {unpinnedSops.map((sop) => (
-                <SopRow key={sop.id} sop={sop} isSelected={selectedSopId === sop.id} onSelect={() => setSelectedSopId(sop.id)} onDoubleClick={() => router.push(`/dashboard/sops/${sop.id}`)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, sop }); }} router={router} onPin={handlePin} onDelete={handleDelete} folders={folders} onMove={handleMove} />
+                <SopRow key={sop.id} sop={sop} isSelected={selectedSopId === sop.id} onSelect={() => setSelectedSopId(sop.id)} onDoubleClick={() => router.push(`/dashboard/sops/${sop.id}`)} onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, sop }); }} router={router} onPin={handlePin} onDelete={handleDelete} folders={folders} onMove={handleMove} />
               ))}
             </div>
           )}

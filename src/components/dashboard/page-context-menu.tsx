@@ -2,7 +2,15 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { FileText, Plus, FolderPlus, CheckSquare, ListTodo, RefreshCw } from "lucide-react";
+import {
+  FileText,
+  FolderPlus,
+  CheckSquare,
+  ListTodo,
+  RefreshCw,
+  ArrowUpDown,
+  Clock,
+} from "lucide-react";
 
 interface MenuItem {
   label: string;
@@ -10,9 +18,19 @@ interface MenuItem {
   action: () => void;
 }
 
+interface Divider {
+  type: "divider";
+}
+
+type MenuEntry = MenuItem | Divider;
+
 interface MenuPosition {
   x: number;
   y: number;
+}
+
+function isDivider(entry: MenuEntry): entry is Divider {
+  return "type" in entry && entry.type === "divider";
 }
 
 export function PageContextMenu() {
@@ -23,7 +41,9 @@ export function PageContextMenu() {
 
   const close = useCallback(() => setMenu(null), []);
 
+  // Close on click outside, escape, scroll
   useEffect(() => {
+    if (!menu) return;
     function handleClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) close();
     }
@@ -32,11 +52,9 @@ export function PageContextMenu() {
     }
     function handleScroll() { close(); }
 
-    if (menu) {
-      document.addEventListener("mousedown", handleClick);
-      document.addEventListener("keydown", handleKey);
-      window.addEventListener("scroll", handleScroll, true);
-    }
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    window.addEventListener("scroll", handleScroll, true);
     return () => {
       document.removeEventListener("mousedown", handleClick);
       document.removeEventListener("keydown", handleKey);
@@ -49,16 +67,17 @@ export function PageContextMenu() {
     function handleContextMenu(e: MouseEvent) {
       const target = e.target as HTMLElement;
 
-      // Don't override if the target or ancestor already handles context menu
-      // (SOP rows, folder items, etc. call e.stopPropagation)
-      // Also skip inputs, textareas, contenteditable
+      // Allow default right-click on text inputs / editable areas
       if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable ||
+        target.closest("[contenteditable]") ||
         target.closest("input") ||
         target.closest("textarea") ||
-        target.closest("[contenteditable]") ||
         target.closest("[data-radix-popper-content-wrapper]")
       ) {
-        return;
+        return; // Let browser show native copy/paste menu
       }
 
       e.preventDefault();
@@ -78,69 +97,102 @@ export function PageContextMenu() {
 
   if (!menu) return null;
 
-  // Build menu items based on current page
-  const items: MenuItem[] = [];
+  // Build menu entries based on current page
+  const entries: MenuEntry[] = [];
 
   if (pathname.startsWith("/dashboard/sops")) {
-    items.push({
+    entries.push({
       label: "New SOP",
       icon: FileText,
       action: () => { router.push("/dashboard/sops/new"); close(); },
     });
-    items.push({
+    entries.push({
       label: "New Folder",
       icon: FolderPlus,
       action: () => {
         close();
         const name = prompt("New folder name:");
         if (name?.trim()) {
-          // Dispatch custom event for the SOPs page to handle
           window.dispatchEvent(new CustomEvent("create-folder", { detail: name.trim() }));
         }
       },
     });
+    entries.push({ type: "divider" });
+    entries.push({
+      label: "Sort by Name",
+      icon: ArrowUpDown,
+      action: () => { window.dispatchEvent(new CustomEvent("wiki-sort", { detail: "title" })); close(); },
+    });
+    entries.push({
+      label: "Sort by Date",
+      icon: Clock,
+      action: () => { window.dispatchEvent(new CustomEvent("wiki-sort", { detail: "updated" })); close(); },
+    });
+    entries.push({ type: "divider" });
+    entries.push({
+      label: "Refresh",
+      icon: RefreshCw,
+      action: () => { window.dispatchEvent(new CustomEvent("wiki-refresh")); close(); },
+    });
   } else if (pathname.startsWith("/dashboard/checklists")) {
-    items.push({
+    entries.push({
       label: "New Checklist",
       icon: CheckSquare,
       action: () => { router.push("/dashboard/checklists/new"); close(); },
     });
+    entries.push({ type: "divider" });
+    entries.push({
+      label: "Refresh",
+      icon: RefreshCw,
+      action: () => { close(); router.refresh(); },
+    });
   } else if (pathname === "/dashboard") {
-    items.push({
-      label: "New Todo",
+    entries.push({
+      label: "Add Todo",
       icon: ListTodo,
       action: () => {
         close();
-        // Focus the todo input
         const input = document.querySelector<HTMLInputElement>('input[placeholder="Add a todo..."]');
         if (input) input.focus();
       },
     });
-    items.push({
+    entries.push({
       label: "New SOP",
       icon: FileText,
       action: () => { router.push("/dashboard/sops/new"); close(); },
     });
-    items.push({
+    entries.push({
+      label: "New Checklist",
+      icon: CheckSquare,
+      action: () => { router.push("/dashboard/checklists/new"); close(); },
+    });
+    entries.push({ type: "divider" });
+    entries.push({
       label: "Refresh",
       icon: RefreshCw,
       action: () => { close(); router.refresh(); },
     });
   } else {
-    // Generic fallback
-    items.push({
+    entries.push({
       label: "New SOP",
       icon: FileText,
       action: () => { router.push("/dashboard/sops/new"); close(); },
     });
-    items.push({
+    entries.push({
       label: "New Checklist",
       icon: CheckSquare,
       action: () => { router.push("/dashboard/checklists/new"); close(); },
     });
+    entries.push({ type: "divider" });
+    entries.push({
+      label: "Refresh",
+      icon: RefreshCw,
+      action: () => { close(); router.refresh(); },
+    });
   }
 
-  const cls = "flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs cursor-pointer transition-colors duration-100 hover:bg-muted text-foreground";
+  const itemCount = entries.filter((e) => !isDivider(e)).length;
+  const dividerCount = entries.filter((e) => isDivider(e)).length;
 
   return (
     <div
@@ -148,15 +200,25 @@ export function PageContextMenu() {
       className="fixed z-50 w-44 rounded-md border bg-popover p-1 shadow-md"
       style={{
         left: Math.min(menu.x, window.innerWidth - 190),
-        top: Math.min(menu.y, window.innerHeight - (items.length * 32 + 16)),
+        top: Math.min(menu.y, window.innerHeight - (itemCount * 30 + dividerCount * 9 + 12)),
       }}
     >
-      {items.map((item) => (
-        <button key={item.label} type="button" className={cls} onClick={item.action}>
-          <item.icon className="h-3.5 w-3.5" />
-          {item.label}
-        </button>
-      ))}
+      {entries.map((entry, i) => {
+        if (isDivider(entry)) {
+          return <div key={`d-${i}`} className="my-1 h-px bg-border" />;
+        }
+        return (
+          <button
+            key={entry.label}
+            type="button"
+            className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs cursor-pointer transition-colors duration-100 hover:bg-muted text-foreground"
+            onClick={entry.action}
+          >
+            <entry.icon className="h-3.5 w-3.5 text-muted-foreground" />
+            {entry.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

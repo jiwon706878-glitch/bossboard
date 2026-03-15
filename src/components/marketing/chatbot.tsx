@@ -348,7 +348,7 @@ export function Chatbot() {
 
       {/* Chat panel */}
       {open && (
-        <div className="dark fixed bottom-24 right-6 z-50 flex h-[32rem] w-[calc(100vw-3rem)] flex-col rounded-xl border bg-background text-foreground sm:w-96">
+        <div className="fixed bottom-24 right-6 z-50 flex h-[32rem] w-[calc(100vw-3rem)] flex-col rounded-xl border bg-card text-card-foreground sm:w-96">
           {/* Header */}
           <div className="flex items-center gap-3 border-b px-4 py-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">

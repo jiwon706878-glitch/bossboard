@@ -24,7 +24,7 @@ export function PricingToggle() {
           onClick={() => setAnnual(!annual)}
           className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200"
           style={{
-            backgroundColor: annual ? "#4F8BFF" : "#2A3050",
+            backgroundColor: annual ? "#4F8BFF" : "var(--border)",
           }}
           role="switch"
           aria-checked={annual}
@@ -32,7 +32,7 @@ export function PricingToggle() {
           <span
             className="inline-block h-4 w-4 rounded-full transition-transform duration-200"
             style={{
-              backgroundColor: "#E8ECF4",
+              backgroundColor: "var(--foreground)",
               transform: annual ? "translateX(24px)" : "translateX(4px)",
             }}
           />
@@ -67,10 +67,10 @@ export function PricingToggle() {
               key={planId}
               className="relative flex flex-col rounded-md p-6"
               style={{
-                backgroundColor: "#141824",
+                backgroundColor: "var(--card)",
                 border: isRecommended
                   ? "1px solid #4F8BFF"
-                  : "1px solid #2A3050",
+                  : "1px solid var(--border)",
                 ...(isRecommended
                   ? { marginTop: "-8px", paddingTop: "32px", paddingBottom: "32px" }
                   : {}),
@@ -84,7 +84,7 @@ export function PricingToggle() {
                     className="rounded-md px-3 py-1 text-xs font-semibold"
                     style={{
                       backgroundColor: "#4F8BFF",
-                      color: "#FFFFFF",
+                      color: "var(--primary-foreground)",
                     }}
                   >
                     Recommended
@@ -96,7 +96,7 @@ export function PricingToggle() {
                 <h3
                   className="text-lg font-semibold"
                   style={{
-                    color: "#E8ECF4",
+                    color: "var(--foreground)",
                     fontFamily: "'A2Z', sans-serif",
                   }}
                 >
@@ -104,7 +104,7 @@ export function PricingToggle() {
                 </h3>
                 <p
                   className="mt-1 text-sm"
-                  style={{ color: "#5A6480" }}
+                  style={{ color: "var(--muted-foreground)" }}
                 >
                   {plan.description}
                 </p>
@@ -112,7 +112,7 @@ export function PricingToggle() {
                   <span
                     className="text-3xl font-bold"
                     style={{
-                      color: "#E8ECF4",
+                      color: "var(--foreground)",
                       fontFamily: "'JetBrains Mono', monospace",
                     }}
                   >
@@ -120,14 +120,14 @@ export function PricingToggle() {
                   </span>
                   <span
                     className="text-sm ml-1"
-                    style={{ color: "#5A6480" }}
+                    style={{ color: "var(--muted-foreground)" }}
                   >
                     /mo
                   </span>
                   {annual && price > 0 && (
                     <p
                       className="mt-1 text-xs"
-                      style={{ color: "#5A6480" }}
+                      style={{ color: "var(--muted-foreground)" }}
                     >
                       ${price}/year
                     </p>
@@ -140,7 +140,7 @@ export function PricingToggle() {
                   <li
                     key={feature}
                     className="flex items-start gap-2 text-sm"
-                    style={{ color: "#8B95B0" }}
+                    style={{ color: "var(--muted-foreground)" }}
                   >
                     <Check
                       className="mt-0.5 h-4 w-4 shrink-0"
@@ -159,7 +159,7 @@ export function PricingToggle() {
                   color: isRecommended ? "#FFFFFF" : "#8B95B0",
                   border: isRecommended
                     ? "1px solid #4F8BFF"
-                    : "1px solid #2A3050",
+                    : "1px solid var(--border)",
                   fontFamily: "'A2Z', sans-serif",
                 }}
                 onMouseEnter={(e) => {
@@ -174,7 +174,7 @@ export function PricingToggle() {
                   if (isRecommended) {
                     e.currentTarget.style.backgroundColor = "#4F8BFF";
                   } else {
-                    e.currentTarget.style.borderColor = "#2A3050";
+                    e.currentTarget.style.borderColor = "var(--border)";
                     e.currentTarget.style.color = "#8B95B0";
                   }
                 }}

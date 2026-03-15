@@ -10,10 +10,14 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.verifyOtp({
       token_hash,
-      type: type as "signup" | "email",
+      type: type as "signup" | "email" | "recovery",
     });
 
     if (!error) {
+      // Redirect recovery to reset-password page, others to confirmed
+      if (type === "recovery") {
+        return NextResponse.redirect(`${origin}/reset-password`);
+      }
       return NextResponse.redirect(`${origin}/auth/confirmed`);
     }
   }

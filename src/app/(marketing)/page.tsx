@@ -57,7 +57,7 @@ export default function HomePage() {
       <section
         className="px-4 sm:px-6 lg:px-8"
         style={{
-          backgroundColor: "#101420",
+          backgroundColor: "var(--background)",
           paddingTop: "112px",
           paddingBottom: "96px",
         }}
@@ -73,7 +73,7 @@ export default function HomePage() {
                   fontWeight: 700,
                   letterSpacing: "-0.02em",
                   lineHeight: 1.15,
-                  color: "#E4E8F0",
+                  color: "var(--foreground)",
                 }}
               >
                 Your Business Manual,
@@ -87,7 +87,7 @@ export default function HomePage() {
                   fontFamily: "'A2Z', sans-serif",
                   fontSize: "18px",
                   lineHeight: 1.7,
-                  color: "#8B95B0",
+                  color: "var(--muted-foreground)",
                   fontWeight: 400,
                 }}
               >
@@ -102,7 +102,7 @@ export default function HomePage() {
                   className="inline-flex items-center gap-2 rounded-md px-7 py-3.5 text-sm font-semibold transition-colors duration-150"
                   style={{
                     backgroundColor: "#4F8BFF",
-                    color: "#F0F2F7",
+                    color: "var(--primary-foreground)",
                     fontFamily: "'A2Z', sans-serif",
                   }}
                 >
@@ -113,7 +113,7 @@ export default function HomePage() {
 
               <p
                 className="text-xs"
-                style={{ color: "#5A6480", fontFamily: "'A2Z', sans-serif" }}
+                style={{ color: "var(--muted-foreground)", fontFamily: "'A2Z', sans-serif" }}
               >
                 No credit card required. Free plan includes 5 documents and 5 AI generations per month.
               </p>
@@ -123,8 +123,8 @@ export default function HomePage() {
             <div
               className="hidden lg:block rounded-md overflow-hidden"
               style={{
-                backgroundColor: "#141824",
-                border: "1px solid #2A3050",
+                backgroundColor: "var(--card)",
+                border: "1px solid var(--border)",
                 minHeight: "420px",
                 position: "relative",
               }}
@@ -134,7 +134,7 @@ export default function HomePage() {
                 <div
                   style={{
                     width: "50px",
-                    backgroundColor: "#101420",
+                    backgroundColor: "var(--background)",
                     borderRight: "1px solid #2A3050",
                     padding: "14px 10px",
                     display: "flex",
@@ -151,34 +151,34 @@ export default function HomePage() {
                 </div>
                 {/* Main */}
                 <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                  <div style={{ height: "28px", backgroundColor: "#101420", borderBottom: "1px solid #2A3050", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px" }}>
+                  <div style={{ height: "28px", backgroundColor: "var(--background)", borderBottom: "1px solid #2A3050", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px" }}>
                     <div style={{ width: "60px", height: "5px", borderRadius: "2px", backgroundColor: "#2A3050" }} />
                     <div style={{ display: "flex", gap: "6px" }}>
                       <div style={{ width: "14px", height: "5px", borderRadius: "2px", backgroundColor: "#2A3050" }} />
-                      <div style={{ width: "14px", height: "14px", borderRadius: "50%", backgroundColor: "#1C2033", border: "1px solid #2A3050" }} />
+                      <div style={{ width: "14px", height: "14px", borderRadius: "50%", backgroundColor: "#1C2033", border: "1px solid var(--border)" }} />
                     </div>
                   </div>
                   <div style={{ padding: "16px 18px", flex: 1 }}>
                     <div style={{ width: "55%", height: "8px", borderRadius: "4px", backgroundColor: "#2A3050", marginBottom: "4px" }} />
                     <div style={{ width: "30%", height: "5px", borderRadius: "2px", backgroundColor: "#1C2033", marginBottom: "16px" }} />
                     <div style={{ display: "flex", gap: "10px", marginBottom: "14px" }}>
-                      <div style={{ flex: 1.4, backgroundColor: "#1C2033", border: "1px solid #2A3050", borderRadius: "6px", padding: "12px" }}>
+                      <div style={{ flex: 1.4, backgroundColor: "#1C2033", border: "1px solid var(--border)", borderRadius: "6px", padding: "12px" }}>
                         <div style={{ width: "40%", height: "4px", borderRadius: "2px", backgroundColor: "#2A3050", marginBottom: "8px" }} />
-                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "18px", fontWeight: 600, color: "#E8ECF4", lineHeight: 1 }}>24</div>
+                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "18px", fontWeight: 600, color: "var(--foreground)", lineHeight: 1 }}>24</div>
                         <div style={{ width: "50%", height: "3px", borderRadius: "2px", backgroundColor: "#2A3050", marginTop: "6px" }} />
                       </div>
-                      <div style={{ flex: 1, backgroundColor: "#1C2033", border: "1px solid #2A3050", borderRadius: "6px", padding: "12px" }}>
+                      <div style={{ flex: 1, backgroundColor: "#1C2033", border: "1px solid var(--border)", borderRadius: "6px", padding: "12px" }}>
                         <div style={{ width: "50%", height: "4px", borderRadius: "2px", backgroundColor: "#2A3050", marginBottom: "8px" }} />
                         <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "18px", fontWeight: 600, color: "#34D399", lineHeight: 1 }}>89%</div>
                         <div style={{ width: "60%", height: "3px", borderRadius: "2px", backgroundColor: "#2A3050", marginTop: "6px" }} />
                       </div>
-                      <div style={{ flex: 0.8, backgroundColor: "#1C2033", border: "1px solid #2A3050", borderRadius: "6px", padding: "12px" }}>
+                      <div style={{ flex: 0.8, backgroundColor: "#1C2033", border: "1px solid var(--border)", borderRadius: "6px", padding: "12px" }}>
                         <div style={{ width: "55%", height: "4px", borderRadius: "2px", backgroundColor: "#2A3050", marginBottom: "8px" }} />
                         <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "18px", fontWeight: 600, color: "#4F8BFF", lineHeight: 1 }}>7</div>
                         <div style={{ width: "45%", height: "3px", borderRadius: "2px", backgroundColor: "#2A3050", marginTop: "6px" }} />
                       </div>
                     </div>
-                    <div style={{ backgroundColor: "#1C2033", border: "1px solid #2A3050", borderLeft: "3px solid #FBBF24", borderRadius: "6px", padding: "12px 14px", marginBottom: "14px" }}>
+                    <div style={{ backgroundColor: "#1C2033", border: "1px solid var(--border)", borderLeft: "3px solid #FBBF24", borderRadius: "6px", padding: "12px 14px", marginBottom: "14px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
                         <div style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#FBBF24" }} />
                         <div style={{ width: "35%", height: "5px", borderRadius: "2px", backgroundColor: "#2A3050" }} />
@@ -207,16 +207,16 @@ export default function HomePage() {
       <section
         className="px-4 sm:px-6 lg:px-8"
         style={{
-          backgroundColor: "#101420",
+          backgroundColor: "var(--background)",
           paddingTop: "64px",
           paddingBottom: "80px",
-          borderTop: "1px solid #2A3050",
+          borderTop: "1px solid var(--border)",
         }}
       >
         <div className="mx-auto max-w-5xl">
           <h2
             className="text-center text-2xl font-bold"
-            style={{ color: "#E8ECF4", fontFamily: "'A2Z', sans-serif", letterSpacing: "-0.01em" }}
+            style={{ color: "var(--foreground)", fontFamily: "'A2Z', sans-serif", letterSpacing: "-0.01em" }}
           >
             Built for teams who refuse to lose knowledge
           </h2>
@@ -230,12 +230,12 @@ export default function HomePage() {
               <div
                 key={stat.value}
                 className="rounded-md p-6 text-center"
-                style={{ backgroundColor: "#141824", border: "1px solid #2A3050" }}
+                style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
               >
                 <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "2rem", fontWeight: 700, color: stat.color }}>
                   {stat.value}
                 </div>
-                <p className="mt-2 text-sm" style={{ color: "#8B95B0" }}>{stat.label}</p>
+                <p className="mt-2 text-sm" style={{ color: "var(--muted-foreground)" }}>{stat.label}</p>
               </div>
             ))}
           </div>
@@ -247,20 +247,20 @@ export default function HomePage() {
         id="features"
         className="px-4 sm:px-6 lg:px-8"
         style={{
-          backgroundColor: "#101420",
+          backgroundColor: "var(--background)",
           paddingTop: "80px",
           paddingBottom: "96px",
-          borderTop: "1px solid #2A3050",
+          borderTop: "1px solid var(--border)",
         }}
       >
         <div className="mx-auto max-w-5xl">
           <h2
             className="text-3xl font-bold"
-            style={{ color: "#E8ECF4", fontFamily: "'A2Z', sans-serif", letterSpacing: "-0.01em" }}
+            style={{ color: "var(--foreground)", fontFamily: "'A2Z', sans-serif", letterSpacing: "-0.01em" }}
           >
             Everything you need to run operations
           </h2>
-          <p className="mt-2 text-base" style={{ color: "#8B95B0" }}>
+          <p className="mt-2 text-base" style={{ color: "var(--muted-foreground)" }}>
             From AI generation to daily execution and tracking.
           </p>
 
@@ -272,8 +272,8 @@ export default function HomePage() {
                   key={feature.title}
                   className="rounded-md p-6"
                   style={{
-                    backgroundColor: "#141824",
-                    border: "1px solid #2A3050",
+                    backgroundColor: "var(--card)",
+                    border: "1px solid var(--border)",
                   }}
                 >
                   <div
@@ -284,11 +284,11 @@ export default function HomePage() {
                   </div>
                   <h3
                     className="mt-4 text-base font-semibold"
-                    style={{ color: "#E8ECF4", fontFamily: "'A2Z', sans-serif" }}
+                    style={{ color: "var(--foreground)", fontFamily: "'A2Z', sans-serif" }}
                   >
                     {feature.title}
                   </h3>
-                  <p className="mt-2 text-sm leading-relaxed" style={{ color: "#8B95B0" }}>
+                  <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
                     {feature.desc}
                   </p>
                 </div>
@@ -303,20 +303,20 @@ export default function HomePage() {
         id="how-it-works"
         className="px-4 sm:px-6 lg:px-8"
         style={{
-          backgroundColor: "#101420",
+          backgroundColor: "var(--background)",
           paddingTop: "96px",
           paddingBottom: "80px",
-          borderTop: "1px solid #2A3050",
+          borderTop: "1px solid var(--border)",
         }}
       >
         <div className="mx-auto max-w-3xl">
           <h2
             className="text-3xl font-bold"
-            style={{ color: "#E8ECF4", fontFamily: "'A2Z', sans-serif", letterSpacing: "-0.01em" }}
+            style={{ color: "var(--foreground)", fontFamily: "'A2Z', sans-serif", letterSpacing: "-0.01em" }}
           >
             How it works
           </h2>
-          <p className="mt-2 text-base" style={{ color: "#8B95B0" }}>
+          <p className="mt-2 text-base" style={{ color: "var(--muted-foreground)" }}>
             From idea to deployed manual in under a minute.
           </p>
 
@@ -355,11 +355,11 @@ export default function HomePage() {
                 <div style={{ borderLeft: `2px solid ${item.accent}`, paddingLeft: "20px" }}>
                   <h3
                     className="text-lg font-semibold"
-                    style={{ color: "#E8ECF4", fontFamily: "'A2Z', sans-serif" }}
+                    style={{ color: "var(--foreground)", fontFamily: "'A2Z', sans-serif" }}
                   >
                     {item.title}
                   </h3>
-                  <p className="mt-1.5 text-sm leading-relaxed" style={{ color: "#8B95B0" }}>
+                  <p className="mt-1.5 text-sm leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
                     {item.desc}
                   </p>
                 </div>
@@ -374,21 +374,21 @@ export default function HomePage() {
         id="pricing"
         className="px-4 sm:px-6 lg:px-8"
         style={{
-          backgroundColor: "#101420",
+          backgroundColor: "var(--background)",
           paddingTop: "80px",
           paddingBottom: "96px",
-          borderTop: "1px solid #2A3050",
+          borderTop: "1px solid var(--border)",
         }}
       >
         <div className="mx-auto max-w-6xl">
           <div className="text-center">
             <h2
               className="text-3xl font-bold"
-              style={{ color: "#E8ECF4", fontFamily: "'A2Z', sans-serif", letterSpacing: "-0.01em" }}
+              style={{ color: "var(--foreground)", fontFamily: "'A2Z', sans-serif", letterSpacing: "-0.01em" }}
             >
               Simple, transparent pricing
             </h2>
-            <p className="mt-2 text-base" style={{ color: "#8B95B0" }}>
+            <p className="mt-2 text-base" style={{ color: "var(--muted-foreground)" }}>
               Start free. Upgrade when you&apos;re ready.
             </p>
           </div>
@@ -405,22 +405,22 @@ export default function HomePage() {
       <section
         className="px-4 sm:px-6 lg:px-8"
         style={{
-          backgroundColor: "#101420",
+          backgroundColor: "var(--background)",
           paddingTop: "64px",
           paddingBottom: "128px",
-          borderTop: "1px solid #2A3050",
+          borderTop: "1px solid var(--border)",
         }}
       >
         <div className="mx-auto max-w-2xl text-center">
           <h2
             className="text-3xl font-bold"
-            style={{ color: "#E8ECF4", fontFamily: "'A2Z', sans-serif", letterSpacing: "-0.01em" }}
+            style={{ color: "var(--foreground)", fontFamily: "'A2Z', sans-serif", letterSpacing: "-0.01em" }}
           >
             Ready to build your operations manual?
           </h2>
           <p
             className="mt-3 leading-relaxed"
-            style={{ color: "#8B95B0", fontSize: "16px" }}
+            style={{ color: "var(--muted-foreground)", fontSize: "16px" }}
           >
             Create your first AI-generated manual in under a minute.
             No credit card required.

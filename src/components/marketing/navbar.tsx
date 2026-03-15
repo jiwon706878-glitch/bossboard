@@ -19,8 +19,8 @@ export function MarketingNavbar() {
     <header
       className="sticky top-0 z-50 w-full"
       style={{
-        backgroundColor: "rgba(16, 20, 32, 0.95)",
-        borderBottom: "1px solid #2A3050",
+        backgroundColor: "color-mix(in srgb, var(--background) 95%, transparent)",
+        borderBottom: "1px solid var(--border)",
         backdropFilter: "blur(12px)",
       }}
     >
@@ -30,7 +30,7 @@ export function MarketingNavbar() {
           <span
             className="text-xl font-bold"
             style={{
-              color: "#E8ECF4",
+              color: "var(--foreground)",
               fontFamily: "'A2Z', sans-serif",
             }}
           >
@@ -45,14 +45,14 @@ export function MarketingNavbar() {
               href={link.href}
               className="text-sm transition-colors duration-150"
               style={{
-                color: "#8B95B0",
+                color: "var(--muted-foreground)",
                 fontFamily: "'A2Z', sans-serif",
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.color = "#E8ECF4")
+                (e.currentTarget.style.color = "var(--foreground)")
               }
               onMouseLeave={(e) =>
-                (e.currentTarget.style.color = "#8B95B0")
+                (e.currentTarget.style.color = "var(--muted-foreground)")
               }
             >
               {link.label}
@@ -83,7 +83,7 @@ export function MarketingNavbar() {
           <button
             className="md:hidden p-2"
             onClick={() => setMobileOpen(!mobileOpen)}
-            style={{ color: "#8B95B0" }}
+            style={{ color: "var(--muted-foreground)" }}
             aria-label="Toggle menu"
           >
             {mobileOpen ? (
@@ -98,8 +98,7 @@ export function MarketingNavbar() {
       {/* Mobile menu */}
       {mobileOpen && (
         <div
-          className="md:hidden px-4 pb-4"
-          style={{ backgroundColor: "#101420" }}
+          className="md:hidden bg-background px-4 pb-4"
         >
           <nav className="flex flex-col gap-3">
             {navLinks.map((link) => (
@@ -108,7 +107,7 @@ export function MarketingNavbar() {
                 href={link.href}
                 className="text-sm py-2"
                 style={{
-                  color: "#8B95B0",
+                  color: "var(--muted-foreground)",
                   fontFamily: "'A2Z', sans-serif",
                 }}
                 onClick={() => setMobileOpen(false)}

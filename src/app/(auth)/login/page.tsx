@@ -48,7 +48,13 @@ export default function LoginPage() {
       provider,
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-    if (error) toast.error(error.message);
+    if (error) {
+      if (error.message.includes("not enabled") || error.message.includes("Unsupported provider")) {
+        toast.error("Google login is being configured. Please use email/password for now.");
+      } else {
+        toast.error(error.message);
+      }
+    }
   }
 
   return (

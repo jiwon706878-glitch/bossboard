@@ -22,7 +22,6 @@ import { FolderTree } from "@/components/sops/folder-tree";
 import { QuickNoteSidebarButton } from "@/components/dashboard/quick-note";
 
 const navLinks = [
-  { key: "dashboard", href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { key: "checklists", href: "/dashboard/checklists", label: "Checklists", icon: CheckSquare },
   { key: "onboarding", href: "/dashboard/onboarding-paths", label: "Onboarding", icon: GraduationCap },
   { key: "team", href: "/dashboard/settings", label: "Team", icon: Users },

@@ -16,7 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, FileText, Search, Clock, Folder, ChevronRight, Pin, StickyNote, ScrollText } from "lucide-react";
+import { Plus, FileText, Search, Clock, Folder, ChevronRight, Pin, MoreHorizontal, Pencil, Trash2, FolderInput, GripVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -48,10 +55,24 @@ const STATUS_COLORS: Record<string, string> = {
   archived: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
 };
 
-function SOPCard({ sop, router }: { sop: SOP; router: ReturnType<typeof useRouter> }) {
+function SOPCard({
+  sop,
+  router,
+  onPin,
+  onDelete,
+  folders,
+  onMove,
+}: {
+  sop: SOP;
+  router: ReturnType<typeof useRouter>;
+  onPin?: (id: string, pinned: boolean) => void;
+  onDelete?: (id: string) => void;
+  folders?: FolderRow[];
+  onMove?: (sopId: string, folderId: string) => void;
+}) {
   return (
     <Card
-      className="cursor-pointer border bg-card transition-colors duration-150 hover:bg-muted/50"
+      className="group cursor-pointer border bg-card transition-colors duration-150 hover:bg-muted/50"
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData("text/plain", sop.id);
@@ -60,6 +81,9 @@ function SOPCard({ sop, router }: { sop: SOP; router: ReturnType<typeof useRoute
       onClick={() => router.push(`/dashboard/sops/${sop.id}`)}
     >
       <CardContent className="flex items-center justify-between py-4">
+        {/* Drag handle */}
+        <GripVertical className="mr-2 h-4 w-4 shrink-0 cursor-grab text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             {sop.isUnread && (
@@ -77,11 +101,9 @@ function SOPCard({ sop, router }: { sop: SOP; router: ReturnType<typeof useRoute
               <Badge variant="outline" className="text-xs">{sop.category}</Badge>
             )}
           </div>
-          <div className="mt-1 flex items-center gap-2">
-            {sop.summary && (
-              <p className="truncate text-sm text-muted-foreground">{sop.summary}</p>
-            )}
-          </div>
+          {sop.summary && (
+            <p className="mt-1 truncate text-sm text-muted-foreground">{sop.summary}</p>
+          )}
           {sop.tags && sop.tags.length > 0 && (
             <div className="mt-1 flex gap-1">
               {sop.tags.slice(0, 4).map((tag) => (
@@ -92,10 +114,52 @@ function SOPCard({ sop, router }: { sop: SOP; router: ReturnType<typeof useRoute
             </div>
           )}
         </div>
+
         <div className="ml-4 flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
           <Clock className="h-3 w-3" />
           {formatDate(sop.updated_at || sop.created_at)}
           <span className="ml-1 font-mono text-[11px]">v{sop.version}</span>
+
+          {/* Inline actions menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="ml-1 flex h-7 w-7 items-center justify-center rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/sops/${sop.id}/edit`); }}>
+                <Pencil className="mr-2 h-3 w-3" /> Edit
+              </DropdownMenuItem>
+              {onPin && (
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onPin(sop.id, !sop.pinned); }}>
+                  <Pin className="mr-2 h-3 w-3" /> {sop.pinned ? "Unpin" : "Pin"}
+                </DropdownMenuItem>
+              )}
+              {onMove && folders && folders.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  {folders.slice(0, 6).map((f) => (
+                    <DropdownMenuItem key={f.id} onClick={(e) => { e.stopPropagation(); onMove(sop.id, f.id); }}>
+                      <FolderInput className="mr-2 h-3 w-3" /> {f.name}
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+              {onDelete && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(sop.id); }}>
+                    <Trash2 className="mr-2 h-3 w-3" /> Delete
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </CardContent>
     </Card>
@@ -212,6 +276,28 @@ export default function SOPsPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  async function handlePin(sopId: string, pinned: boolean) {
+    const { error } = await supabase.from("sops").update({ pinned }).eq("id", sopId);
+    if (error) { toast.error(error.message); return; }
+    toast.success(pinned ? "SOP pinned" : "SOP unpinned");
+    fetchData();
+  }
+
+  async function handleDeleteSop(sopId: string) {
+    const { error } = await supabase.from("sops").delete().eq("id", sopId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("SOP deleted");
+    fetchData();
+  }
+
+  async function handleMoveSop(sopId: string, targetFolderId: string) {
+    const { error } = await supabase.from("sops").update({ folder_id: targetFolderId }).eq("id", sopId);
+    if (error) { toast.error(error.message); return; }
+    const folderName = folders.find((f) => f.id === targetFolderId)?.name ?? "folder";
+    toast.success(`Moved to ${folderName}`);
+    fetchData();
+  }
 
   async function handleDropOnFolder(folderId: string, e: React.DragEvent) {
     e.preventDefault();
@@ -474,13 +560,13 @@ export default function SOPsPage() {
                 <span>Pinned ({pinnedSops.length})</span>
               </div>
               {pinnedSops.map((sop) => (
-                <SOPCard key={sop.id} sop={sop} router={router} />
+                <SOPCard key={sop.id} sop={sop} router={router} onPin={handlePin} onDelete={handleDeleteSop} folders={folders} onMove={handleMoveSop} />
               ))}
               {unpinnedSops.length > 0 && <div className="h-2" />}
             </>
           )}
           {unpinnedSops.map((sop) => (
-            <SOPCard key={sop.id} sop={sop} router={router} />
+            <SOPCard key={sop.id} sop={sop} router={router} onPin={handlePin} onDelete={handleDeleteSop} folders={folders} onMove={handleMoveSop} />
           ))}
         </div>
       )}

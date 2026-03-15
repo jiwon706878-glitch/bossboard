@@ -309,7 +309,7 @@ export function Chatbot() {
     addMessages({
       id: nextId(),
       role: "assistant",
-      content: "You\u2019re now chatting with our AI assistant. Type your question below. (1 credit per message)",
+      content: "You\u2019re now chatting with our AI assistant. You have 5 free questions. Sign up for unlimited access!",
     });
   }
 
@@ -357,7 +357,7 @@ export function Chatbot() {
             <div>
               <p className="text-sm font-semibold">BossBoard Help</p>
               <p className="text-xs text-muted-foreground">
-                {aiMode ? "AI Assistant (1 credit/msg)" : "Ask us anything"}
+                {aiMode ? "AI Assistant" : "5 free questions. Sign up for more."}
               </p>
             </div>
             {aiMode && (

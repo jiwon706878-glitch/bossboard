@@ -26,7 +26,7 @@ const inputStyle: React.CSSProperties = {
   color: "#E8ECF4",
   padding: "10px 14px",
   fontSize: "14px",
-  fontFamily: "'Source Sans 3', sans-serif",
+  fontFamily: "'A2Z', sans-serif",
   width: "100%",
   outline: "none",
 };
@@ -117,7 +117,7 @@ export function WaitlistForm() {
           className="mt-4 text-2xl font-bold"
           style={{
             color: "#E8ECF4",
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'A2Z', sans-serif",
           }}
         >
           You&apos;re on the list!
@@ -280,7 +280,7 @@ export function WaitlistForm() {
           style={{
             backgroundColor: "#4F8BFF",
             color: "#FFFFFF",
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'A2Z', sans-serif",
           }}
           onMouseEnter={(e) => {
             if (!submitting)

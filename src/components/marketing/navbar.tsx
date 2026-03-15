@@ -30,7 +30,7 @@ export function MarketingNavbar() {
             className="text-xl font-bold"
             style={{
               color: "#E8ECF4",
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'A2Z', sans-serif",
             }}
           >
             BossBoard
@@ -45,7 +45,7 @@ export function MarketingNavbar() {
               className="text-sm transition-colors duration-150"
               style={{
                 color: "#8B95B0",
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'A2Z', sans-serif",
               }}
               onMouseEnter={(e) =>
                 (e.currentTarget.style.color = "#E8ECF4")
@@ -66,7 +66,7 @@ export function MarketingNavbar() {
             style={{
               backgroundColor: "#4F8BFF",
               color: "#FFFFFF",
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'A2Z', sans-serif",
             }}
             onMouseEnter={(e) =>
               (e.currentTarget.style.backgroundColor = "#6BA0FF")
@@ -107,7 +107,7 @@ export function MarketingNavbar() {
                 className="text-sm py-2"
                 style={{
                   color: "#8B95B0",
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "'A2Z', sans-serif",
                 }}
                 onClick={() => setMobileOpen(false)}
               >
@@ -120,7 +120,7 @@ export function MarketingNavbar() {
               style={{
                 backgroundColor: "#4F8BFF",
                 color: "#FFFFFF",
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'A2Z', sans-serif",
               }}
               onClick={() => setMobileOpen(false)}
             >

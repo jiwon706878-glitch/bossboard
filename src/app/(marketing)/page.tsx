@@ -57,38 +57,38 @@ export default function HomePage() {
       <section
         className="px-4 sm:px-6 lg:px-8"
         style={{
-          backgroundColor: "#0C0F17",
+          backgroundColor: "#101420",
           paddingTop: "112px",
           paddingBottom: "96px",
         }}
       >
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-start">
-            <div>
+            <div className="space-y-8">
               <h1
+                className="max-w-2xl"
                 style={{
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "'A2Z', sans-serif",
                   fontSize: "clamp(2.5rem, 5vw, 3.5rem)",
                   fontWeight: 700,
                   letterSpacing: "-0.02em",
-                  lineHeight: 1.1,
-                  color: "#E8ECF4",
+                  lineHeight: 1.15,
+                  color: "#E4E8F0",
                 }}
               >
-                Your Business
+                Your Business Manual,
                 <br />
-                Manual, Built
-                <br />
-                by AI
+                Built by AI
               </h1>
 
               <p
-                className="mt-6 max-w-lg"
+                className="max-w-xl leading-relaxed"
                 style={{
-                  fontFamily: "'Source Sans 3', sans-serif",
+                  fontFamily: "'A2Z', sans-serif",
                   fontSize: "18px",
-                  lineHeight: 1.6,
+                  lineHeight: 1.7,
                   color: "#8B95B0",
+                  fontWeight: 400,
                 }}
               >
                 Create operation manuals, checklists, and team procedures in
@@ -96,14 +96,14 @@ export default function HomePage() {
                 everything.
               </p>
 
-              <div className="mt-8">
+              <div>
                 <Link
                   href="/signup"
-                  className="inline-flex items-center gap-2 rounded-md px-6 py-3 text-sm font-semibold transition-colors duration-150"
+                  className="inline-flex items-center gap-2 rounded-md px-7 py-3.5 text-sm font-semibold transition-colors duration-150"
                   style={{
                     backgroundColor: "#4F8BFF",
-                    color: "#FFFFFF",
-                    fontFamily: "'DM Sans', sans-serif",
+                    color: "#F0F2F7",
+                    fontFamily: "'A2Z', sans-serif",
                   }}
                 >
                   Get Started Free
@@ -112,8 +112,8 @@ export default function HomePage() {
               </div>
 
               <p
-                className="mt-4 text-xs"
-                style={{ color: "#5A6480" }}
+                className="text-xs"
+                style={{ color: "#5A6480", fontFamily: "'A2Z', sans-serif" }}
               >
                 No credit card required. Free plan includes 5 documents and 5 AI generations per month.
               </p>
@@ -134,7 +134,7 @@ export default function HomePage() {
                 <div
                   style={{
                     width: "50px",
-                    backgroundColor: "#0C0F17",
+                    backgroundColor: "#101420",
                     borderRight: "1px solid #2A3050",
                     padding: "14px 10px",
                     display: "flex",
@@ -151,7 +151,7 @@ export default function HomePage() {
                 </div>
                 {/* Main */}
                 <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                  <div style={{ height: "28px", backgroundColor: "#0C0F17", borderBottom: "1px solid #2A3050", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px" }}>
+                  <div style={{ height: "28px", backgroundColor: "#101420", borderBottom: "1px solid #2A3050", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px" }}>
                     <div style={{ width: "60px", height: "5px", borderRadius: "2px", backgroundColor: "#2A3050" }} />
                     <div style={{ display: "flex", gap: "6px" }}>
                       <div style={{ width: "14px", height: "5px", borderRadius: "2px", backgroundColor: "#2A3050" }} />
@@ -207,7 +207,7 @@ export default function HomePage() {
       <section
         className="px-4 sm:px-6 lg:px-8"
         style={{
-          backgroundColor: "#0C0F17",
+          backgroundColor: "#101420",
           paddingTop: "64px",
           paddingBottom: "80px",
           borderTop: "1px solid #2A3050",
@@ -216,7 +216,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-5xl">
           <h2
             className="text-center text-2xl font-bold"
-            style={{ color: "#E8ECF4", fontFamily: "'DM Sans', sans-serif", letterSpacing: "-0.01em" }}
+            style={{ color: "#E8ECF4", fontFamily: "'A2Z', sans-serif", letterSpacing: "-0.01em" }}
           >
             Built for teams who refuse to lose knowledge
           </h2>
@@ -247,7 +247,7 @@ export default function HomePage() {
         id="features"
         className="px-4 sm:px-6 lg:px-8"
         style={{
-          backgroundColor: "#0C0F17",
+          backgroundColor: "#101420",
           paddingTop: "80px",
           paddingBottom: "96px",
           borderTop: "1px solid #2A3050",
@@ -256,7 +256,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-5xl">
           <h2
             className="text-3xl font-bold"
-            style={{ color: "#E8ECF4", fontFamily: "'DM Sans', sans-serif", letterSpacing: "-0.01em" }}
+            style={{ color: "#E8ECF4", fontFamily: "'A2Z', sans-serif", letterSpacing: "-0.01em" }}
           >
             Everything you need to run operations
           </h2>
@@ -284,7 +284,7 @@ export default function HomePage() {
                   </div>
                   <h3
                     className="mt-4 text-base font-semibold"
-                    style={{ color: "#E8ECF4", fontFamily: "'DM Sans', sans-serif" }}
+                    style={{ color: "#E8ECF4", fontFamily: "'A2Z', sans-serif" }}
                   >
                     {feature.title}
                   </h3>
@@ -303,7 +303,7 @@ export default function HomePage() {
         id="how-it-works"
         className="px-4 sm:px-6 lg:px-8"
         style={{
-          backgroundColor: "#0C0F17",
+          backgroundColor: "#101420",
           paddingTop: "96px",
           paddingBottom: "80px",
           borderTop: "1px solid #2A3050",
@@ -312,7 +312,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-3xl">
           <h2
             className="text-3xl font-bold"
-            style={{ color: "#E8ECF4", fontFamily: "'DM Sans', sans-serif", letterSpacing: "-0.01em" }}
+            style={{ color: "#E8ECF4", fontFamily: "'A2Z', sans-serif", letterSpacing: "-0.01em" }}
           >
             How it works
           </h2>
@@ -355,7 +355,7 @@ export default function HomePage() {
                 <div style={{ borderLeft: `2px solid ${item.accent}`, paddingLeft: "20px" }}>
                   <h3
                     className="text-lg font-semibold"
-                    style={{ color: "#E8ECF4", fontFamily: "'DM Sans', sans-serif" }}
+                    style={{ color: "#E8ECF4", fontFamily: "'A2Z', sans-serif" }}
                   >
                     {item.title}
                   </h3>
@@ -374,7 +374,7 @@ export default function HomePage() {
         id="pricing"
         className="px-4 sm:px-6 lg:px-8"
         style={{
-          backgroundColor: "#0C0F17",
+          backgroundColor: "#101420",
           paddingTop: "80px",
           paddingBottom: "96px",
           borderTop: "1px solid #2A3050",
@@ -384,7 +384,7 @@ export default function HomePage() {
           <div className="text-center">
             <h2
               className="text-3xl font-bold"
-              style={{ color: "#E8ECF4", fontFamily: "'DM Sans', sans-serif", letterSpacing: "-0.01em" }}
+              style={{ color: "#E8ECF4", fontFamily: "'A2Z', sans-serif", letterSpacing: "-0.01em" }}
             >
               Simple, transparent pricing
             </h2>
@@ -405,7 +405,7 @@ export default function HomePage() {
       <section
         className="px-4 sm:px-6 lg:px-8"
         style={{
-          backgroundColor: "#0C0F17",
+          backgroundColor: "#101420",
           paddingTop: "64px",
           paddingBottom: "128px",
           borderTop: "1px solid #2A3050",
@@ -414,7 +414,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-2xl text-center">
           <h2
             className="text-3xl font-bold"
-            style={{ color: "#E8ECF4", fontFamily: "'DM Sans', sans-serif", letterSpacing: "-0.01em" }}
+            style={{ color: "#E8ECF4", fontFamily: "'A2Z', sans-serif", letterSpacing: "-0.01em" }}
           >
             Ready to build your operations manual?
           </h2>
@@ -429,7 +429,7 @@ export default function HomePage() {
             <Link
               href="/signup"
               className="inline-flex items-center gap-2 rounded-md px-6 py-3 text-sm font-semibold transition-colors duration-150"
-              style={{ backgroundColor: "#4F8BFF", color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif" }}
+              style={{ backgroundColor: "#4F8BFF", color: "#FFFFFF", fontFamily: "'A2Z', sans-serif" }}
             >
               Get Started Free
               <ArrowRight className="h-4 w-4" />

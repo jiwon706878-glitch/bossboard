@@ -1,54 +1,24 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@font-face {
-  font-family: "A2Z";
-  src: url("/fonts/A2Z-4Regular.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "A2Z";
-  src: url("/fonts/A2Z-5Medium.ttf") format("truetype");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "A2Z";
-  src: url("/fonts/A2Z-6SemiBold.ttf") format("truetype");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "A2Z";
-  src: url("/fonts/A2Z-7Bold.ttf") format("truetype");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "A2Z";
-  src: url("/fonts/A2Z-9Black.ttf") format("truetype");
-  font-weight: 900;
-  font-style: normal;
-  font-display: swap;
-}
+@font-face { font-family: "A2Z"; src: url("/fonts/A2Z-1Thin.ttf") format("truetype"); font-weight: 100; font-style: normal; font-display: swap; }
+@font-face { font-family: "A2Z"; src: url("/fonts/A2Z-2ExtraLight.ttf") format("truetype"); font-weight: 200; font-style: normal; font-display: swap; }
+@font-face { font-family: "A2Z"; src: url("/fonts/A2Z-3Light.ttf") format("truetype"); font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: "A2Z"; src: url("/fonts/A2Z-4Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "A2Z"; src: url("/fonts/A2Z-5Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "A2Z"; src: url("/fonts/A2Z-6SemiBold.ttf") format("truetype"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "A2Z"; src: url("/fonts/A2Z-7Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "A2Z"; src: url("/fonts/A2Z-8ExtraBold.ttf") format("truetype"); font-weight: 800; font-style: normal; font-display: swap; }
+@font-face { font-family: "A2Z"; src: url("/fonts/A2Z-9Black.ttf") format("truetype"); font-weight: 900; font-style: normal; font-display: swap; }
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "DM Sans", "A2Z", sans-serif;
+  --font-sans: "A2Z", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -93,93 +63,85 @@
 }
 
 @keyframes accordion-down {
-  from {
-    height: 0;
-  }
-  to {
-    height: var(--radix-accordion-content-height);
-  }
+  from { height: 0; }
+  to { height: var(--radix-accordion-content-height); }
 }
 
 @keyframes accordion-up {
-  from {
-    height: var(--radix-accordion-content-height);
-  }
-  to {
-    height: 0;
-  }
+  from { height: var(--radix-accordion-content-height); }
+  to { height: 0; }
 }
 
 :root {
   --radius: 0.625rem;
-  --background: #FAFBFD;
-  --foreground: #1A1D2B;
-  --card: #FFFFFF;
-  --card-foreground: #1A1D2B;
-  --popover: #FFFFFF;
-  --popover-foreground: #1A1D2B;
+  --background: #F5F6F8;
+  --foreground: #1E2330;
+  --card: #FAFBFC;
+  --card-foreground: #1E2330;
+  --popover: #FAFBFC;
+  --popover-foreground: #1E2330;
   --primary: #3366FF;
-  --primary-foreground: #FFFFFF;
-  --secondary: #F0F2F7;
-  --secondary-foreground: #1A1D2B;
-  --muted: #F0F2F7;
-  --muted-foreground: #5E6478;
-  --accent: #E8EBF2;
-  --accent-foreground: #1A1D2B;
+  --primary-foreground: #FAFBFC;
+  --secondary: #EEF0F4;
+  --secondary-foreground: #1E2330;
+  --muted: #F0F1F4;
+  --muted-foreground: #6B7280;
+  --accent: #EEF0F4;
+  --accent-foreground: #1E2330;
   --destructive: #DC2626;
   --border: #E2E6EF;
   --input: #E2E6EF;
   --ring: #3366FF;
   --amber: #FBBF24;
-  --amber-foreground: #1A1D2B;
+  --amber-foreground: #1E2330;
   --chart-1: #3366FF;
   --chart-2: #059669;
   --chart-3: #D97706;
   --chart-4: #DC2626;
-  --chart-5: #5E6478;
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #1A1D2B;
+  --chart-5: #6B7280;
+  --sidebar: #FAFBFC;
+  --sidebar-foreground: #1E2330;
   --sidebar-primary: #3366FF;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F0F2F7;
-  --sidebar-accent-foreground: #1A1D2B;
+  --sidebar-primary-foreground: #FAFBFC;
+  --sidebar-accent: #EEF0F4;
+  --sidebar-accent-foreground: #1E2330;
   --sidebar-border: #E2E6EF;
   --sidebar-ring: #3366FF;
 }
 
 .dark {
   --radius: 0.625rem;
-  --background: #0C0F17;
-  --foreground: #E8ECF4;
-  --card: #141824;
-  --card-foreground: #E8ECF4;
-  --popover: #141824;
-  --popover-foreground: #E8ECF4;
+  --background: #101420;
+  --foreground: #E4E8F0;
+  --card: #171C2E;
+  --card-foreground: #E4E8F0;
+  --popover: #171C2E;
+  --popover-foreground: #E4E8F0;
   --primary: #4F8BFF;
-  --primary-foreground: #FFFFFF;
-  --secondary: #1C2033;
-  --secondary-foreground: #E8ECF4;
-  --muted: #1C2033;
+  --primary-foreground: #F0F2F7;
+  --secondary: #1E2438;
+  --secondary-foreground: #E4E8F0;
+  --muted: #1E2438;
   --muted-foreground: #8B95B0;
   --accent: #232840;
-  --accent-foreground: #E8ECF4;
+  --accent-foreground: #E4E8F0;
   --destructive: #F87171;
   --border: #2A3050;
   --input: #2A3050;
   --ring: #4F8BFF;
   --amber: #FBBF24;
-  --amber-foreground: #0C0F17;
+  --amber-foreground: #101420;
   --chart-1: #4F8BFF;
   --chart-2: #34D399;
   --chart-3: #FBBF24;
   --chart-4: #F87171;
   --chart-5: #8B95B0;
-  --sidebar: #0C0F17;
-  --sidebar-foreground: #E8ECF4;
+  --sidebar: #101420;
+  --sidebar-foreground: #E4E8F0;
   --sidebar-primary: #4F8BFF;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #1C2033;
-  --sidebar-accent-foreground: #E8ECF4;
+  --sidebar-primary-foreground: #F0F2F7;
+  --sidebar-accent: #1E2438;
+  --sidebar-accent-foreground: #E4E8F0;
   --sidebar-border: #2A3050;
   --sidebar-ring: #4F8BFF;
 }
@@ -190,28 +152,27 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: "DM Sans", "A2Z", sans-serif;
+    font-family: "A2Z", sans-serif;
   }
   h1 {
-    font-weight: 900;
+    font-weight: 700;
   }
-  h2,
-  h3 {
+  h2, h3 {
     font-weight: 600;
   }
-  button,
-  [data-slot="button"] {
+  button, [data-slot="button"] {
     font-weight: 600;
   }
 }
 
+/* Hide print-only elements on screen */
+.print-only {
+  display: none;
+}
+
 @media print {
-  /* Hide everything except the SOP content */
-  aside,
-  nav,
-  header,
-  [data-slot="button"],
-  button,
+  aside, nav, header,
+  [data-slot="button"], button,
   .no-print,
   [class*="topbar"],
   [class*="sidebar"],
@@ -220,8 +181,8 @@
   }
 
   body {
-    background: white !important;
-    color: black !important;
+    background: #F5F6F8 !important;
+    color: #1E2330 !important;
     font-size: 12pt;
   }
 
@@ -230,36 +191,27 @@
     margin: 0 !important;
   }
 
-  /* Make the content area full width */
   .flex.h-screen {
     display: block !important;
   }
 
-  /* Ensure card borders print well */
-  [class*="Card"],
-  [class*="card"] {
+  [class*="Card"], [class*="card"] {
     border: none !important;
     box-shadow: none !important;
-    background: white !important;
+    background: #FAFBFC !important;
   }
 
-  /* Ensure prose content is readable */
   .prose {
     max-width: 100% !important;
-    color: black !important;
+    color: #1E2330 !important;
   }
 
   a {
-    color: black !important;
+    color: #1E2330 !important;
     text-decoration: none !important;
   }
 
   .print-only {
     display: block !important;
   }
-}
-
-/* Hide print-only elements on screen */
-.print-only {
-  display: none;
 }

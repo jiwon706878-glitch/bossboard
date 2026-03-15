@@ -13,8 +13,10 @@ import {
   GraduationCap,
   Users,
   Settings,
+  Shield,
   LogOut,
 } from "lucide-react";
+import { useRoleStore } from "@/hooks/use-role";
 import { toast } from "sonner";
 import { FolderTree } from "@/components/sops/folder-tree";
 import { QuickNoteSidebarButton } from "@/components/dashboard/quick-note";
@@ -65,6 +67,7 @@ export function DashboardSidebar({ className }: { className?: string }) {
   const [creditsUsed, setCreditsUsed] = useState(0);
   const [creditsLimit, setCreditsLimit] = useState(30);
   const [unlimited, setUnlimited] = useState(false);
+  const { loadRole, isAdmin } = useRoleStore();
 
   useEffect(() => {
     async function load() {
@@ -103,7 +106,8 @@ export function DashboardSidebar({ className }: { className?: string }) {
       setCreditsUsed(total);
     }
     load();
-  }, [supabase]);
+    loadRole();
+  }, [supabase, loadRole]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -189,6 +193,16 @@ export function DashboardSidebar({ className }: { className?: string }) {
           {navLinks.map(({ key, ...link }) => (
             <NavLink key={key} {...link} pathname={pathname} />
           ))}
+
+          {/* Admin link — only for owner/admin */}
+          {isAdmin() && (
+            <NavLink
+              href="/dashboard/admin"
+              label="Admin"
+              icon={Shield}
+              pathname={pathname}
+            />
+          )}
         </div>
       </nav>
 

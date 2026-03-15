@@ -97,7 +97,7 @@ export function PricingToggle() {
                   className="text-lg font-semibold"
                   style={{
                     color: "#E8ECF4",
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "'A2Z', sans-serif",
                   }}
                 >
                   {plan.name}
@@ -160,7 +160,7 @@ export function PricingToggle() {
                   border: isRecommended
                     ? "1px solid #4F8BFF"
                     : "1px solid #2A3050",
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "'A2Z', sans-serif",
                 }}
                 onMouseEnter={(e) => {
                   if (isRecommended) {

@@ -11,9 +11,9 @@ export default function MarketingLayout({
     <div
       className="flex min-h-screen flex-col"
       style={{
-        backgroundColor: "#0C0F17",
-        color: "#E8ECF4",
-        fontFamily: "'Source Sans 3', sans-serif",
+        backgroundColor: "#101420",
+        color: "#E4E8F0",
+        fontFamily: "'A2Z', sans-serif",
       }}
     >
       <link

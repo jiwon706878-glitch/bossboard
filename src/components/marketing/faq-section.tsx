@@ -49,7 +49,7 @@ export function FaqSection() {
           className="text-3xl font-bold"
           style={{
             color: "#E8ECF4",
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'A2Z', sans-serif",
             letterSpacing: "-0.01em",
           }}
         >
@@ -77,7 +77,7 @@ export function FaqSection() {
               >
                 <span
                   className="text-base font-medium"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ fontFamily: "'A2Z', sans-serif" }}
                 >
                   {faq.question}
                 </span>

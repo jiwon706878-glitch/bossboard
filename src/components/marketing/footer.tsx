@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export function MarketingFooter() {
   return (
-    <footer style={{ borderTop: "1px solid #2A3050", backgroundColor: "#0C0F17" }}>
+    <footer style={{ borderTop: "1px solid #2A3050", backgroundColor: "#101420" }}>
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-between">
           <div className="flex items-center gap-2">
@@ -11,7 +11,7 @@ export function MarketingFooter() {
               className="text-base font-semibold"
               style={{
                 color: "#E8ECF4",
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'A2Z', sans-serif",
               }}
             >
               BossBoard

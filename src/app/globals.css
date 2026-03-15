@@ -253,4 +253,13 @@
     color: black !important;
     text-decoration: none !important;
   }
+
+  .print-only {
+    display: block !important;
+  }
+}
+
+/* Hide print-only elements on screen */
+.print-only {
+  display: none;
 }

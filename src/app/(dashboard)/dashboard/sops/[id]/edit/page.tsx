@@ -91,7 +91,7 @@ export default function EditSOPPage() {
       .update({
         title: title.trim(),
         content: editorContent,
-        category: category || null,
+        category: category && category !== "none" ? category : null,
         status,
         updated_at: new Date().toISOString(),
       })
@@ -155,6 +155,7 @@ export default function EditSOPPage() {
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
                   {CATEGORIES.map((c) => (
                     <SelectItem key={c.value} value={c.value}>
                       {c.label}

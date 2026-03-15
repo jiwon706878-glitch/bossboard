@@ -265,8 +265,11 @@ export default function SOPDetailPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
+      {/* Print-only title */}
+      <h1 className="print-only text-2xl font-bold">{sop.title}</h1>
+
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="no-print flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <Link href="/dashboard/sops">
             <Button variant="ghost" size="sm" className="mt-1">
@@ -367,7 +370,7 @@ export default function SOPDetailPage() {
       </div>
 
       {/* Metadata */}
-      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+      <div className="no-print flex items-center gap-4 text-sm text-muted-foreground">
         <span className="flex items-center gap-1">
           <Clock className="h-3.5 w-3.5" />
           Created {formatDate(sop.created_at)}
@@ -402,7 +405,7 @@ export default function SOPDetailPage() {
       </Card>
 
       {/* Read Tracking & Sign-off */}
-      <div className="space-y-4">
+      <div className="no-print space-y-4">
         {/* Read by count + avatars */}
         {readBy.length > 0 && (
           <div className="flex items-center gap-3">

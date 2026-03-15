@@ -12,7 +12,7 @@ export function StickyNote() {
   const [isOpen, setIsOpen] = useState(false);
   const [notes, setNotes] = useState<Note[]>([]);
   const [input, setInput] = useState("");
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -23,7 +23,12 @@ export function StickyNote() {
       const saved = localStorage.getItem("bossboard-sticky-notes");
       if (saved) setNotes(JSON.parse(saved));
       const savedPos = localStorage.getItem("bossboard-sticky-pos");
-      if (savedPos) setPosition(JSON.parse(savedPos));
+      if (savedPos) {
+        const parsed = JSON.parse(savedPos);
+        if (parsed && (parsed.x !== 0 || parsed.y !== 0)) {
+          setPosition(parsed);
+        }
+      }
     } catch {}
   }, []);
 
@@ -43,10 +48,20 @@ export function StickyNote() {
     setNotes((prev) => prev.filter((n) => n.id !== id));
   }
 
+  const noteRef = useRef<HTMLDivElement>(null);
+
   // Drag title bar
   function handleMouseDown(e: React.MouseEvent) {
+    // Get actual position of the note element on screen
+    const rect = noteRef.current?.getBoundingClientRect();
+    const currentX = rect?.left ?? 0;
+    const currentY = rect?.top ?? 0;
     setIsDragging(true);
-    dragRef.current = { startX: e.clientX, startY: e.clientY, origX: position.x, origY: position.y };
+    dragRef.current = { startX: e.clientX, startY: e.clientY, origX: currentX, origY: currentY };
+    // Switch from bottom/right positioning to top/left
+    if (!position) {
+      setPosition({ x: currentX, y: currentY });
+    }
   }
 
   useEffect(() => {
@@ -55,7 +70,10 @@ export function StickyNote() {
       if (!dragRef.current) return;
       const dx = e.clientX - dragRef.current.startX;
       const dy = e.clientY - dragRef.current.startY;
-      const newPos = { x: dragRef.current.origX + dx, y: dragRef.current.origY + dy };
+      const newPos = {
+        x: Math.max(0, Math.min(window.innerWidth - 300, dragRef.current.origX + dx)),
+        y: Math.max(0, Math.min(window.innerHeight - 100, dragRef.current.origY + dy)),
+      };
       setPosition(newPos);
       localStorage.setItem("bossboard-sticky-pos", JSON.stringify(newPos));
     }
@@ -86,13 +104,12 @@ export function StickyNote() {
     );
   }
 
-  const hasCustomPos = position.x !== 0 || position.y !== 0;
-
   return (
     <div
+      ref={noteRef}
       className="fixed z-50 w-72 rounded-lg border shadow-2xl"
       style={{
-        ...(hasCustomPos
+        ...(position
           ? { left: position.x, top: position.y }
           : { bottom: 80, right: 24 }),
         backgroundColor: "var(--card)",

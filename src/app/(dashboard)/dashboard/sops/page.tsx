@@ -148,9 +148,13 @@ export default function SOPsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; sop: SOP } | null>(null);
   const [folderCtxMenu, setFolderCtxMenu] = useState<{ x: number; y: number; folderId: string } | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<{ id: string; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const [hiddenSopId, setHiddenSopId] = useState<string | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"updated" | "title">("updated");
+  const [newFolderName, setNewFolderName] = useState("");
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const newFolderInputRef = useRef<HTMLInputElement>(null);
 
   const supabase = createClient();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
@@ -196,20 +200,30 @@ export default function SOPsPage() {
   // Ctrl+Z undo delete
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if ((e.ctrlKey || e.metaKey) && e.key === "z" && pendingDelete) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && hiddenSopId) {
         e.preventDefault();
-        clearTimeout(pendingDelete.timer);
-        setPendingDelete(null);
-        if (deletedSopRef.current) {
-          setAllSops((prev) => [deletedSopRef.current!, ...prev]);
-          deletedSopRef.current = null;
-        }
-        toast.success("Delete undone");
+        undoDelete();
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [pendingDelete]);
+  }, [hiddenSopId]);
+
+  function undoDelete() {
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    undoTimerRef.current = null;
+    setHiddenSopId(null);
+    toast.success("SOP restored");
+  }
+
+  function actuallyDelete(sopId: string) {
+    supabase.from("sops").delete().eq("id", sopId).then(() => {
+      // Remove from allSops after DB delete
+      setAllSops((prev) => prev.filter((s) => s.id !== sopId));
+    });
+    setHiddenSopId(null);
+    undoTimerRef.current = null;
+  }
 
   // Listen for events from PageContextMenu
   useEffect(() => {
@@ -232,23 +246,27 @@ export default function SOPsPage() {
     };
   }, [currentBusiness?.id, fetchData]);
 
+  // ── Visible SOPs (filter out pending-delete) ─────────────────────────────
+
+  const visibleSops = hiddenSopId ? allSops.filter((s) => s.id !== hiddenSopId) : allSops;
+
   // ── Folder computations ───────────────────────────────────────────────────
 
   const rootFolders = folders.filter((f) => !f.parent_id);
   const folderCounts: Record<string, number> = {};
   let unfiledCount = 0;
-  for (const s of allSops) {
+  for (const s of visibleSops) {
     if (s.folder_id) folderCounts[s.folder_id] = (folderCounts[s.folder_id] ?? 0) + 1;
     else unfiledCount++;
   }
 
   // ── Filtered SOPs for right panel ─────────────────────────────────────────
 
-  let displaySops = allSops;
+  let displaySops = visibleSops;
   if (selectedFolder === "unfiled") {
-    displaySops = allSops.filter((s) => !s.folder_id);
+    displaySops = visibleSops.filter((s) => !s.folder_id);
   } else if (selectedFolder) {
-    displaySops = allSops.filter((s) => s.folder_id === selectedFolder);
+    displaySops = visibleSops.filter((s) => s.folder_id === selectedFolder);
   }
 
   if (searchQuery) {
@@ -275,41 +293,19 @@ export default function SOPsPage() {
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
-  // Store deleted SOP for undo (so we don't need to refetch)
-  const deletedSopRef = useRef<SOP | null>(null);
-
   async function handlePin(sopId: string, pinned: boolean) {
-    // Optimistic
     setAllSops((prev) => prev.map((s) => s.id === sopId ? { ...s, pinned } : s));
     const { error } = await supabase.from("sops").update({ pinned }).eq("id", sopId);
-    if (error) fetchData(); // Rollback on error
+    if (error) fetchData();
   }
 
   function handleDelete(sopId: string) {
-    const sop = allSops.find((s) => s.id === sopId);
-    if (sop) deletedSopRef.current = sop;
-    // Optimistic: remove from UI immediately
-    setAllSops((prev) => prev.filter((s) => s.id !== sopId));
-    if (pendingDelete) clearTimeout(pendingDelete.timer);
-    const timer = setTimeout(async () => {
-      await supabase.from("sops").delete().eq("id", sopId);
-      setPendingDelete(null);
-      deletedSopRef.current = null;
-    }, 5000);
-    setPendingDelete({ id: sopId, timer });
-    toast.success("SOP deleted", {
-      action: {
-        label: "Undo",
-        onClick: () => {
-          clearTimeout(timer);
-          setPendingDelete(null);
-          // Optimistic: restore to UI immediately
-          if (deletedSopRef.current) {
-            setAllSops((prev) => [deletedSopRef.current!, ...prev]);
-            deletedSopRef.current = null;
-          }
-        },
-      },
+    // Hide from UI but keep in allSops (don't delete from DB yet)
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setHiddenSopId(sopId);
+    undoTimerRef.current = setTimeout(() => actuallyDelete(sopId), 5000);
+    toast("SOP deleted", {
+      action: { label: "Undo", onClick: () => undoDelete() },
       duration: 5000,
     });
   }
@@ -332,11 +328,14 @@ export default function SOPsPage() {
   }
 
   async function handleCreateFolder(name: string) {
-    if (!currentBusiness?.id) return;
+    if (!currentBusiness?.id || !name.trim()) return;
     const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from("folders").insert({ business_id: currentBusiness.id, name, parent_id: null, sort_order: folders.length, created_by: user?.id });
-    toast.success(`Folder "${name}" created`);
-    fetchData();
+    const { data } = await supabase.from("folders").insert({ business_id: currentBusiness.id, name: name.trim(), parent_id: null, sort_order: folders.length, created_by: user?.id }).select("id").single();
+    setIsCreatingFolder(false);
+    setNewFolderName("");
+    toast.success(`Folder "${name.trim()}" created`);
+    await fetchData();
+    if (data?.id) setSelectedFolder(data.id);
   }
 
   async function handleRenameFolder(folderId: string) {
@@ -513,14 +512,29 @@ export default function SOPsPage() {
           )}
         </div>
         <div className="border-t p-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start gap-2 text-muted-foreground"
-            onClick={() => { const n = prompt("New folder name:"); if (n?.trim()) handleCreateFolder(n.trim()); }}
-          >
-            <FolderPlus className="h-4 w-4" /> New Folder
-          </Button>
+          {isCreatingFolder ? (
+            <form onSubmit={(e) => { e.preventDefault(); handleCreateFolder(newFolderName); }} className="flex items-center gap-1">
+              <Input
+                ref={newFolderInputRef}
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                placeholder="Folder name"
+                className="h-7 text-xs"
+                autoFocus
+                onKeyDown={(e) => { if (e.key === "Escape") { setIsCreatingFolder(false); setNewFolderName(""); } }}
+                onBlur={() => { if (!newFolderName.trim()) { setIsCreatingFolder(false); setNewFolderName(""); } }}
+              />
+            </form>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start gap-2 text-muted-foreground"
+              onClick={() => { setIsCreatingFolder(true); setTimeout(() => newFolderInputRef.current?.focus(), 10); }}
+            >
+              <FolderPlus className="h-4 w-4" /> New Folder
+            </Button>
+          )}
         </div>
       </div>
 

@@ -154,8 +154,8 @@ function SOPCard({
   onContextMenu?: (e: React.MouseEvent, sop: SOP) => void;
 }) {
   return (
-    <Card
-      className="group cursor-pointer border bg-card transition-colors duration-150 hover:bg-muted/50"
+    <div
+      className="group flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-transparent px-3 text-sm transition-colors duration-100 hover:bg-muted/50"
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData("text/plain", sop.id);
@@ -170,92 +170,38 @@ function SOPCard({
         }
       }}
     >
-      <CardContent className="flex items-center gap-2 px-3 py-2.5">
-        {/* Drag handle */}
-        <div className="p-1.5 cursor-grab active:cursor-grabbing shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-          <GripVertical className="h-5 w-5 text-muted-foreground/40" />
-        </div>
-
-        {sop.isUnread && (
-          <span className="h-2 w-2 shrink-0 rounded-full bg-primary" title="Unread" />
-        )}
-        {sop.pinned && <Pin className="h-3 w-3 shrink-0 text-amber-400" />}
-        <h3 className="min-w-0 truncate text-sm font-medium" style={{ maxWidth: "40ch" }}>{sop.title}</h3>
-        <Badge variant="secondary" className={cn("shrink-0 text-[11px] px-1.5 py-0", STATUS_COLORS[sop.status])}>
-          {sop.status}
-        </Badge>
-        {sop.doc_type && sop.doc_type !== "sop" && (
-          <Badge variant="outline" className="shrink-0 text-[11px] px-1.5 py-0 capitalize">{sop.doc_type}</Badge>
-        )}
-        {sop.tags?.slice(0, 2).map((tag) => (
-          <span key={tag} className="hidden shrink-0 text-[10px] text-muted-foreground lg:inline">#{tag}</span>
-        ))}
-
-        <div className="flex-1" />
-
-        {/* Inline action icons (hover) */}
-        <div className="flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button type="button" title="Edit" className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/sops/${sop.id}/edit`); }}>
-            <Pencil className="h-4 w-4" />
-          </button>
-          {onPin && (
-            <button type="button" title={sop.pinned ? "Unpin" : "Pin"} className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted" onClick={(e) => { e.stopPropagation(); onPin(sop.id, !sop.pinned); }}>
-              <Pin className={cn("h-4 w-4", sop.pinned && "text-amber-400")} />
-            </button>
+      <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+      <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
+      {sop.isUnread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
+      {sop.pinned && <Pin className="h-3 w-3 shrink-0 text-amber-400" />}
+      <span className="min-w-0 truncate font-medium" style={{ maxWidth: "35ch" }}>{sop.title}</span>
+      <Badge variant="secondary" className={cn("shrink-0 text-[10px] leading-none px-1.5 py-0.5", STATUS_COLORS[sop.status])}>{sop.status}</Badge>
+      {sop.tags?.slice(0, 1).map((tag) => (
+        <span key={tag} className="hidden shrink-0 text-[10px] text-muted-foreground lg:inline">#{tag}</span>
+      ))}
+      <div className="flex-1" />
+      <div className="flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button type="button" title="Edit" className="rounded p-0.5 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/sops/${sop.id}/edit`); }}><Pencil className="h-3.5 w-3.5" /></button>
+        {onPin && <button type="button" title={sop.pinned ? "Unpin" : "Pin"} className="rounded p-0.5 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); onPin(sop.id, !sop.pinned); }}><Pin className={cn("h-3.5 w-3.5", sop.pinned && "text-amber-400")} /></button>}
+        {onDelete && <button type="button" title="Delete" className="rounded p-0.5 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(sop.id); }}><Trash2 className="h-3.5 w-3.5" /></button>}
+      </div>
+      <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">{formatDate(sop.updated_at || sop.created_at)}</span>
+      <span className="shrink-0 font-mono text-[10px] text-muted-foreground">v{sop.version}</span>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button type="button" className="flex h-5 w-5 items-center justify-center rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity" onClick={(e) => e.stopPropagation()}><MoreHorizontal className="h-3.5 w-3.5" /></button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/sops/${sop.id}/edit`); }}><Pencil className="mr-2 h-3 w-3" /> Edit</DropdownMenuItem>
+          {onPin && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onPin(sop.id, !sop.pinned); }}><Pin className="mr-2 h-3 w-3" /> {sop.pinned ? "Unpin" : "Pin"}</DropdownMenuItem>}
+          {onDuplicate && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate(sop.id); }}><FileText className="mr-2 h-3 w-3" /> Duplicate</DropdownMenuItem>}
+          {onMove && folders && folders.length > 0 && (
+            <>{folders.slice(0, 8).map((f) => (<DropdownMenuItem key={f.id} onClick={(e) => { e.stopPropagation(); onMove(sop.id, f.id); }}><FolderInput className="mr-2 h-3 w-3" /> {f.name}</DropdownMenuItem>))}</>
           )}
-          {onDelete && (
-            <button type="button" title="Delete" className="rounded p-1 text-muted-foreground hover:text-destructive hover:bg-muted" onClick={(e) => { e.stopPropagation(); onDelete(sop.id); }}>
-              <Trash2 className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-
-        {/* Date + version */}
-        <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">{formatDate(sop.updated_at || sop.created_at)}</span>
-        <span className="shrink-0 font-mono text-[11px] text-muted-foreground">v{sop.version}</span>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button type="button" className="flex h-6 w-6 items-center justify-center rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity" onClick={(e) => e.stopPropagation()}>
-              <MoreHorizontal className="h-3.5 w-3.5" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/sops/${sop.id}/edit`); }}>
-              <Pencil className="mr-2 h-3 w-3" /> Edit
-            </DropdownMenuItem>
-            {onPin && (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onPin(sop.id, !sop.pinned); }}>
-                <Pin className="mr-2 h-3 w-3" /> {sop.pinned ? "Unpin" : "Pin"}
-              </DropdownMenuItem>
-            )}
-            {onDuplicate && (
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate(sop.id); }}>
-                <FileText className="mr-2 h-3 w-3" /> Duplicate
-              </DropdownMenuItem>
-            )}
-            {onMove && folders && folders.length > 0 && (
-              <>
-                <DropdownMenuSeparator />
-                {folders.slice(0, 8).map((f) => (
-                  <DropdownMenuItem key={f.id} onClick={(e) => { e.stopPropagation(); onMove(sop.id, f.id); }}>
-                    <FolderInput className="mr-2 h-3 w-3" /> {f.name}
-                  </DropdownMenuItem>
-                ))}
-              </>
-            )}
-            {onDelete && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(sop.id); }}>
-                  <Trash2 className="mr-2 h-3 w-3" /> Delete
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </CardContent>
-    </Card>
+          {onDelete && <><DropdownMenuSeparator /><DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(sop.id); }}><Trash2 className="mr-2 h-3 w-3" /> Delete</DropdownMenuItem></>}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
 
@@ -632,9 +578,9 @@ export default function SOPsPage() {
         </div>
       </div>
 
-      {/* Root view: folder grid only */}
+      {/* Root view: folder grid only (Chrome bookmarks style) */}
       {showFoldersGrid && (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {rootFolders.map((f) => (
             <button
               key={f.id}
@@ -644,14 +590,14 @@ export default function SOPsPage() {
               onDragLeave={() => setDragOverFolder(null)}
               onDrop={(e) => handleDropOnFolder(f.id, e)}
               className={cn(
-                "flex items-center gap-3 rounded-md border px-4 py-3 text-left transition-all duration-150",
+                "flex h-14 cursor-pointer items-center gap-2 rounded-md border bg-card p-3 text-left transition-colors duration-100",
                 dragOverFolder === f.id
-                  ? "border-primary bg-primary/10 scale-[1.02]"
+                  ? "border-primary bg-primary/10"
                   : "border-border hover:bg-muted/50"
               )}
             >
               <Folder className="h-5 w-5 shrink-0 text-muted-foreground" />
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{f.name}</p>
                 <p className="text-xs text-muted-foreground">{folderSopCounts[f.id] ?? 0} docs</p>
               </div>
@@ -661,10 +607,10 @@ export default function SOPsPage() {
             <button
               type="button"
               onClick={() => router.push("/dashboard/sops?folder=unfiled")}
-              className="flex items-center gap-3 rounded-md border border-border px-4 py-3 text-left transition-all duration-150 hover:bg-muted/50"
+              className="flex h-14 cursor-pointer items-center gap-2 rounded-md border border-border bg-card p-3 text-left transition-colors duration-100 hover:bg-muted/50"
             >
               <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">Unfiled</p>
                 <p className="text-xs text-muted-foreground">{unfiledSopCount} docs</p>
               </div>
@@ -794,11 +740,11 @@ export default function SOPsPage() {
 
           {/* SOP list */}
           {loading ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map((i) => (
+            <div className="space-y-1">
+              {[1, 2, 3, 4, 5].map((i) => (
                 <div
                   key={i}
-                  className="h-12 animate-pulse rounded-md border bg-muted/40"
+                  className="h-9 animate-pulse rounded-md bg-muted/40"
                 />
               ))}
             </div>
@@ -824,18 +770,18 @@ export default function SOPsPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-1">
+            <div>
               {/* Pinned SOPs */}
               {pinnedSops.length > 0 && (
                 <>
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                  <div className="flex items-center gap-1.5 px-3 py-1 text-[11px] text-muted-foreground">
                     <Pin className="h-3 w-3 text-amber-400" />
                     <span>Pinned ({pinnedSops.length})</span>
                   </div>
                   {pinnedSops.map((sop) => (
                     <SOPCard key={sop.id} sop={sop} router={router} onPin={handlePin} onDelete={handleDeleteSop} onDuplicate={handleDuplicate} folders={folders} onMove={handleMoveSop} onContextMenu={(e, s) => setCtxMenu({ x: e.clientX, y: e.clientY, sop: s })} />
                   ))}
-                  {unpinnedSops.length > 0 && <div className="h-1" />}
+                  {unpinnedSops.length > 0 && <div className="h-px bg-border mx-3 my-1" />}
                 </>
               )}
               {unpinnedSops.map((sop) => (

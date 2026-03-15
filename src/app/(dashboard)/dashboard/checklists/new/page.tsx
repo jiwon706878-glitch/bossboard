@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -30,6 +30,11 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { extractStepsFromContent } from "@/lib/checklists/extract-steps";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
+import Placeholder from "@tiptap/extension-placeholder";
 
 interface SOPOption {
   id: string;
@@ -74,7 +79,41 @@ export default function NewChecklistPage() {
 
   // Manual tab
   const [manualTitle, setManualTitle] = useState("");
-  const [manualItems, setManualItems] = useState<string[]>([""]);
+
+  const manualEditor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        bulletList: false,
+        orderedList: false,
+        listItem: false,
+      }),
+      TaskList,
+      TaskItem.configure({ nested: true }),
+      Placeholder.configure({
+        placeholder: "Start typing checklist items... each line becomes a checkbox",
+      }),
+    ],
+    content: {
+      type: "doc",
+      content: [
+        {
+          type: "taskList",
+          content: [
+            {
+              type: "taskItem",
+              attrs: { checked: false },
+              content: [{ type: "paragraph" }],
+            },
+          ],
+        },
+      ],
+    },
+    editorProps: {
+      attributes: {
+        class: "min-h-[300px] outline-none prose prose-sm dark:prose-invert max-w-none px-1 py-2 [&_ul[data-type=taskList]]:list-none [&_ul[data-type=taskList]]:pl-0 [&_li[data-type=taskItem]]:flex [&_li[data-type=taskItem]]:items-start [&_li[data-type=taskItem]]:gap-2 [&_li[data-type=taskItem]_label]:mt-0.5 [&_li[data-type=taskItem]_div]:flex-1 [&_li[data-type=taskItem]_p]:my-0.5",
+      },
+    },
+  });
 
   // Load SOPs
   useEffect(() => {
@@ -241,13 +280,25 @@ export default function NewChecklistPage() {
     if (data?.id) router.push(`/dashboard/checklists/${data.id}`);
   }
 
+  function extractTaskItems(): { text: string; required: boolean }[] {
+    if (!manualEditor) return [];
+    const items: { text: string; required: boolean }[] = [];
+    manualEditor.state.doc.descendants((node) => {
+      if (node.type.name === "taskItem") {
+        const text = node.textContent.trim();
+        if (text) {
+          items.push({ text, required: true });
+        }
+      }
+    });
+    return items;
+  }
+
   async function handleCreateManual() {
     if (!manualTitle.trim() || !currentBusiness?.id) return;
     setCreating(true);
 
-    const items = manualItems
-      .filter((t) => t.trim())
-      .map((t) => ({ text: t.trim(), required: true }));
+    const items = extractTaskItems();
 
     if (items.length === 0) {
       toast.error("Add at least one item");
@@ -513,104 +564,62 @@ export default function NewChecklistPage() {
         </TabsContent>
 
         {/* ── Manual ──────────────────────────────────────── */}
-        <TabsContent value="manual" className="space-y-4 pt-4">
-          <Card className="border bg-card">
-            <CardHeader>
-              <CardTitle className="text-foreground">Create Manually</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Title</Label>
+        <TabsContent value="manual" className="pt-4">
+          <div className="space-y-4">
+            {/* Title — large, borderless, document-style */}
+            <input
+              type="text"
+              value={manualTitle}
+              onChange={(e) => setManualTitle(e.target.value)}
+              placeholder="Untitled Checklist"
+              className="w-full border-0 border-b border-border bg-transparent pb-2 text-2xl font-semibold text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-primary"
+            />
+
+            {/* TipTap TaskList editor */}
+            <div className="rounded-md border bg-card">
+              <EditorContent editor={manualEditor} />
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="flex-1 space-y-1">
+                <Label className="text-xs text-muted-foreground">Recurrence</Label>
+                <Select value={recurrence} onValueChange={setRecurrence}>
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RECURRENCE_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1 space-y-1">
+                <Label className="text-xs text-muted-foreground">Due date</Label>
                 <Input
-                  value={manualTitle}
-                  onChange={(e) => setManualTitle(e.target.value)}
-                  placeholder="Checklist title"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="h-8 text-sm"
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Items</Label>
-                <div className="space-y-1.5">
-                  {manualItems.map((item, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <CheckSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      <Input
-                        value={item}
-                        onChange={(e) => {
-                          const next = [...manualItems];
-                          next[i] = e.target.value;
-                          setManualItems(next);
-                        }}
-                        placeholder={`Item ${i + 1}`}
-                        className="h-8 text-sm"
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            setManualItems([...manualItems, ""]);
-                          }
-                        }}
-                      />
-                      {manualItems.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => setManualItems(manualItems.filter((_, j) => j !== i))}
-                          className="shrink-0 text-muted-foreground hover:text-destructive"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setManualItems([...manualItems, ""])}
-                >
-                  <Plus className="mr-1 h-3 w-3" /> Add item
-                </Button>
-              </div>
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Recurrence</Label>
-                  <Select value={recurrence} onValueChange={setRecurrence}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {RECURRENCE_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>
-                          {o.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Due date</Label>
-                  <Input
-                    type="date"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <Button
-                onClick={handleCreateManual}
-                disabled={creating || !manualTitle.trim()}
-                className="w-full"
-              >
-                {creating ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckSquare className="mr-2 h-4 w-4" />
-                )}
-                Create Checklist
-              </Button>
-            </CardContent>
-          </Card>
+            <Button
+              onClick={handleCreateManual}
+              disabled={creating || !manualTitle.trim()}
+              className="w-full"
+            >
+              {creating ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <CheckSquare className="mr-2 h-4 w-4" />
+              )}
+              Create Checklist
+            </Button>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

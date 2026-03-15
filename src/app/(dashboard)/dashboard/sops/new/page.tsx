@@ -249,8 +249,8 @@ export default function NewSOPPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 10_000_000) {
-      toast.error("File too large. Max file size: 10MB.");
+    if (file.size > 4_718_592) {
+      toast.error("File too large. Max file size: 4.5MB.");
       return;
     }
 

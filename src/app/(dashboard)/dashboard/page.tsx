@@ -121,7 +121,7 @@ export default function DashboardPage() {
         const { data: sops } = await supabase
           .from("sops")
           .select("id, title, status, created_at, updated_at")
-          .eq("workspace_id", businessId)
+          .eq("business_id", businessId)
           .order("updated_at", { ascending: false });
 
         if (sops) {
@@ -168,7 +168,7 @@ export default function DashboardPage() {
         const { data: activeChecklists } = await supabase
           .from("checklists")
           .select("id, due_date, status")
-          .eq("workspace_id", businessId)
+          .eq("business_id", businessId)
           .neq("status", "completed");
 
         if (activeChecklists) {

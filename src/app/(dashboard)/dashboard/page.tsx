@@ -121,7 +121,7 @@ export default function DashboardPage() {
         const { data: sops } = await supabase
           .from("sops")
           .select("id, title, status, created_at, updated_at")
-          .eq("business_id", businessId)
+          .eq("workspace_id", businessId)
           .order("updated_at", { ascending: false });
 
         if (sops) {
@@ -149,12 +149,11 @@ export default function DashboardPage() {
           setActivities(activityItems);
         }
 
-        // Fetch team count (profiles linked to same business)
-        // Note: team data may not be available in all setups
+        // Fetch team count
         const { data: invites } = await supabase
           .from("invites")
           .select("id, accepted")
-          .eq("business_id", businessId);
+          .eq("workspace_id", businessId);
 
         if (invites) {
           const accepted = invites.filter((i) => i.accepted).length;
@@ -169,7 +168,7 @@ export default function DashboardPage() {
         const { data: activeChecklists } = await supabase
           .from("checklists")
           .select("id, due_date, status")
-          .eq("business_id", businessId)
+          .eq("workspace_id", businessId)
           .neq("status", "completed");
 
         if (activeChecklists) {

@@ -201,7 +201,7 @@ export default function SOPDetailPage() {
     const { data, error } = await supabase
       .from("checklists")
       .insert({
-        business_id: businessId,
+        workspace_id: businessId,
         sop_id: sop.id,
         title: `${sop.title} — Checklist`,
         items: steps,

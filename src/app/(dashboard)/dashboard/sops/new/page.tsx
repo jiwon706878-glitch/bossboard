@@ -261,7 +261,7 @@ export default function NewSOPPage() {
     const { data, error } = await supabase
       .from("sops")
       .insert({
-        business_id: bizId,
+        workspace_id: bizId,
         title: title.trim(),
         content: editorContent,
         summary: summary || null,

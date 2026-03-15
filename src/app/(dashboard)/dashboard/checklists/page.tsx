@@ -55,7 +55,7 @@ export default function ChecklistsPage() {
     const { data, error } = await supabase
       .from("checklists")
       .select("*")
-      .eq("business_id", currentBusiness.id)
+      .eq("workspace_id", currentBusiness.id)
       .order("created_at", { ascending: false });
 
     if (error) {

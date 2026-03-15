@@ -76,7 +76,7 @@ export default function SOPsPage() {
       let query = supabase
         .from("sops")
         .select("id, title, summary, category, status, version, created_at, updated_at")
-        .eq("business_id", currentBusiness.id)
+        .eq("workspace_id", currentBusiness.id)
         .order("updated_at", { ascending: false });
 
       if (statusFilter !== "all") {

@@ -246,7 +246,7 @@ export default function OnboardingPage() {
       const content = textToTipTapJSON(completion);
 
       const { error } = await supabase.from("sops").insert({
-        business_id: currentBusiness.id,
+        workspace_id: currentBusiness.id,
         title,
         content,
         summary: summary || null,

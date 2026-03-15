@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { DashboardTopbar } from "@/components/dashboard/topbar";
-import { QuickNoteButton } from "@/components/dashboard/quick-note";
+import { StickyNote } from "@/components/dashboard/sticky-note";
 import { PageContextMenu } from "@/components/dashboard/page-context-menu";
 
 export const metadata: Metadata = {
@@ -36,7 +36,7 @@ export default async function DashboardLayout({
         <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
           {children}
         </main>
-        <QuickNoteButton />
+        <StickyNote />
         <PageContextMenu />
       </div>
     </div>

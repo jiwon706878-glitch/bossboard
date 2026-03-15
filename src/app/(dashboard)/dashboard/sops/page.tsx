@@ -8,7 +8,7 @@ import { useBusinessStore } from "@/hooks/use-business";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, FileText, Search, Folder, ChevronRight, Pin, MoreHorizontal, Pencil, Trash2, FolderInput, FolderPlus, GripVertical } from "lucide-react";
+import { Plus, FileText, Search, Folder, ChevronRight, ChevronUp, ChevronDown, Pin, MoreHorizontal, Pencil, Trash2, FolderInput, FolderPlus, GripVertical } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -151,12 +151,6 @@ export default function SOPsPage() {
   const [pendingDelete, setPendingDelete] = useState<{ id: string; timer: ReturnType<typeof setTimeout> } | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"updated" | "title">("updated");
-  // SOP drag reorder
-  const [dragSopId, setDragSopId] = useState<string | null>(null);
-  const [sopDropIndex, setSopDropIndex] = useState<number | null>(null);
-  // Folder drag reorder
-  const [dragFolderId, setDragFolderId] = useState<string | null>(null);
-  const [folderDropIndex, setFolderDropIndex] = useState<number | null>(null);
 
   const supabase = createClient();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
@@ -376,43 +370,61 @@ export default function SOPsPage() {
     if (error) fetchData();
   }
 
-  // ── SOP reorder ─────────────────────────────────────────────────────────
+  // ── SOP reorder (arrow buttons) ───────────────────────────────────────
 
-  function handleSopReorder(fromId: string, toIndex: number) {
-    // Reorder within the current display list (unpinned only)
+  function handleSopMoveUp(sopId: string) {
     const list = [...unpinnedSops];
-    const fromIndex = list.findIndex((s) => s.id === fromId);
-    if (fromIndex === -1 || fromIndex === toIndex) return;
-    const [item] = list.splice(fromIndex, 1);
-    list.splice(toIndex > fromIndex ? toIndex - 1 : toIndex, 0, item);
-    // Update allSops to reflect new order by adjusting updated_at timestamps
-    const now = Date.now();
-    const updates: Record<string, string> = {};
-    list.forEach((s, i) => {
-      const ts = new Date(now - i * 1000).toISOString();
-      updates[s.id] = ts;
-    });
-    setAllSops((prev) => prev.map((s) => updates[s.id] ? { ...s, updated_at: updates[s.id] } : s));
-    // Persist order (fire and forget)
-    list.forEach((s, i) => {
-      supabase.from("sops").update({ updated_at: updates[s.id] }).eq("id", s.id).then(() => {});
-    });
+    const idx = list.findIndex((s) => s.id === sopId);
+    if (idx <= 0) return;
+    // Swap updated_at with the one above to swap positions
+    const thisTs = list[idx].updated_at;
+    const aboveTs = list[idx - 1].updated_at;
+    setAllSops((prev) => prev.map((s) => {
+      if (s.id === list[idx].id) return { ...s, updated_at: aboveTs };
+      if (s.id === list[idx - 1].id) return { ...s, updated_at: thisTs };
+      return s;
+    }));
+    supabase.from("sops").update({ updated_at: aboveTs }).eq("id", list[idx].id).then(() => {});
+    supabase.from("sops").update({ updated_at: thisTs }).eq("id", list[idx - 1].id).then(() => {});
   }
 
-  // ── Folder reorder ──────────────────────────────────────────────────────
+  function handleSopMoveDown(sopId: string) {
+    const list = [...unpinnedSops];
+    const idx = list.findIndex((s) => s.id === sopId);
+    if (idx === -1 || idx >= list.length - 1) return;
+    const thisTs = list[idx].updated_at;
+    const belowTs = list[idx + 1].updated_at;
+    setAllSops((prev) => prev.map((s) => {
+      if (s.id === list[idx].id) return { ...s, updated_at: belowTs };
+      if (s.id === list[idx + 1].id) return { ...s, updated_at: thisTs };
+      return s;
+    }));
+    supabase.from("sops").update({ updated_at: belowTs }).eq("id", list[idx].id).then(() => {});
+    supabase.from("sops").update({ updated_at: thisTs }).eq("id", list[idx + 1].id).then(() => {});
+  }
 
-  function handleFolderReorder(fromId: string, toIndex: number) {
+  // ── Folder reorder (arrow buttons) ──────────────────────────────────────
+
+  function handleFolderMoveUp(folderId: string) {
     const roots = folders.filter((f) => !f.parent_id);
+    const idx = roots.findIndex((f) => f.id === folderId);
+    if (idx <= 0) return;
     const nonRoots = folders.filter((f) => f.parent_id);
-    const fromIndex = roots.findIndex((f) => f.id === fromId);
-    if (fromIndex === -1 || fromIndex === toIndex) return;
-    const [item] = roots.splice(fromIndex, 1);
-    roots.splice(toIndex > fromIndex ? toIndex - 1 : toIndex, 0, item);
+    [roots[idx], roots[idx - 1]] = [roots[idx - 1], roots[idx]];
     setFolders([...roots, ...nonRoots]);
-    // Persist sort_order
-    roots.forEach((f, i) => {
-      supabase.from("folders").update({ sort_order: i }).eq("id", f.id).then(() => {});
-    });
+    supabase.from("folders").update({ sort_order: idx - 1 }).eq("id", roots[idx - 1].id).then(() => {});
+    supabase.from("folders").update({ sort_order: idx }).eq("id", roots[idx].id).then(() => {});
+  }
+
+  function handleFolderMoveDown(folderId: string) {
+    const roots = folders.filter((f) => !f.parent_id);
+    const idx = roots.findIndex((f) => f.id === folderId);
+    if (idx === -1 || idx >= roots.length - 1) return;
+    const nonRoots = folders.filter((f) => f.parent_id);
+    [roots[idx], roots[idx + 1]] = [roots[idx + 1], roots[idx]];
+    setFolders([...roots, ...nonRoots]);
+    supabase.from("folders").update({ sort_order: idx }).eq("id", roots[idx].id).then(() => {});
+    supabase.from("folders").update({ sort_order: idx + 1 }).eq("id", roots[idx + 1].id).then(() => {});
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -453,46 +465,38 @@ export default function SOPsPage() {
         </div>
         <div className="flex-1 overflow-y-auto py-1">
           {rootFolders.map((f, idx) => (
-            <div key={f.id}>
-              {/* Drop zone above folder */}
-              <div
-                className={cn("h-0 transition-all duration-100", folderDropIndex === idx ? "h-1 bg-primary mx-2 rounded" : "")}
-                onDragOver={(e) => { e.preventDefault(); if (dragFolderId) setFolderDropIndex(idx); }}
-                onDragLeave={() => { if (folderDropIndex === idx) setFolderDropIndex(null); }}
-                onDrop={(e) => { e.preventDefault(); if (dragFolderId) { handleFolderReorder(dragFolderId, idx); setDragFolderId(null); setFolderDropIndex(null); } }}
-              />
-              <button
-                type="button"
-                data-has-context-menu
-                draggable
-                onDragStart={(e) => { setDragFolderId(f.id); e.dataTransfer.setData("application/folder-id", f.id); e.dataTransfer.effectAllowed = "move"; }}
-                onDragEnd={() => { setDragFolderId(null); setFolderDropIndex(null); }}
-                onClick={() => { setSelectedFolder(f.id); setSelectedSopId(null); }}
-                onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setFolderCtxMenu({ x: e.clientX, y: e.clientY, folderId: f.id }); }}
-                onDragOver={(e) => { e.preventDefault(); if (!dragFolderId) setDragOverFolder(f.id); }}
-                onDragLeave={() => setDragOverFolder(null)}
-                onDrop={(e) => { if (!dragFolderId) handleDropOnFolder(f.id, e); }}
-                className={cn(
-                  "flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors duration-100",
-                  selectedFolder === f.id ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted/50",
-                  dragOverFolder === f.id && !dragFolderId && "ring-2 ring-primary bg-primary/10"
+            <div
+              key={f.id}
+              data-has-context-menu
+              className={cn(
+                "group/folder flex w-full items-center gap-1 px-2 py-1.5 text-sm transition-colors duration-100 cursor-pointer",
+                selectedFolder === f.id ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted/50",
+                dragOverFolder === f.id && "ring-2 ring-primary bg-primary/10"
+              )}
+              onClick={() => { setSelectedFolder(f.id); setSelectedSopId(null); }}
+              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setFolderCtxMenu({ x: e.clientX, y: e.clientY, folderId: f.id }); }}
+              onDragOver={(e) => { e.preventDefault(); setDragOverFolder(f.id); }}
+              onDragLeave={() => setDragOverFolder(null)}
+              onDrop={(e) => handleDropOnFolder(f.id, e)}
+            >
+              {/* Reorder arrows */}
+              <div className="flex shrink-0 flex-col opacity-0 group-hover/folder:opacity-100 transition-opacity">
+                {idx > 0 && (
+                  <button type="button" className="text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); handleFolderMoveUp(f.id); }}>
+                    <ChevronUp className="h-3 w-3" />
+                  </button>
                 )}
-              >
-                <Folder className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1 truncate">{f.name}</span>
-                <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{folderCounts[f.id] ?? 0}</span>
-              </button>
+                {idx < rootFolders.length - 1 && (
+                  <button type="button" className="text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); handleFolderMoveDown(f.id); }}>
+                    <ChevronDown className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+              <Folder className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="min-w-0 flex-1 truncate">{f.name}</span>
+              <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{folderCounts[f.id] ?? 0}</span>
             </div>
           ))}
-          {/* Drop zone at bottom of folders */}
-          {dragFolderId && (
-            <div
-              className={cn("h-0 transition-all duration-100", folderDropIndex === rootFolders.length ? "h-1 bg-primary mx-2 rounded" : "")}
-              onDragOver={(e) => { e.preventDefault(); setFolderDropIndex(rootFolders.length); }}
-              onDragLeave={() => { if (folderDropIndex === rootFolders.length) setFolderDropIndex(null); }}
-              onDrop={(e) => { e.preventDefault(); handleFolderReorder(dragFolderId, rootFolders.length); setDragFolderId(null); setFolderDropIndex(null); }}
-            />
-          )}
           {unfiledCount > 0 && (
             <button
               type="button"
@@ -578,45 +582,28 @@ export default function SOPsPage() {
                     <Pin className="h-3 w-3 text-amber-400" /> Pinned
                   </div>
                   {pinnedSops.map((sop) => (
-                    <SopRow key={sop.id} sop={sop} isSelected={selectedSopId === sop.id} onSelect={() => setSelectedSopId(sop.id)} onDoubleClick={() => router.push(`/dashboard/sops/${sop.id}`)} onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, sop }); }} onDragStart={() => setDragSopId(sop.id)} onDragEnd={() => { setDragSopId(null); setSopDropIndex(null); }} router={router} onPin={handlePin} onDelete={handleDelete} folders={folders} onMove={handleMove} />
+                    <SopRow key={sop.id} sop={sop} isSelected={selectedSopId === sop.id} onSelect={() => setSelectedSopId(sop.id)} onDoubleClick={() => router.push(`/dashboard/sops/${sop.id}`)} onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, sop }); }} router={router} onPin={handlePin} onDelete={handleDelete} folders={folders} onMove={handleMove} />
                   ))}
                   {unpinnedSops.length > 0 && <div className="mx-4 my-0.5 h-px bg-border/50" />}
                 </>
               )}
               {unpinnedSops.map((sop, idx) => (
-                <div key={sop.id}>
-                  {/* Drop zone above this SOP */}
-                  <div
-                    className={cn("h-0 transition-all duration-100", sopDropIndex === idx && dragSopId ? "h-1 bg-primary mx-4 rounded" : "")}
-                    onDragOver={(e) => { e.preventDefault(); if (dragSopId) setSopDropIndex(idx); }}
-                    onDragLeave={() => { if (sopDropIndex === idx) setSopDropIndex(null); }}
-                    onDrop={(e) => { e.preventDefault(); if (dragSopId) { handleSopReorder(dragSopId, idx); setDragSopId(null); setSopDropIndex(null); } }}
-                  />
-                  <SopRow
-                    sop={sop}
-                    isSelected={selectedSopId === sop.id}
-                    onSelect={() => setSelectedSopId(sop.id)}
-                    onDoubleClick={() => router.push(`/dashboard/sops/${sop.id}`)}
-                    onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, sop }); }}
-                    onDragStart={() => setDragSopId(sop.id)}
-                    onDragEnd={() => { setDragSopId(null); setSopDropIndex(null); }}
-                    router={router}
-                    onPin={handlePin}
-                    onDelete={handleDelete}
-                    folders={folders}
-                    onMove={handleMove}
-                  />
-                </div>
-              ))}
-              {/* Drop zone at bottom */}
-              {dragSopId && (
-                <div
-                  className={cn("h-0 transition-all duration-100", sopDropIndex === unpinnedSops.length && dragSopId ? "h-1 bg-primary mx-4 rounded" : "")}
-                  onDragOver={(e) => { e.preventDefault(); setSopDropIndex(unpinnedSops.length); }}
-                  onDragLeave={() => { if (sopDropIndex === unpinnedSops.length) setSopDropIndex(null); }}
-                  onDrop={(e) => { e.preventDefault(); handleSopReorder(dragSopId, unpinnedSops.length); setDragSopId(null); setSopDropIndex(null); }}
+                <SopRow
+                  key={sop.id}
+                  sop={sop}
+                  isSelected={selectedSopId === sop.id}
+                  onSelect={() => setSelectedSopId(sop.id)}
+                  onDoubleClick={() => router.push(`/dashboard/sops/${sop.id}`)}
+                  onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, sop }); }}
+                  router={router}
+                  onPin={handlePin}
+                  onDelete={handleDelete}
+                  folders={folders}
+                  onMove={handleMove}
+                  onMoveUp={idx > 0 ? () => handleSopMoveUp(sop.id) : undefined}
+                  onMoveDown={idx < unpinnedSops.length - 1 ? () => handleSopMoveDown(sop.id) : undefined}
                 />
-              )}
+              ))}
             </div>
           )}
         </div>
@@ -633,26 +620,26 @@ function SopRow({
   onSelect,
   onDoubleClick,
   onContextMenu,
-  onDragStart,
-  onDragEnd,
   router,
   onPin,
   onDelete,
   folders,
   onMove,
+  onMoveUp,
+  onMoveDown,
 }: {
   sop: SOP;
   isSelected: boolean;
   onSelect: () => void;
   onDoubleClick: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
-  onDragStart?: () => void;
-  onDragEnd?: () => void;
   router: ReturnType<typeof useRouter>;
   onPin: (id: string, pinned: boolean) => void;
   onDelete: (id: string) => void;
   folders: FolderRow[];
   onMove: (sopId: string, folderId: string) => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }) {
   return (
     <div
@@ -662,13 +649,16 @@ function SopRow({
         isSelected ? "bg-primary/5 border-l-2 border-l-primary" : "hover:bg-muted/30"
       )}
       draggable
-      onDragStart={(e) => { e.dataTransfer.setData("text/plain", sop.id); e.dataTransfer.effectAllowed = "move"; onDragStart?.(); }}
-      onDragEnd={() => onDragEnd?.()}
+      onDragStart={(e) => { e.dataTransfer.setData("text/plain", sop.id); e.dataTransfer.effectAllowed = "move"; }}
       onClick={onSelect}
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
     >
-      <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+      {/* Reorder arrows */}
+      <div className="flex shrink-0 flex-col opacity-0 group-hover:opacity-100 transition-opacity">
+        {onMoveUp && <button type="button" className="text-muted-foreground/40 hover:text-foreground leading-none" onClick={(e) => { e.stopPropagation(); onMoveUp(); }}><ChevronUp className="h-3 w-3" /></button>}
+        {onMoveDown && <button type="button" className="text-muted-foreground/40 hover:text-foreground leading-none" onClick={(e) => { e.stopPropagation(); onMoveDown(); }}><ChevronDown className="h-3 w-3" /></button>}
+      </div>
       <FileText className="h-4 w-4 shrink-0 text-muted-foreground/40" />
       {sop.isUnread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
       {sop.pinned && <Pin className="h-3 w-3 shrink-0 text-amber-400" />}

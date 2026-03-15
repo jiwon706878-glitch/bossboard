@@ -165,6 +165,7 @@ function FolderItem({
   onRename,
   onDelete,
   onContextMenu,
+  onDropSop,
 }: {
   node: FolderNode;
   depth: number;
@@ -173,10 +174,12 @@ function FolderItem({
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
   onContextMenu: (e: React.MouseEvent, id: string, name: string) => void;
+  onDropSop: (folderId: string, sopId: string) => void;
 }) {
   const [expanded, setExpanded] = useState(depth === 0);
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(node.name);
+  const [isDragOver, setIsDragOver] = useState(false);
   const hasChildren = node.children.length > 0;
   const isActive = activeFolderId === node.id;
 
@@ -192,14 +195,23 @@ function FolderItem({
     <div>
       <div
         className={cn(
-          "group flex items-center gap-1 rounded-md px-1 py-1 text-sm transition-colors duration-100 cursor-pointer",
-          isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+          "group flex items-center gap-1 rounded-md px-1 py-1 text-sm transition-all duration-100 cursor-pointer",
+          isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+          isDragOver && "ring-2 ring-primary bg-primary/10"
         )}
         style={{ paddingLeft: `${depth * 16 + 4}px` }}
         onContextMenu={(e) => {
           e.preventDefault();
           e.stopPropagation();
           onContextMenu(e, node.id, node.name);
+        }}
+        onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDragOver(false);
+          const sopId = e.dataTransfer.getData("text/plain");
+          if (sopId) onDropSop(node.id, sopId);
         }}
         data-folder-id={node.id}
       >
@@ -270,6 +282,7 @@ function FolderItem({
               onRename={onRename}
               onDelete={onDelete}
               onContextMenu={onContextMenu}
+              onDropSop={onDropSop}
             />
           ))}
         </div>
@@ -410,6 +423,24 @@ export function FolderTree() {
     loadFolders();
   }
 
+  async function handleDropSop(folderId: string, sopId: string) {
+    const { error } = await supabase
+      .from("sops")
+      .update({ folder_id: folderId })
+      .eq("id", sopId);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    const folderName = tree.find((f) => f.id === folderId)?.name
+      ?? tree.flatMap((f) => f.children).find((f) => f.id === folderId)?.name
+      ?? "folder";
+    toast.success(`Moved to ${folderName}`);
+    loadFolders();
+  }
+
   function handleContextMenu(e: React.MouseEvent, folderId: string, folderName: string) {
     setContextMenu({ x: e.clientX, y: e.clientY, folderId, folderName });
   }
@@ -503,6 +534,7 @@ export function FolderTree() {
             onRename={handleRename}
             onDelete={handleDelete}
             onContextMenu={handleContextMenu}
+            onDropSop={handleDropSop}
           />
         ))}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, lazy, Suspense } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -30,11 +30,12 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { extractStepsFromContent } from "@/lib/checklists/extract-steps";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import TaskList from "@tiptap/extension-task-list";
-import TaskItem from "@tiptap/extension-task-item";
-import Placeholder from "@tiptap/extension-placeholder";
+import dynamic from "next/dynamic";
+
+const ChecklistEditor = dynamic(() => import("@/components/checklists/checklist-editor"), {
+  ssr: false,
+  loading: () => <div className="h-[300px] rounded-md border bg-card animate-pulse" />,
+});
 
 interface SOPOption {
   id: string;
@@ -79,41 +80,7 @@ export default function NewChecklistPage() {
 
   // Manual tab
   const [manualTitle, setManualTitle] = useState("");
-
-  const manualEditor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        bulletList: false,
-        orderedList: false,
-        listItem: false,
-      }),
-      TaskList,
-      TaskItem.configure({ nested: true }),
-      Placeholder.configure({
-        placeholder: "Start typing checklist items... each line becomes a checkbox",
-      }),
-    ],
-    content: {
-      type: "doc",
-      content: [
-        {
-          type: "taskList",
-          content: [
-            {
-              type: "taskItem",
-              attrs: { checked: false },
-              content: [{ type: "paragraph" }],
-            },
-          ],
-        },
-      ],
-    },
-    editorProps: {
-      attributes: {
-        class: "min-h-[300px] outline-none prose prose-sm dark:prose-invert max-w-none px-1 py-2 [&_ul[data-type=taskList]]:list-none [&_ul[data-type=taskList]]:pl-0 [&_li[data-type=taskItem]]:flex [&_li[data-type=taskItem]]:items-start [&_li[data-type=taskItem]]:gap-2 [&_li[data-type=taskItem]_label]:mt-0.5 [&_li[data-type=taskItem]_div]:flex-1 [&_li[data-type=taskItem]_p]:my-0.5",
-      },
-    },
-  });
+  const editorRef = useRef<import("@/components/checklists/checklist-editor").ChecklistEditorRef>(null);
 
   // Load SOPs
   useEffect(() => {
@@ -280,25 +247,11 @@ export default function NewChecklistPage() {
     if (data?.id) router.push(`/dashboard/checklists/${data.id}`);
   }
 
-  function extractTaskItems(): { text: string; required: boolean }[] {
-    if (!manualEditor) return [];
-    const items: { text: string; required: boolean }[] = [];
-    manualEditor.state.doc.descendants((node) => {
-      if (node.type.name === "taskItem") {
-        const text = node.textContent.trim();
-        if (text) {
-          items.push({ text, required: true });
-        }
-      }
-    });
-    return items;
-  }
-
   async function handleCreateManual() {
     if (!manualTitle.trim() || !currentBusiness?.id) return;
     setCreating(true);
 
-    const items = extractTaskItems();
+    const items = editorRef.current?.getItems() ?? [];
 
     if (items.length === 0) {
       toast.error("Add at least one item");
@@ -576,9 +529,7 @@ export default function NewChecklistPage() {
             />
 
             {/* TipTap TaskList editor */}
-            <div className="rounded-md border bg-card">
-              <EditorContent editor={manualEditor} />
-            </div>
+            <ChecklistEditor ref={editorRef} />
 
             <div className="flex items-center gap-4">
               <div className="flex-1 space-y-1">

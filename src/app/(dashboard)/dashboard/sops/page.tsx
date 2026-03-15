@@ -2,21 +2,13 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Plus, FileText, Search, Clock, Folder, ChevronRight, Pin, MoreHorizontal, Pencil, Trash2, FolderInput, GripVertical, FolderPlus } from "lucide-react";
+import { Plus, FileText, Search, Folder, ChevronRight, Pin, MoreHorizontal, Pencil, Trash2, FolderInput, FolderPlus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,7 +47,14 @@ const STATUS_COLORS: Record<string, string> = {
   archived: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
 };
 
-function SOPContextMenuPopup({
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+// ── Context menu ──────────────────────────────────────────────────────────────
+
+function SOPContextMenu({
   menu,
   onClose,
   onOpen,
@@ -79,334 +78,155 @@ function SOPContextMenuPopup({
   isPinned: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    }
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKey);
-    };
+    const h1 = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+    const h2 = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("mousedown", h1);
+    document.addEventListener("keydown", h2);
+    return () => { document.removeEventListener("mousedown", h1); document.removeEventListener("keydown", h2); };
   }, [onClose]);
 
-  const item = "flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs cursor-pointer transition-colors duration-100 hover:bg-muted text-foreground";
-  const danger = "flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs cursor-pointer transition-colors duration-100 hover:bg-destructive/10 text-destructive";
-
+  const cls = "flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs cursor-pointer hover:bg-muted text-foreground";
   return (
-    <div
-      ref={ref}
-      className="fixed z-50 w-48 rounded-md border bg-popover p-1 shadow-md"
-      style={{
-        left: Math.min(menu.x, typeof window !== "undefined" ? window.innerWidth - 200 : menu.x),
-        top: Math.min(menu.y, typeof window !== "undefined" ? window.innerHeight - 280 : menu.y),
-      }}
-    >
-      <button type="button" className={item} onClick={onOpen}>
-        <FileText className="h-3 w-3" /> Open
-      </button>
-      <button type="button" className={item} onClick={onEdit}>
-        <Pencil className="h-3 w-3" /> Edit
-      </button>
+    <div ref={ref} className="fixed z-50 w-48 rounded-md border bg-popover p-1 shadow-md" style={{ left: Math.min(menu.x, window.innerWidth - 200), top: Math.min(menu.y, window.innerHeight - 260) }}>
+      <button type="button" className={cls} onClick={onOpen}><FileText className="h-3 w-3" /> Open</button>
+      <button type="button" className={cls} onClick={onEdit}><Pencil className="h-3 w-3" /> Edit</button>
       <div className="my-1 h-px bg-border" />
       {folders.slice(0, 6).map((f) => (
-        <button key={f.id} type="button" className={item} onClick={() => onMove(f.id)}>
-          <FolderInput className="h-3 w-3" /> {f.name}
-        </button>
+        <button key={f.id} type="button" className={cls} onClick={() => onMove(f.id)}><FolderInput className="h-3 w-3" /> {f.name}</button>
       ))}
       <div className="my-1 h-px bg-border" />
-      <button type="button" className={item} onClick={onPin}>
-        <Pin className="h-3 w-3" /> {isPinned ? "Unpin" : "Pin"}
-      </button>
-      <button type="button" className={item} onClick={onDuplicate}>
-        <FileText className="h-3 w-3" /> Duplicate
-      </button>
+      <button type="button" className={cls} onClick={onPin}><Pin className="h-3 w-3" /> {isPinned ? "Unpin" : "Pin"}</button>
+      <button type="button" className={cls} onClick={onDuplicate}><FileText className="h-3 w-3" /> Duplicate</button>
       <div className="my-1 h-px bg-border" />
-      <button type="button" className={danger} onClick={onDelete}>
-        <Trash2 className="h-3 w-3" /> Delete
-      </button>
+      <button type="button" className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs cursor-pointer hover:bg-destructive/10 text-destructive" onClick={onDelete}><Trash2 className="h-3 w-3" /> Delete</button>
     </div>
   );
 }
 
-function SOPCard({
-  sop,
-  router,
-  onPin,
-  onDelete,
-  onDuplicate,
-  folders,
-  onMove,
-  onContextMenu,
-}: {
-  sop: SOP;
-  router: ReturnType<typeof useRouter>;
-  onPin?: (id: string, pinned: boolean) => void;
-  onDelete?: (id: string) => void;
-  onDuplicate?: (id: string) => void;
-  folders?: FolderRow[];
-  onMove?: (sopId: string, folderId: string) => void;
-  onContextMenu?: (e: React.MouseEvent, sop: SOP) => void;
-}) {
-  return (
-    <div
-      className="group flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-transparent px-3 text-sm transition-colors duration-100 hover:bg-muted/50"
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.setData("text/plain", sop.id);
-        e.dataTransfer.effectAllowed = "move";
-      }}
-      onClick={() => router.push(`/dashboard/sops/${sop.id}`)}
-      onContextMenu={(e) => {
-        if (onContextMenu) {
-          e.preventDefault();
-          e.stopPropagation();
-          onContextMenu(e, sop);
-        }
-      }}
-    >
-      <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
-      <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
-      {sop.isUnread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
-      {sop.pinned && <Pin className="h-3 w-3 shrink-0 text-amber-400" />}
-      <span className="min-w-0 truncate font-medium" style={{ maxWidth: "35ch" }}>{sop.title}</span>
-      <Badge variant="secondary" className={cn("shrink-0 text-[10px] leading-none px-1.5 py-0.5", STATUS_COLORS[sop.status])}>{sop.status}</Badge>
-      {sop.tags?.slice(0, 1).map((tag) => (
-        <span key={tag} className="hidden shrink-0 text-[10px] text-muted-foreground lg:inline">#{tag}</span>
-      ))}
-      <div className="flex-1" />
-      <div className="flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button type="button" title="Edit" className="rounded p-0.5 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/sops/${sop.id}/edit`); }}><Pencil className="h-3.5 w-3.5" /></button>
-        {onPin && <button type="button" title={sop.pinned ? "Unpin" : "Pin"} className="rounded p-0.5 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); onPin(sop.id, !sop.pinned); }}><Pin className={cn("h-3.5 w-3.5", sop.pinned && "text-amber-400")} /></button>}
-        {onDelete && <button type="button" title="Delete" className="rounded p-0.5 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(sop.id); }}><Trash2 className="h-3.5 w-3.5" /></button>}
-      </div>
-      <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">{formatDate(sop.updated_at || sop.created_at)}</span>
-      <span className="shrink-0 font-mono text-[10px] text-muted-foreground">v{sop.version}</span>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button type="button" className="flex h-5 w-5 items-center justify-center rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity" onClick={(e) => e.stopPropagation()}><MoreHorizontal className="h-3.5 w-3.5" /></button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/sops/${sop.id}/edit`); }}><Pencil className="mr-2 h-3 w-3" /> Edit</DropdownMenuItem>
-          {onPin && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onPin(sop.id, !sop.pinned); }}><Pin className="mr-2 h-3 w-3" /> {sop.pinned ? "Unpin" : "Pin"}</DropdownMenuItem>}
-          {onDuplicate && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate(sop.id); }}><FileText className="mr-2 h-3 w-3" /> Duplicate</DropdownMenuItem>}
-          {onMove && folders && folders.length > 0 && (
-            <>{folders.slice(0, 8).map((f) => (<DropdownMenuItem key={f.id} onClick={(e) => { e.stopPropagation(); onMove(sop.id, f.id); }}><FolderInput className="mr-2 h-3 w-3" /> {f.name}</DropdownMenuItem>))}</>
-          )}
-          {onDelete && <><DropdownMenuSeparator /><DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(sop.id); }}><Trash2 className="mr-2 h-3 w-3" /> Delete</DropdownMenuItem></>}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  );
-}
-
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
+// ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function SOPsPage() {
-  const [sops, setSops] = useState<SOP[]>([]);
+  const [allSops, setAllSops] = useState<SOP[]>([]);
   const [folders, setFolders] = useState<FolderRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [docTypeFilter, setDocTypeFilter] = useState("all");
-  const [tagFilter, setTagFilter] = useState("");
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  const [selectedSopId, setSelectedSopId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("updated");
-  const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; sop: SOP } | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
 
   const supabase = createClient();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const folderId = searchParams.get("folder");
 
-  // Build breadcrumb path
-  function getBreadcrumbs(): { id: string | null; name: string }[] {
-    const crumbs: { id: string | null; name: string }[] = [
-      { id: null, name: "Wiki" },
-    ];
-    if (!folderId || folderId === "unfiled") {
-      if (folderId === "unfiled") crumbs.push({ id: "unfiled", name: "Unfiled SOPs" });
-      return crumbs;
-    }
-    // Walk up the tree
-    const path: FolderRow[] = [];
-    let current = folders.find((f) => f.id === folderId);
-    while (current) {
-      path.unshift(current);
-      current = current.parent_id
-        ? folders.find((f) => f.id === current!.parent_id)
-        : undefined;
-    }
-    for (const f of path) {
-      crumbs.push({ id: f.id, name: f.name });
-    }
-    return crumbs;
-  }
+  // ── Data fetching ─────────────────────────────────────────────────────────
 
   const fetchData = useCallback(async () => {
     if (!currentBusiness) return;
     setLoading(true);
 
-    // Fetch folders
-    const { data: allFolders } = await supabase
-      .from("folders")
-      .select("id, name, parent_id")
-      .eq("business_id", currentBusiness.id);
+    const [{ data: allFolders }, { data: sopsData }] = await Promise.all([
+      supabase.from("folders").select("id, name, parent_id").eq("business_id", currentBusiness.id),
+      supabase.from("sops")
+        .select("id, title, summary, category, status, version, folder_id, doc_type, tags, pinned, created_at, updated_at")
+        .eq("business_id", currentBusiness.id)
+        .order("updated_at", { ascending: false }),
+    ]);
+
     setFolders(allFolders ?? []);
 
-    // Build SOP query
-    let query = supabase
-      .from("sops")
-      .select("id, title, summary, category, status, version, folder_id, doc_type, tags, pinned, created_at, updated_at")
-      .eq("business_id", currentBusiness.id)
-      .order("updated_at", { ascending: false });
-
-    if (statusFilter !== "all") {
-      query = query.eq("status", statusFilter);
-    }
-
-    // Filter by folder
-    if (folderId === "unfiled") {
-      query = query.is("folder_id", null);
-    } else if (folderId) {
-      query = query.eq("folder_id", folderId);
-    }
-
-    const { data } = await query;
-    if (!data) {
-      setSops([]);
-      setLoading(false);
-      return;
-    }
-
-    // Check which SOPs the current user has read
+    // Mark unread
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const sopIds = data.map((s) => s.id);
-      if (sopIds.length > 0) {
-        const { data: reads } = await supabase
-          .from("sop_reads")
-          .select("sop_id")
-          .eq("user_id", user.id)
-          .in("sop_id", sopIds);
-
-        const readSopIds = new Set((reads ?? []).map((r) => r.sop_id));
-        setSops(data.map((s) => ({ ...s, isUnread: !readSopIds.has(s.id) })));
-      } else {
-        setSops([]);
-      }
+    if (user && sopsData && sopsData.length > 0) {
+      const { data: reads } = await supabase.from("sop_reads").select("sop_id").eq("user_id", user.id).in("sop_id", sopsData.map((s) => s.id));
+      const readIds = new Set((reads ?? []).map((r) => r.sop_id));
+      setAllSops(sopsData.map((s) => ({ ...s, isUnread: !readIds.has(s.id) })));
     } else {
-      setSops(data);
+      setAllSops(sopsData ?? []);
     }
-    setLoading(false);
-  }, [currentBusiness, statusFilter, folderId, supabase]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    // Auto-select first folder
+    if (!selectedFolder && allFolders && allFolders.length > 0) {
+      const roots = allFolders.filter((f) => !f.parent_id);
+      if (roots.length > 0) setSelectedFolder(roots[0].id);
+    }
+
+    setLoading(false);
+  }, [currentBusiness, supabase]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // ── Folder computations ───────────────────────────────────────────────────
+
+  const rootFolders = folders.filter((f) => !f.parent_id);
+  const folderCounts: Record<string, number> = {};
+  let unfiledCount = 0;
+  for (const s of allSops) {
+    if (s.folder_id) folderCounts[s.folder_id] = (folderCounts[s.folder_id] ?? 0) + 1;
+    else unfiledCount++;
+  }
+
+  // ── Filtered SOPs for right panel ─────────────────────────────────────────
+
+  let displaySops = allSops;
+  if (selectedFolder === "unfiled") {
+    displaySops = allSops.filter((s) => !s.folder_id);
+  } else if (selectedFolder) {
+    displaySops = allSops.filter((s) => s.folder_id === selectedFolder);
+  }
+
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    displaySops = displaySops.filter((s) =>
+      s.title.toLowerCase().includes(q) ||
+      s.summary?.toLowerCase().includes(q) ||
+      s.tags?.some((t) => t.toLowerCase().includes(q))
+    );
+  }
+
+  const pinnedSops = displaySops.filter((s) => s.pinned);
+  const unpinnedSops = displaySops.filter((s) => !s.pinned);
+
+  const currentFolderName = selectedFolder === "unfiled"
+    ? "Unfiled"
+    : folders.find((f) => f.id === selectedFolder)?.name ?? "All Documents";
+
+  // ── Actions ───────────────────────────────────────────────────────────────
 
   async function handlePin(sopId: string, pinned: boolean) {
-    const { error } = await supabase.from("sops").update({ pinned }).eq("id", sopId);
-    if (error) { toast.error(error.message); return; }
-    toast.success(pinned ? "SOP pinned" : "SOP unpinned");
+    await supabase.from("sops").update({ pinned }).eq("id", sopId);
     fetchData();
   }
 
-  function handleDeleteSop(sopId: string) {
-    // Hide from UI immediately
-    setSops((prev) => prev.filter((s) => s.id !== sopId));
-
-    // Cancel any previous pending delete
-    if (pendingDelete) {
-      clearTimeout(pendingDelete.timer);
-    }
-
-    // Set 5-second timer before actual delete
-    const timer = setTimeout(async () => {
-      await supabase.from("sops").delete().eq("id", sopId);
-      setPendingDelete(null);
-    }, 5000);
-
+  function handleDelete(sopId: string) {
+    setAllSops((prev) => prev.filter((s) => s.id !== sopId));
+    if (pendingDelete) clearTimeout(pendingDelete.timer);
+    const timer = setTimeout(async () => { await supabase.from("sops").delete().eq("id", sopId); setPendingDelete(null); }, 5000);
     setPendingDelete({ id: sopId, timer });
-
-    toast.success("SOP deleted", {
-      action: {
-        label: "Undo",
-        onClick: () => {
-          clearTimeout(timer);
-          setPendingDelete(null);
-          fetchData(); // Refresh to bring it back
-        },
-      },
-      duration: 5000,
-    });
+    toast.success("SOP deleted", { action: { label: "Undo", onClick: () => { clearTimeout(timer); setPendingDelete(null); fetchData(); } }, duration: 5000 });
   }
 
-  async function handleMoveSop(sopId: string, targetFolderId: string) {
-    const { error } = await supabase.from("sops").update({ folder_id: targetFolderId }).eq("id", sopId);
-    if (error) { toast.error(error.message); return; }
-    const folderName = folders.find((f) => f.id === targetFolderId)?.name ?? "folder";
-    toast.success(`Moved to ${folderName}`);
+  async function handleMove(sopId: string, folderId: string) {
+    await supabase.from("sops").update({ folder_id: folderId }).eq("id", sopId);
+    toast.success(`Moved to ${folders.find((f) => f.id === folderId)?.name ?? "folder"}`);
     fetchData();
   }
 
   async function handleDuplicate(sopId: string) {
-    const original = sops.find((s) => s.id === sopId);
-    if (!original || !currentBusiness?.id) return;
-
-    const { data: fullSop } = await supabase
-      .from("sops")
-      .select("*")
-      .eq("id", sopId)
-      .single();
-
-    if (!fullSop) return;
-
+    if (!currentBusiness?.id) return;
+    const { data: full } = await supabase.from("sops").select("*").eq("id", sopId).single();
+    if (!full) return;
     const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase.from("sops").insert({
-      business_id: currentBusiness.id,
-      title: fullSop.title + " (Copy)",
-      content: fullSop.content,
-      summary: fullSop.summary,
-      category: fullSop.category,
-      folder_id: fullSop.folder_id,
-      doc_type: fullSop.doc_type,
-      tags: fullSop.tags,
-      status: "draft",
-      version: 1,
-      created_by: user?.id,
-    });
-
-    if (error) { toast.error(error.message); return; }
-    toast.success("SOP duplicated");
+    await supabase.from("sops").insert({ business_id: currentBusiness.id, title: full.title + " (Copy)", content: full.content, summary: full.summary, category: full.category, folder_id: full.folder_id, doc_type: full.doc_type, tags: full.tags, status: "draft", version: 1, created_by: user?.id });
     fetchData();
   }
 
   async function handleCreateFolder(name: string) {
     if (!currentBusiness?.id) return;
     const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase.from("folders").insert({
-      business_id: currentBusiness.id,
-      name,
-      parent_id: null,
-      sort_order: folders.length,
-      created_by: user?.id,
-    });
-    if (error) { toast.error(error.message); return; }
+    await supabase.from("folders").insert({ business_id: currentBusiness.id, name, parent_id: null, sort_order: folders.length, created_by: user?.id });
     toast.success(`Folder "${name}" created`);
     fetchData();
   }
@@ -416,381 +236,225 @@ export default function SOPsPage() {
     setDragOverFolder(null);
     const sopId = e.dataTransfer.getData("text/plain");
     if (!sopId) return;
-
-    const { error } = await supabase
-      .from("sops")
-      .update({ folder_id: folderId })
-      .eq("id", sopId);
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
-    toast.success("SOP moved to folder");
+    await supabase.from("sops").update({ folder_id: folderId }).eq("id", sopId);
+    toast.success("SOP moved");
     fetchData();
   }
 
-  // Get subfolders of current folder
-  const subfolders = folderId && folderId !== "unfiled"
-    ? folders.filter((f) => f.parent_id === folderId)
-    : [];
-
-  // Root-level folders (when no folder is selected)
-  const rootFolders = !folderId
-    ? folders.filter((f) => !f.parent_id)
-    : [];
-
-  // Count SOPs per folder for the root grid
-  const folderSopCounts: Record<string, number> = {};
-  if (!folderId && sops.length > 0) {
-    for (const s of sops) {
-      if (s.folder_id) {
-        folderSopCounts[s.folder_id] = (folderSopCounts[s.folder_id] ?? 0) + 1;
-      }
-    }
-  }
-  const unfiledSopCount = !folderId ? sops.filter((s) => !s.folder_id).length : 0;
-
-  // When at root, show folders-first view
-  const showFoldersGrid = !folderId && !searchQuery && rootFolders.length > 0;
-
-  // Client-side filtering
-  let filteredSops = sops;
-
-  if (docTypeFilter !== "all") {
-    filteredSops = filteredSops.filter((s) => (s.doc_type || "sop") === docTypeFilter);
-  }
-
-  if (tagFilter) {
-    filteredSops = filteredSops.filter((s) => s.tags?.includes(tagFilter));
-  }
-
-  if (searchQuery) {
-    const q = searchQuery.toLowerCase();
-    filteredSops = filteredSops.filter(
-      (s) =>
-        s.title.toLowerCase().includes(q) ||
-        s.summary?.toLowerCase().includes(q) ||
-        s.category?.toLowerCase().includes(q) ||
-        s.tags?.some((t) => t.toLowerCase().includes(q))
-    );
-  }
-
-  // Sort
-  const sortedSops = [...filteredSops].sort((a, b) => {
-    switch (sortBy) {
-      case "title": return a.title.localeCompare(b.title);
-      case "created": return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      case "status": return a.status.localeCompare(b.status);
-      default: return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-    }
-  });
-
-  // Separate pinned and unpinned
-  const pinnedSops = sortedSops.filter((s) => s.pinned);
-  const unpinnedSops = sortedSops.filter((s) => !s.pinned);
-
-  // Collect all tags for filter chips
-  const allTags: Record<string, number> = {};
-  for (const s of sops) {
-    for (const t of s.tags ?? []) {
-      allTags[t] = (allTags[t] ?? 0) + 1;
-    }
-  }
-  const popularTags = Object.entries(allTags).sort((a, b) => b[1] - a[1]).slice(0, 8);
-
-  const breadcrumbs = getBreadcrumbs();
-  const currentFolderName = folderId
-    ? folderId === "unfiled"
-      ? "Unfiled SOPs"
-      : folders.find((f) => f.id === folderId)?.name ?? "SOP Wiki"
-    : "SOP Wiki";
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
-      {/* SOP right-click context menu */}
+    <div className="-m-4 lg:-m-6 flex h-[calc(100vh-4rem)] overflow-hidden">
+      {/* Context menu */}
       {ctxMenu && (
-        <SOPContextMenuPopup
+        <SOPContextMenu
           menu={ctxMenu}
           onClose={() => setCtxMenu(null)}
           onOpen={() => { router.push(`/dashboard/sops/${ctxMenu.sop.id}`); setCtxMenu(null); }}
           onEdit={() => { router.push(`/dashboard/sops/${ctxMenu.sop.id}/edit`); setCtxMenu(null); }}
           onPin={() => { handlePin(ctxMenu.sop.id, !ctxMenu.sop.pinned); setCtxMenu(null); }}
           onDuplicate={() => { handleDuplicate(ctxMenu.sop.id); setCtxMenu(null); }}
-          onDelete={() => { handleDeleteSop(ctxMenu.sop.id); setCtxMenu(null); }}
-          onMove={(fid) => { handleMoveSop(ctxMenu.sop.id, fid); setCtxMenu(null); }}
+          onDelete={() => { handleDelete(ctxMenu.sop.id); setCtxMenu(null); }}
+          onMove={(fid) => { handleMove(ctxMenu.sop.id, fid); setCtxMenu(null); }}
           folders={folders}
           isPinned={ctxMenu.sop.pinned}
         />
       )}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            {folderId ? currentFolderName : "Wiki"}
-          </h1>
-
-          {/* Breadcrumbs */}
-          {breadcrumbs.length > 1 && (
-            <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
-              {breadcrumbs.map((crumb, i) => (
-                <span key={crumb.id ?? "root"} className="flex items-center gap-1">
-                  {i > 0 && <ChevronRight className="h-3 w-3" />}
-                  {i < breadcrumbs.length - 1 ? (
-                    <Link
-                      href={crumb.id ? `/dashboard/sops?folder=${crumb.id}` : "/dashboard/sops"}
-                      className="hover:text-foreground hover:underline"
-                    >
-                      {crumb.name}
-                    </Link>
-                  ) : (
-                    <span className="text-foreground">{crumb.name}</span>
-                  )}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {!folderId && (
-            <p className="text-muted-foreground">
-              Create and manage SOPs for your team with AI assistance.
-            </p>
-          )}
+      {/* ── LEFT PANEL: folder list ──────────────────────────────────────── */}
+      <div className="flex w-64 shrink-0 flex-col border-r bg-card">
+        <div className="flex items-center justify-between border-b px-3 py-2">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Folders</span>
         </div>
-        <div className="flex items-center gap-2">
-          {!folderId && (
-            <Button
-              variant="outline"
-              onClick={() => {
-                const name = prompt("New folder name:");
-                if (name?.trim()) handleCreateFolder(name.trim());
-              }}
-            >
-              <FolderPlus className="mr-2 h-4 w-4" /> New Folder
-            </Button>
-          )}
-          <Link href={folderId && folderId !== "unfiled" ? `/dashboard/sops/new?folder=${folderId}` : "/dashboard/sops/new"}>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> New SOP
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Root view: folder grid only (Chrome bookmarks style) */}
-      {showFoldersGrid && (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="flex-1 overflow-y-auto py-1">
           {rootFolders.map((f) => (
             <button
               key={f.id}
               type="button"
-              onClick={() => router.push(`/dashboard/sops?folder=${f.id}`)}
+              onClick={() => { setSelectedFolder(f.id); setSelectedSopId(null); }}
               onDragOver={(e) => { e.preventDefault(); setDragOverFolder(f.id); }}
               onDragLeave={() => setDragOverFolder(null)}
               onDrop={(e) => handleDropOnFolder(f.id, e)}
               className={cn(
-                "flex h-14 cursor-pointer items-center gap-2 rounded-md border bg-card p-3 text-left transition-colors duration-100",
-                dragOverFolder === f.id
-                  ? "border-primary bg-primary/10"
-                  : "border-border hover:bg-muted/50"
+                "flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors duration-100",
+                selectedFolder === f.id ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted/50",
+                dragOverFolder === f.id && "bg-primary/10"
               )}
             >
-              <Folder className="h-5 w-5 shrink-0 text-muted-foreground" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{f.name}</p>
-                <p className="text-xs text-muted-foreground">{folderSopCounts[f.id] ?? 0} docs</p>
-              </div>
+              <Folder className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="min-w-0 flex-1 truncate">{f.name}</span>
+              <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{folderCounts[f.id] ?? 0}</span>
             </button>
           ))}
-          {unfiledSopCount > 0 && (
+          {unfiledCount > 0 && (
             <button
               type="button"
-              onClick={() => router.push("/dashboard/sops?folder=unfiled")}
-              className="flex h-14 cursor-pointer items-center gap-2 rounded-md border border-border bg-card p-3 text-left transition-colors duration-100 hover:bg-muted/50"
+              onClick={() => { setSelectedFolder("unfiled"); setSelectedSopId(null); }}
+              className={cn(
+                "flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors duration-100",
+                selectedFolder === "unfiled" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted/50"
+              )}
             >
-              <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">Unfiled</p>
-                <p className="text-xs text-muted-foreground">{unfiledSopCount} docs</p>
-              </div>
+              <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="min-w-0 flex-1 truncate">Unfiled</span>
+              <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{unfiledCount}</span>
             </button>
           )}
         </div>
-      )}
+        <div className="border-t p-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start gap-2 text-muted-foreground"
+            onClick={() => { const n = prompt("New folder name:"); if (n?.trim()) handleCreateFolder(n.trim()); }}
+          >
+            <FolderPlus className="h-4 w-4" /> New Folder
+          </Button>
+        </div>
+      </div>
 
-      {/* Inside a folder: show search, filters, subfolders, SOP cards */}
-      {folderId && (
-        <>
-          {/* Search + Filters */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search SOPs..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="published">Published</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="updated">Last Updated</SelectItem>
-                <SelectItem value="title">Title A-Z</SelectItem>
-                <SelectItem value="created">Created Date</SelectItem>
-                <SelectItem value="status">Status</SelectItem>
-              </SelectContent>
-            </Select>
+      {/* ── RIGHT PANEL: documents ───────────────────────────────────────── */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center gap-3 border-b px-4 py-2">
+          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+            <span>Wiki</span>
+            <ChevronRight className="h-3 w-3" />
+            <span className="text-foreground font-medium">{currentFolderName}</span>
           </div>
-
-          {/* Doc type tabs */}
-          <div className="flex items-center gap-2">
-            {[
-              { value: "all", label: "All" },
-              { value: "sop", label: "SOPs" },
-              { value: "note", label: "Notes" },
-              { value: "policy", label: "Policies" },
-            ].map((dt) => (
-              <button
-                key={dt.value}
-                type="button"
-                onClick={() => setDocTypeFilter(dt.value)}
-                className={cn(
-                  "rounded-md px-3 py-1 text-xs font-medium transition-colors duration-100",
-                  docTypeFilter === dt.value
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                )}
-              >
-                {dt.label}
-              </button>
-            ))}
+          <div className="flex-1" />
+          <div className="relative w-48">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-8 pl-8 text-sm"
+            />
           </div>
+          <Link href={selectedFolder && selectedFolder !== "unfiled" ? `/dashboard/sops/new?folder=${selectedFolder}` : "/dashboard/sops/new"}>
+            <Button size="sm">
+              <Plus className="mr-1 h-3.5 w-3.5" /> New SOP
+            </Button>
+          </Link>
+        </div>
 
-          {/* Tag chips */}
-          {popularTags.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-xs text-muted-foreground mr-1">Tags:</span>
-              {popularTags.map(([tag, count]) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => setTagFilter(tagFilter === tag ? "" : tag)}
-                  className={cn(
-                    "rounded-md px-2 py-0.5 text-[11px] transition-colors duration-100",
-                    tagFilter === tag
-                      ? "bg-primary/15 text-primary"
-                      : "bg-accent text-accent-foreground hover:bg-muted"
-                  )}
-                >
-                  #{tag}
-                  <span className="ml-1 text-muted-foreground">({count})</span>
-                </button>
+        {/* Document list */}
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="space-y-px p-1">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="h-9 animate-pulse rounded bg-muted/30" />
               ))}
-              {tagFilter && (
-                <button
-                  type="button"
-                  onClick={() => setTagFilter("")}
-                  className="text-[11px] text-muted-foreground hover:text-foreground"
-                >
-                  Clear
-                </button>
+            </div>
+          ) : !selectedFolder ? (
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              Select a folder from the left panel
+            </div>
+          ) : displaySops.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+              <FileText className="h-10 w-10 text-muted-foreground/30" />
+              <p className="text-sm text-muted-foreground">
+                {searchQuery ? "No SOPs match your search" : "This folder is empty"}
+              </p>
+              {!searchQuery && (
+                <Link href={`/dashboard/sops/new${selectedFolder !== "unfiled" ? `?folder=${selectedFolder}` : ""}`}>
+                  <Button size="sm" variant="outline"><Plus className="mr-1 h-3.5 w-3.5" /> Create SOP</Button>
+                </Link>
               )}
             </div>
-          )}
-
-          {/* Subfolders */}
-          {subfolders.length > 0 && !searchQuery && (
-            <div className="flex flex-wrap gap-2">
-              {subfolders.map((sf) => (
-                <button
-                  key={sf.id}
-                  type="button"
-                  onClick={() => router.push(`/dashboard/sops?folder=${sf.id}`)}
-                  onDragOver={(e) => { e.preventDefault(); setDragOverFolder(sf.id); }}
-                  onDragLeave={() => setDragOverFolder(null)}
-                  onDrop={(e) => handleDropOnFolder(sf.id, e)}
-                  className={cn(
-                    "flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-all duration-150 border-border text-foreground",
-                    dragOverFolder === sf.id
-                      ? "border-primary bg-primary/10 scale-105"
-                      : "hover:bg-muted/50"
-                  )}
-                >
-                  <Folder className="h-4 w-4 text-muted-foreground" />
-                  {sf.name}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* SOP list */}
-          {loading ? (
-            <div className="space-y-1">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div
-                  key={i}
-                  className="h-9 animate-pulse rounded-md bg-muted/40"
-                />
-              ))}
-            </div>
-          ) : pinnedSops.length === 0 && unpinnedSops.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                <FileText className="mb-4 h-12 w-12 text-muted-foreground/50" />
-                <h3 className="mb-1 text-lg font-medium">
-                  {searchQuery || statusFilter !== "all"
-                    ? "No SOPs match your filters"
-                    : "This folder is empty"}
-                </h3>
-                <p className="mb-4 text-sm text-muted-foreground">
-                  {searchQuery || statusFilter !== "all"
-                    ? "Try adjusting your search or filters."
-                    : "Create your first SOP to get started."}
-                </p>
-                <Link href={`/dashboard/sops/new${folderId && folderId !== "unfiled" ? `?folder=${folderId}` : ""}`}>
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" /> Create SOP
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
           ) : (
             <div>
-              {/* Pinned SOPs */}
               {pinnedSops.length > 0 && (
                 <>
-                  <div className="flex items-center gap-1.5 px-3 py-1 text-[11px] text-muted-foreground">
-                    <Pin className="h-3 w-3 text-amber-400" />
-                    <span>Pinned ({pinnedSops.length})</span>
+                  <div className="flex items-center gap-1.5 px-4 py-1 text-[11px] text-muted-foreground">
+                    <Pin className="h-3 w-3 text-amber-400" /> Pinned
                   </div>
                   {pinnedSops.map((sop) => (
-                    <SOPCard key={sop.id} sop={sop} router={router} onPin={handlePin} onDelete={handleDeleteSop} onDuplicate={handleDuplicate} folders={folders} onMove={handleMoveSop} onContextMenu={(e, s) => setCtxMenu({ x: e.clientX, y: e.clientY, sop: s })} />
+                    <SopRow key={sop.id} sop={sop} isSelected={selectedSopId === sop.id} onSelect={() => setSelectedSopId(sop.id)} onDoubleClick={() => router.push(`/dashboard/sops/${sop.id}`)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, sop }); }} router={router} onPin={handlePin} onDelete={handleDelete} folders={folders} onMove={handleMove} />
                   ))}
-                  {unpinnedSops.length > 0 && <div className="h-px bg-border mx-3 my-1" />}
+                  {unpinnedSops.length > 0 && <div className="mx-4 my-0.5 h-px bg-border/50" />}
                 </>
               )}
               {unpinnedSops.map((sop) => (
-                <SOPCard key={sop.id} sop={sop} router={router} onPin={handlePin} onDelete={handleDeleteSop} onDuplicate={handleDuplicate} folders={folders} onMove={handleMoveSop} onContextMenu={(e, s) => setCtxMenu({ x: e.clientX, y: e.clientY, sop: s })} />
+                <SopRow key={sop.id} sop={sop} isSelected={selectedSopId === sop.id} onSelect={() => setSelectedSopId(sop.id)} onDoubleClick={() => router.push(`/dashboard/sops/${sop.id}`)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, sop }); }} router={router} onPin={handlePin} onDelete={handleDelete} folders={folders} onMove={handleMove} />
               ))}
             </div>
           )}
-        </>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SOP Row ───────────────────────────────────────────────────────────────────
+
+function SopRow({
+  sop,
+  isSelected,
+  onSelect,
+  onDoubleClick,
+  onContextMenu,
+  router,
+  onPin,
+  onDelete,
+  folders,
+  onMove,
+}: {
+  sop: SOP;
+  isSelected: boolean;
+  onSelect: () => void;
+  onDoubleClick: () => void;
+  onContextMenu: (e: React.MouseEvent) => void;
+  router: ReturnType<typeof useRouter>;
+  onPin: (id: string, pinned: boolean) => void;
+  onDelete: (id: string) => void;
+  folders: FolderRow[];
+  onMove: (sopId: string, folderId: string) => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "group flex h-9 cursor-default items-center gap-1.5 border-b border-border/30 px-4 text-sm transition-colors duration-75",
+        isSelected ? "bg-primary/5 border-l-2 border-l-primary" : "hover:bg-muted/30"
       )}
+      draggable
+      onDragStart={(e) => { e.dataTransfer.setData("text/plain", sop.id); e.dataTransfer.effectAllowed = "move"; }}
+      onClick={onSelect}
+      onDoubleClick={onDoubleClick}
+      onContextMenu={onContextMenu}
+    >
+      <FileText className="h-4 w-4 shrink-0 text-muted-foreground/40" />
+      {sop.isUnread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
+      {sop.pinned && <Pin className="h-3 w-3 shrink-0 text-amber-400" />}
+      <span className="min-w-0 truncate" style={{ maxWidth: "35ch" }}>{sop.title}</span>
+      <Badge variant="secondary" className={cn("shrink-0 text-[10px] leading-none px-1.5 py-0.5", STATUS_COLORS[sop.status])}>{sop.status}</Badge>
+      {sop.tags?.slice(0, 1).map((tag) => (
+        <span key={tag} className="hidden shrink-0 text-[10px] text-muted-foreground lg:inline">#{tag}</span>
+      ))}
+      <div className="flex-1" />
+      {/* Hover actions */}
+      <div className="flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button type="button" title="Edit" className="rounded p-0.5 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/sops/${sop.id}/edit`); }}><Pencil className="h-3.5 w-3.5" /></button>
+        <button type="button" title={sop.pinned ? "Unpin" : "Pin"} className="rounded p-0.5 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); onPin(sop.id, !sop.pinned); }}><Pin className={cn("h-3.5 w-3.5", sop.pinned && "text-amber-400")} /></button>
+        <button type="button" title="Delete" className="rounded p-0.5 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(sop.id); }}><Trash2 className="h-3.5 w-3.5" /></button>
+      </div>
+      <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">{formatDate(sop.updated_at || sop.created_at)}</span>
+      <span className="shrink-0 font-mono text-[10px] text-muted-foreground">v{sop.version}</span>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button type="button" className="flex h-5 w-5 items-center justify-center rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity" onClick={(e) => e.stopPropagation()}><MoreHorizontal className="h-3.5 w-3.5" /></button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/sops/${sop.id}/edit`); }}><Pencil className="mr-2 h-3 w-3" /> Edit</DropdownMenuItem>
+          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onPin(sop.id, !sop.pinned); }}><Pin className="mr-2 h-3 w-3" /> {sop.pinned ? "Unpin" : "Pin"}</DropdownMenuItem>
+          {folders.length > 0 && (
+            <>{folders.slice(0, 8).map((f) => (<DropdownMenuItem key={f.id} onClick={(e) => { e.stopPropagation(); onMove(sop.id, f.id); }}><FolderInput className="mr-2 h-3 w-3" /> {f.name}</DropdownMenuItem>))}</>
+          )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(sop.id); }}><Trash2 className="mr-2 h-3 w-3" /> Delete</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

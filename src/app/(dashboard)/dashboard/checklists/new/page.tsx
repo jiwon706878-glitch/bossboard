@@ -90,6 +90,7 @@ export default function NewChecklistPage() {
         .from("sops")
         .select("id, title, content")
         .eq("business_id", currentBusiness!.id)
+        .is("deleted_at", null)
         .order("title");
       setSops(data ?? []);
     }

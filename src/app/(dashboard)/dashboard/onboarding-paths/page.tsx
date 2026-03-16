@@ -99,6 +99,7 @@ export default function OnboardingPathsPage() {
           .from("sops")
           .select("id, title")
           .eq("business_id", currentBusiness.id)
+          .is("deleted_at", null)
           .order("title"),
         supabase
           .from("checklists")

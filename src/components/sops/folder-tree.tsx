@@ -322,7 +322,8 @@ export function FolderTree() {
       supabase
         .from("sops")
         .select("id, folder_id")
-        .eq("business_id", currentBusiness.id),
+        .eq("business_id", currentBusiness.id)
+        .is("deleted_at", null),
     ]);
 
     if (!folders) {
@@ -506,20 +507,7 @@ export function FolderTree() {
         onClick={() => router.push("/dashboard/sops")}
       >
         <FileText className="h-4 w-4" />
-        <span className="text-sm font-medium">SOP Wiki</span>
-      </div>
-
-      {/* Sidebar search */}
-      <div className="px-1">
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search folders..."
-            value={sidebarSearch}
-            onChange={(e) => setSidebarSearch(e.target.value)}
-            className="h-7 pl-7 text-xs"
-          />
-        </div>
+        <span className="text-sm font-medium">Wiki</span>
       </div>
 
       {/* Folder tree */}
@@ -557,8 +545,8 @@ export function FolderTree() {
         )}
       </div>
 
-      {/* New folder */}
-      {creating ? (
+      {/* Inline new folder (triggered from context menu) */}
+      {creating && (
         <form
           className="flex items-center gap-1 px-1"
           onSubmit={(e) => { e.preventDefault(); handleCreate(); }}
@@ -583,15 +571,6 @@ export function FolderTree() {
             <X className="h-3 w-3" />
           </button>
         </form>
-      ) : (
-        <button
-          type="button"
-          className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors duration-100"
-          onClick={() => { setCreating(true); setCreatingParentId(null); }}
-        >
-          <Plus className="h-3 w-3" />
-          New Folder
-        </button>
       )}
     </div>
   );

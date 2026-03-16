@@ -169,7 +169,7 @@ export default function SOPDetailPage() {
 
   async function handleDelete() {
     setDeleting(true);
-    const { error } = await supabase.from("sops").delete().eq("id", sopId);
+    const { error } = await supabase.from("sops").update({ deleted_at: new Date().toISOString() }).eq("id", sopId);
 
     if (error) {
       toast.error(error.message);
@@ -177,7 +177,7 @@ export default function SOPDetailPage() {
       return;
     }
 
-    toast.success("SOP deleted");
+    toast.success("SOP moved to trash");
     router.push("/dashboard/sops");
     router.refresh();
   }
@@ -441,8 +441,7 @@ export default function SOPDetailPage() {
               <DialogHeader>
                 <DialogTitle>Delete SOP</DialogTitle>
                 <DialogDescription>
-                  Are you sure you want to delete &quot;{sop.title}&quot;? This action
-                  cannot be undone.
+                  &quot;{sop.title}&quot; will be moved to trash. You can restore it later.
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>

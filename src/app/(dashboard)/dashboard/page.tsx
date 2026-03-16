@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { format, formatDistanceToNow, isToday, isPast, differenceInDays } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import {
   FileText,
   Users,
   Zap,
-  Lightbulb,
   Plus,
   Clock,
   CheckCircle2,
@@ -17,16 +15,14 @@ import {
   ChevronDown,
   ChevronRight,
   Loader2,
-  Send,
   Trash2,
-  PenLine,
+  ListTodo,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { plans, type PlanId } from "@/config/plans";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
@@ -39,59 +35,31 @@ interface ChecklistRow {
   assigned_to: string | null;
 }
 
-interface NoteRow {
-  id: string;
-  title: string;
-  summary: string | null;
-  created_at: string;
-}
-
 interface TodoRow {
   id: string;
   text: string;
   completed: boolean;
   completed_at: string | null;
+  due_date: string | null;
   priority: string;
   created_at: string;
-}
-
-interface WorkLogRow {
-  id: string;
-  action: string;
-  title: string;
-  target_type: string | null;
-  created_at: string;
-}
-
-interface ActivityItem {
-  id: string;
-  text: string;
-  time: string;
-  icon: "checklist" | "sop" | "note" | "read";
-  link?: string;
 }
 
 export default function DashboardPage() {
   const supabase = createClient();
   const { currentBusiness } = useBusinessStore();
-  const router = useRouter();
 
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Data
   const [overdueChecklists, setOverdueChecklists] = useState<ChecklistRow[]>([]);
   const [todayChecklists, setTodayChecklists] = useState<ChecklistRow[]>([]);
-  const [todayNotes, setTodayNotes] = useState<NoteRow[]>([]);
-  const [todos, setTodos] = useState<TodoRow[]>([]);
-  const [workLog, setWorkLog] = useState<WorkLogRow[]>([]);
-  const [activity, setActivity] = useState<ActivityItem[]>([]);
-  const [quickNote, setQuickNote] = useState("");
-  const [addingNote, setAddingNote] = useState(false);
+  const [overdueTodos, setOverdueTodos] = useState<TodoRow[]>([]);
+  const [todayTodos, setTodayTodos] = useState<TodoRow[]>([]);
   const [todoText, setTodoText] = useState("");
   const [addingTodo, setAddingTodo] = useState(false);
 
-  // Stats (collapsed section)
+  // Stats (collapsed)
   const [statsOpen, setStatsOpen] = useState(false);
   const [totalSops, setTotalSops] = useState(0);
   const [draftSops, setDraftSops] = useState(0);
@@ -163,40 +131,10 @@ export default function DashboardPage() {
           setTodayChecklists(today);
         }
 
-        // Today's notes
+        // Auto-generate recurring checklist instances
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
-        const { data: notes } = await supabase
-          .from("sops")
-          .select("id, title, summary, created_at")
-          .eq("business_id", businessId)
-          .eq("doc_type", "note")
-          .gte("created_at", startOfDay.toISOString())
-          .order("created_at", { ascending: false })
-          .limit(10);
-        setTodayNotes(notes ?? []);
 
-        // Todos
-        const { data: todoData } = await supabase
-          .from("todos")
-          .select("id, text, completed, completed_at, priority, created_at")
-          .eq("user_id", user.id)
-          .eq("completed", false)
-          .order("sort_order")
-          .limit(20);
-        setTodos(todoData ?? []);
-
-        // Work log (today)
-        const { data: logData } = await supabase
-          .from("work_log")
-          .select("id, action, title, target_type, created_at")
-          .eq("business_id", businessId)
-          .gte("created_at", startOfDay.toISOString())
-          .order("created_at", { ascending: false })
-          .limit(15);
-        setWorkLog(logData ?? []);
-
-        // Auto-generate recurring checklist instances
         const { data: recurringTemplates } = await supabase
           .from("checklists")
           .select("*")
@@ -239,46 +177,39 @@ export default function DashboardPage() {
           }
         }
 
+        // Todos — active only
+        const { data: todoData } = await supabase
+          .from("todos")
+          .select("id, text, completed, completed_at, due_date, priority, created_at")
+          .eq("user_id", user.id)
+          .eq("completed", false)
+          .order("sort_order")
+          .limit(30);
+
+        if (todoData) {
+          setOverdueTodos(todoData.filter((t) => t.due_date && t.due_date < todayStr));
+          setTodayTodos(todoData.filter((t) => !t.due_date || t.due_date >= todayStr));
+        }
+
         // SOPs for stats
         const { data: sops } = await supabase
           .from("sops")
-          .select("id, title, status, created_at, updated_at")
+          .select("id, status")
           .eq("business_id", businessId)
-          .order("updated_at", { ascending: false });
+          .is("deleted_at", null);
 
         if (sops) {
           setTotalSops(sops.length);
           setDraftSops(sops.filter((s) => s.status === "draft").length);
           setPublishedSops(sops.filter((s) => s.status === "published").length);
-
-          // Build activity from recent SOPs + completions
-          const activityItems: ActivityItem[] = [];
-
-          // Recent SOP activity
-          const recentSops = sops.slice(0, 5);
-          for (const sop of recentSops) {
-            const isNew = new Date(sop.created_at).getTime() === new Date(sop.updated_at).getTime();
-            activityItems.push({
-              id: sop.id,
-              text: isNew ? `Created: "${sop.title}"` : `Updated: "${sop.title}"`,
-              time: formatDistanceToNow(new Date(sop.updated_at), { addSuffix: true }),
-              icon: isNew ? "note" : "sop",
-              link: `/dashboard/sops/${sop.id}`,
-            });
-          }
-          setActivity(activityItems.slice(0, 10));
         }
 
         // Team count
-        const { data: invites } = await supabase
-          .from("invites")
-          .select("id, accepted")
-          .eq("workspace_id", businessId);
-        if (invites) {
-          setTeamCount(invites.filter((i) => i.accepted).length + 1);
-        } else {
-          setTeamCount(1);
-        }
+        const { data: members } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("business_id", businessId);
+        setTeamCount(members?.length ?? 1);
       } catch {
         // Dashboard will show zeros
       } finally {
@@ -288,46 +219,6 @@ export default function DashboardPage() {
 
     loadDashboard();
   }, [supabase, currentBusiness?.id]);
-
-  async function handleQuickNote() {
-    if (!quickNote.trim() || !currentBusiness?.id) return;
-    setAddingNote(true);
-
-    const { data: { user } } = await supabase.auth.getUser();
-    const content = {
-      type: "doc",
-      content: [{ type: "paragraph", content: [{ type: "text", text: quickNote.trim() }] }],
-    };
-
-    const { data, error } = await supabase
-      .from("sops")
-      .insert({
-        business_id: currentBusiness.id,
-        title: `Note - ${format(new Date(), "MMM d, h:mm a")}`,
-        content,
-        summary: quickNote.trim().substring(0, 200),
-        doc_type: "note",
-        status: "published",
-        version: 1,
-        created_by: user?.id,
-      })
-      .select("id, title, summary, created_at")
-      .single();
-
-    if (error) {
-      toast.error(error.message);
-    } else if (data) {
-      setTodayNotes((prev) => [data, ...prev]);
-      setQuickNote("");
-      toast.success("Note added");
-    }
-    setAddingNote(false);
-  }
-
-  async function handleDeleteNote(noteId: string) {
-    await supabase.from("sops").delete().eq("id", noteId);
-    setTodayNotes((prev) => prev.filter((n) => n.id !== noteId));
-  }
 
   async function handleAddTodo() {
     if (!todoText.trim() || !currentBusiness?.id) return;
@@ -340,67 +231,45 @@ export default function DashboardPage() {
         business_id: currentBusiness.id,
         user_id: user?.id,
         text: todoText.trim(),
+        due_date: todayStr,
         priority: "normal",
-        sort_order: todos.length,
+        sort_order: todayTodos.length,
       })
-      .select("id, text, completed, completed_at, priority, created_at")
+      .select("id, text, completed, completed_at, due_date, priority, created_at")
       .single();
 
-    if (error) { toast.error(error.message); }
+    if (error) toast.error(error.message);
     else if (data) {
-      setTodos((prev) => [...prev, data]);
+      setTodayTodos((prev) => [...prev, data]);
       setTodoText("");
     }
     setAddingTodo(false);
   }
 
-  async function handleToggleTodo(todoId: string, completed: boolean) {
+  async function handleToggleTodo(todoId: string) {
     const now = new Date().toISOString();
     await supabase
       .from("todos")
-      .update({ completed, completed_at: completed ? now : null })
+      .update({ completed: true, completed_at: now })
       .eq("id", todoId);
 
-    if (completed) {
-      const todo = todos.find((t) => t.id === todoId);
-      setTodos((prev) => prev.filter((t) => t.id !== todoId));
-
-      // Log to work log
-      if (todo && currentBusiness?.id) {
-        const { data: { user } } = await supabase.auth.getUser();
-        await supabase.from("work_log").insert({
-          business_id: currentBusiness.id,
-          user_id: user?.id,
-          action: "todo_completed",
-          title: todo.text,
-          target_id: todoId,
-          target_type: "todo",
-        });
-        setWorkLog((prev) => [{
-          id: crypto.randomUUID(),
-          action: "todo_completed",
-          title: todo.text,
-          target_type: "todo",
-          created_at: now,
-        }, ...prev]);
-      }
-
-      toast.success("Todo completed");
-    } else {
-      setTodos((prev) => prev.map((t) => t.id === todoId ? { ...t, completed, completed_at: null } : t));
-    }
+    setTodayTodos((prev) => prev.filter((t) => t.id !== todoId));
+    setOverdueTodos((prev) => prev.filter((t) => t.id !== todoId));
+    toast.success("Todo completed");
   }
 
   async function handleDeleteTodo(todoId: string) {
     await supabase.from("todos").delete().eq("id", todoId);
-    setTodos((prev) => prev.filter((t) => t.id !== todoId));
+    setTodayTodos((prev) => prev.filter((t) => t.id !== todoId));
+    setOverdueTodos((prev) => prev.filter((t) => t.id !== todoId));
   }
 
+  // Summary line
+  const totalOverdue = overdueChecklists.length + overdueTodos.length;
   const summaryParts: string[] = [];
+  if (totalOverdue > 0) summaryParts.push(`${totalOverdue} overdue`);
   if (todayChecklists.length > 0) summaryParts.push(`${todayChecklists.length} checklist${todayChecklists.length > 1 ? "s" : ""} today`);
-  if (overdueChecklists.length > 0) summaryParts.push(`${overdueChecklists.length} overdue`);
-  if (todos.length > 0) summaryParts.push(`${todos.length} todo${todos.length > 1 ? "s" : ""}`);
-  if (todayNotes.length > 0) summaryParts.push(`${todayNotes.length} note${todayNotes.length > 1 ? "s" : ""}`);
+  if (todayTodos.length > 0) summaryParts.push(`${todayTodos.length} todo${todayTodos.length > 1 ? "s" : ""}`);
 
   if (loading) {
     return (
@@ -425,30 +294,46 @@ export default function DashboardPage() {
         </h2>
         <p className="text-sm text-muted-foreground">{todayFormatted}</p>
         {summaryParts.length > 0 && (
-          <p className="text-xs text-muted-foreground">{summaryParts.join(" · ")}</p>
+          <p className="text-xs text-muted-foreground">{summaryParts.join(" \u00b7 ")}</p>
         )}
       </div>
 
-      {/* SECTION 1: Overdue */}
-      {overdueChecklists.length > 0 && (
+      {/* SECTION 1: Overdue — only if items exist */}
+      {(overdueChecklists.length > 0 || overdueTodos.length > 0) && (
         <Card className="rounded-md border-l-[3px] border-l-destructive shadow-none">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-sm font-medium">
               <AlertTriangle className="h-4 w-4 text-destructive" />
-              Overdue ({overdueChecklists.length})
+              Overdue ({totalOverdue})
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-1">
             {overdueChecklists.map((cl) => {
               const daysOverdue = cl.due_date ? differenceInDays(new Date(), new Date(cl.due_date)) : 0;
               return (
                 <Link key={cl.id} href={`/dashboard/checklists/${cl.id}`} className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted/50 transition-colors">
-                  <span className="h-2 w-2 shrink-0 rounded-full bg-destructive" />
+                  <CheckSquare className="h-4 w-4 shrink-0 text-destructive" />
                   <span className="flex-1 text-sm">{cl.title}</span>
                   <span className="text-xs text-destructive">
-                    {daysOverdue === 1 ? "overdue from yesterday" : `overdue ${daysOverdue} days`}
+                    overdue {daysOverdue} day{daysOverdue !== 1 ? "s" : ""}
                   </span>
                 </Link>
+              );
+            })}
+            {overdueTodos.map((todo) => {
+              const daysOverdue = todo.due_date ? differenceInDays(new Date(), new Date(todo.due_date)) : 0;
+              return (
+                <div key={todo.id} className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted/50">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleTodo(todo.id)}
+                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-destructive/40 hover:border-primary hover:bg-primary/10 transition-colors"
+                  />
+                  <span className="flex-1 text-sm">{todo.text}</span>
+                  <span className="text-xs text-destructive">
+                    overdue {daysOverdue} day{daysOverdue !== 1 ? "s" : ""}
+                  </span>
+                </div>
               );
             })}
           </CardContent>
@@ -466,10 +351,10 @@ export default function DashboardPage() {
         <CardContent>
           {todayChecklists.length === 0 ? (
             <p className="py-4 text-center text-sm text-muted-foreground">
-              No checklists due today. <Link href="/dashboard/sops" className="text-primary hover:underline">Create one from an SOP</Link>.
+              No checklists scheduled for today
             </p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1">
               {todayChecklists.map((cl) => {
                 const itemCount = cl.items?.length ?? 0;
                 const isInProgress = cl.status === "in_progress";
@@ -494,16 +379,16 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* SECTION 3a: Todos */}
-      <Card className="rounded-md shadow-none">
+      {/* SECTION 3: Today's Todos */}
+      <Card className="rounded-md border-l-[3px] border-l-emerald-400 shadow-none">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm font-medium">
-            <CheckSquare className="h-4 w-4 text-muted-foreground" />
-            Todos ({todos.length})
+            <ListTodo className="h-4 w-4 text-emerald-400" />
+            Today&apos;s Todos ({todayTodos.length})
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {/* Add todo */}
+          {/* Inline add */}
           <form onSubmit={(e) => { e.preventDefault(); handleAddTodo(); }} className="flex items-center gap-2">
             <Input
               value={todoText}
@@ -511,23 +396,21 @@ export default function DashboardPage() {
               placeholder="Add a todo..."
               className="h-8 text-sm"
             />
-            <Button type="submit" size="sm" variant="ghost" disabled={addingTodo || !todoText.trim()} className="shrink-0 h-8 w-8 p-0">
-              {addingTodo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            </Button>
+            {addingTodo && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
           </form>
 
-          {todos.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-2">No todos. Add one above.</p>
+          {todayTodos.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-2">No todos for today. Type above and press Enter.</p>
           ) : (
             <div className="space-y-1">
-              {todos.map((todo) => (
-                <div key={todo.id} className="group flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/50">
-                  <button type="button" onClick={() => handleToggleTodo(todo.id, true)} className="shrink-0 text-muted-foreground hover:text-emerald-400">
-                    <CheckSquare className="h-4 w-4" />
-                  </button>
+              {todayTodos.map((todo) => (
+                <div key={todo.id} className="group flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-muted/50">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleTodo(todo.id)}
+                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-muted-foreground/30 hover:border-emerald-400 hover:bg-emerald-400/10 transition-colors"
+                  />
                   <span className="flex-1 text-sm">{todo.text}</span>
-                  {todo.priority === "high" && <span className="text-[10px] text-amber-400">high</span>}
-                  {todo.priority === "urgent" && <span className="text-[10px] text-destructive">urgent</span>}
                   <button type="button" className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteTodo(todo.id)}>
                     <Trash2 className="h-3 w-3" />
                   </button>
@@ -538,129 +421,7 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* SECTION 3b: Today's Notes */}
-      <Card className="rounded-md shadow-none">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm font-medium">
-            <PenLine className="h-4 w-4 text-muted-foreground" />
-            Today&apos;s Notes
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {/* Inline add */}
-          <form
-            onSubmit={(e) => { e.preventDefault(); handleQuickNote(); }}
-            className="flex items-center gap-2"
-          >
-            <Input
-              value={quickNote}
-              onChange={(e) => setQuickNote(e.target.value)}
-              placeholder="Add a note..."
-              className="h-8 text-sm"
-            />
-            <Button type="submit" size="sm" variant="ghost" disabled={addingNote || !quickNote.trim()} className="shrink-0 h-8 w-8 p-0">
-              {addingNote ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
-          </form>
-
-          {/* Notes list */}
-          {todayNotes.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No notes today.</p>
-          ) : (
-            <div className="space-y-1">
-              {todayNotes.map((note) => (
-                <div key={note.id} className="group flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/50">
-                  <Link href={`/dashboard/sops/${note.id}`} className="flex-1 text-sm truncate">
-                    {note.summary || note.title}
-                  </Link>
-                  <span className="text-[10px] text-muted-foreground shrink-0">
-                    {format(new Date(note.created_at), "h:mm a")}
-                  </span>
-                  <button
-                    type="button"
-                    className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
-                    onClick={() => handleDeleteNote(note.id)}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* SECTION 3c: Work Log */}
-      {workLog.length > 0 && (
-        <Card className="rounded-md border-l-[3px] border-l-emerald-400 shadow-none">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm font-medium">
-              <Clock className="h-4 w-4 text-emerald-400" />
-              Today&apos;s Work Log ({workLog.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-1.5">
-              {workLog.map((entry) => (
-                <div key={entry.id} className="flex items-center gap-3 text-sm">
-                  <span className="text-[10px] text-muted-foreground shrink-0">
-                    {format(new Date(entry.created_at), "h:mm a")}
-                  </span>
-                  <span className="flex-1 truncate">
-                    {entry.action === "todo_completed" && "Completed todo: "}
-                    {entry.action === "checklist_completed" && "Completed checklist: "}
-                    {entry.action === "sop_read" && "Read SOP: "}
-                    {entry.action === "sop_signed" && "Signed off: "}
-                    {entry.action === "note_created" && "Added note: "}
-                    {entry.title}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* SECTION 4: Team Activity */}
-      {activity.length > 0 && (
-        <Card className="rounded-md shadow-none">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm font-medium">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              Recent Activity
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {activity.map((item) => (
-                <div key={item.id} className="flex items-start gap-3">
-                  <div className="mt-0.5 shrink-0">
-                    {item.icon === "checklist" ? (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                    ) : item.icon === "read" ? (
-                      <FileText className="h-3.5 w-3.5 text-primary" />
-                    ) : (
-                      <PenLine className="h-3.5 w-3.5 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    {item.link ? (
-                      <Link href={item.link} className="text-sm hover:underline truncate block">
-                        {item.text}
-                      </Link>
-                    ) : (
-                      <p className="text-sm truncate">{item.text}</p>
-                    )}
-                  </div>
-                  <span className="shrink-0 text-[10px] text-muted-foreground">{item.time}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* SECTION 5: Statistics (collapsed by default) */}
+      {/* SECTION 4: Statistics (collapsed by default) */}
       <Card className="rounded-md shadow-none">
         <button
           type="button"
@@ -668,7 +429,6 @@ export default function DashboardPage() {
           onClick={() => setStatsOpen(!statsOpen)}
         >
           <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-            <Lightbulb className="h-4 w-4" />
             Statistics
           </span>
           {statsOpen ? (
@@ -680,7 +440,6 @@ export default function DashboardPage() {
         {statsOpen && (
           <CardContent className="pt-0">
             <div className="grid gap-4 md:grid-cols-3">
-              {/* SOPs */}
               <div className="rounded-md border p-4">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
                   <FileText className="h-3.5 w-3.5 text-primary" />
@@ -688,11 +447,10 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-baseline gap-4">
                   <span className="font-mono text-2xl font-bold">{totalSops}</span>
-                  <span className="text-xs text-muted-foreground">{publishedSops} published · {draftSops} drafts</span>
+                  <span className="text-xs text-muted-foreground">{publishedSops} published \u00b7 {draftSops} drafts</span>
                 </div>
               </div>
 
-              {/* Team */}
               <div className="rounded-md border p-4">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
                   <Users className="h-3.5 w-3.5 text-primary" />
@@ -702,7 +460,6 @@ export default function DashboardPage() {
                 <span className="ml-2 text-xs text-muted-foreground">members</span>
               </div>
 
-              {/* AI Credits */}
               <div className="rounded-md border p-4">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
                   <Zap className="h-3.5 w-3.5 text-primary" />

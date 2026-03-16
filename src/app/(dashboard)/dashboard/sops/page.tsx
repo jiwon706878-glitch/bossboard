@@ -8,7 +8,15 @@ import { useBusinessStore } from "@/hooks/use-business";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, FileText, Search, Folder, ChevronRight, ChevronUp, ChevronDown, Pin, MoreHorizontal, Pencil, Trash2, FolderInput, FolderPlus, GripVertical } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Plus, FileText, Search, Folder, ChevronRight, ChevronUp, ChevronDown, Pin, MoreHorizontal, Pencil, Trash2, FolderInput, FolderPlus, RotateCcw } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +40,7 @@ interface SOP {
   pinned: boolean;
   created_at: string;
   updated_at: string;
+  deleted_at: string | null;
   isUnread?: boolean;
 }
 
@@ -141,6 +150,7 @@ function FolderContextMenu({
 
 export default function SOPsPage() {
   const [allSops, setAllSops] = useState<SOP[]>([]);
+  const [trashedSops, setTrashedSops] = useState<SOP[]>([]);
   const [folders, setFolders] = useState<FolderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
@@ -148,13 +158,15 @@ export default function SOPsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; sop: SOP } | null>(null);
   const [folderCtxMenu, setFolderCtxMenu] = useState<{ x: number; y: number; folderId: string } | null>(null);
-  const [hiddenSopId, setHiddenSopId] = useState<string | null>(null);
-  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastDeletedSopIdRef = useRef<string | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"updated" | "title">("updated");
   const [newFolderName, setNewFolderName] = useState("");
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const newFolderInputRef = useRef<HTMLInputElement>(null);
+  const [deleteForeverOpen, setDeleteForeverOpen] = useState(false);
+  const [deleteForeverId, setDeleteForeverId] = useState<string | null>(null);
+  const [emptyTrashOpen, setEmptyTrashOpen] = useState(false);
 
   const supabase = createClient();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
@@ -166,15 +178,22 @@ export default function SOPsPage() {
     if (!currentBusiness) return;
     setLoading(true);
 
-    const [{ data: allFolders }, { data: sopsData }] = await Promise.all([
+    const [{ data: allFolders }, { data: sopsData }, { data: trashed }] = await Promise.all([
       supabase.from("folders").select("id, name, parent_id").eq("business_id", currentBusiness.id),
       supabase.from("sops")
-        .select("id, title, summary, category, status, version, folder_id, doc_type, tags, pinned, created_at, updated_at")
+        .select("id, title, summary, category, status, version, folder_id, doc_type, tags, pinned, created_at, updated_at, deleted_at")
         .eq("business_id", currentBusiness.id)
+        .is("deleted_at", null)
         .order("updated_at", { ascending: false }),
+      supabase.from("sops")
+        .select("id, title, summary, category, status, version, folder_id, doc_type, tags, pinned, created_at, updated_at, deleted_at")
+        .eq("business_id", currentBusiness.id)
+        .not("deleted_at", "is", null)
+        .order("deleted_at", { ascending: false }),
     ]);
 
     setFolders(allFolders ?? []);
+    setTrashedSops(trashed ?? []);
 
     // Mark unread
     const { data: { user } } = await supabase.auth.getUser();
@@ -197,33 +216,18 @@ export default function SOPsPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Ctrl+Z undo delete
+  // Ctrl+Z undo soft delete (works anytime during session)
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if ((e.ctrlKey || e.metaKey) && e.key === "z" && hiddenSopId) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && lastDeletedSopIdRef.current) {
         e.preventDefault();
-        undoDelete();
+        handleRestore(lastDeletedSopIdRef.current);
+        lastDeletedSopIdRef.current = null;
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [hiddenSopId]);
-
-  function undoDelete() {
-    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-    undoTimerRef.current = null;
-    setHiddenSopId(null);
-    toast.success("SOP restored");
-  }
-
-  function actuallyDelete(sopId: string) {
-    supabase.from("sops").delete().eq("id", sopId).then(() => {
-      // Remove from allSops after DB delete
-      setAllSops((prev) => prev.filter((s) => s.id !== sopId));
-    });
-    setHiddenSopId(null);
-    undoTimerRef.current = null;
-  }
+  }, []);
 
   // Listen for events from PageContextMenu
   useEffect(() => {
@@ -246,30 +250,26 @@ export default function SOPsPage() {
     };
   }, [currentBusiness?.id, fetchData]);
 
-  // ── Visible SOPs (filter out pending-delete) ─────────────────────────────
-
-  const visibleSops = hiddenSopId ? allSops.filter((s) => s.id !== hiddenSopId) : allSops;
-
   // ── Folder computations ───────────────────────────────────────────────────
 
   const rootFolders = folders.filter((f) => !f.parent_id);
   const folderCounts: Record<string, number> = {};
   let unfiledCount = 0;
-  for (const s of visibleSops) {
+  for (const s of allSops) {
     if (s.folder_id) folderCounts[s.folder_id] = (folderCounts[s.folder_id] ?? 0) + 1;
     else unfiledCount++;
   }
 
   // ── Filtered SOPs for right panel ─────────────────────────────────────────
 
-  let displaySops = visibleSops;
+  let displaySops = allSops;
   if (selectedFolder === "unfiled") {
-    displaySops = visibleSops.filter((s) => !s.folder_id);
-  } else if (selectedFolder) {
-    displaySops = visibleSops.filter((s) => s.folder_id === selectedFolder);
+    displaySops = allSops.filter((s) => !s.folder_id);
+  } else if (selectedFolder && selectedFolder !== "trash") {
+    displaySops = allSops.filter((s) => s.folder_id === selectedFolder);
   }
 
-  if (searchQuery) {
+  if (searchQuery && selectedFolder !== "trash") {
     const q = searchQuery.toLowerCase();
     displaySops = displaySops.filter((s) =>
       s.title.toLowerCase().includes(q) ||
@@ -289,6 +289,8 @@ export default function SOPsPage() {
 
   const currentFolderName = selectedFolder === "unfiled"
     ? "Unfiled"
+    : selectedFolder === "trash"
+    ? "Trash"
     : folders.find((f) => f.id === selectedFolder)?.name ?? "All Documents";
 
   // ── Actions ───────────────────────────────────────────────────────────────
@@ -299,23 +301,71 @@ export default function SOPsPage() {
     if (error) fetchData();
   }
 
-  function handleDelete(sopId: string) {
-    // Hide from UI but keep in allSops (don't delete from DB yet)
-    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-    setHiddenSopId(sopId);
-    undoTimerRef.current = setTimeout(() => actuallyDelete(sopId), 5000);
-    toast("SOP deleted", {
-      action: { label: "Undo", onClick: () => undoDelete() },
+  async function handleDelete(sopId: string) {
+    // Soft delete: set deleted_at
+    const now = new Date().toISOString();
+    setAllSops((prev) => prev.filter((s) => s.id !== sopId));
+    const deleted = allSops.find((s) => s.id === sopId);
+    if (deleted) setTrashedSops((prev) => [{ ...deleted, deleted_at: now }, ...prev]);
+    lastDeletedSopIdRef.current = sopId;
+
+    const { error } = await supabase.from("sops").update({ deleted_at: now }).eq("id", sopId);
+    if (error) {
+      toast.error(error.message);
+      fetchData();
+      return;
+    }
+    toast("SOP moved to trash", {
+      action: { label: "Undo", onClick: () => handleRestore(sopId) },
       duration: 5000,
     });
   }
 
+  async function handleRestore(sopId: string) {
+    // Restore: set deleted_at = null
+    const restored = trashedSops.find((s) => s.id === sopId);
+    setTrashedSops((prev) => prev.filter((s) => s.id !== sopId));
+    if (restored) setAllSops((prev) => [{ ...restored, deleted_at: null }, ...prev]);
+
+    const { error } = await supabase.from("sops").update({ deleted_at: null }).eq("id", sopId);
+    if (error) {
+      toast.error(error.message);
+      fetchData();
+      return;
+    }
+    toast.success("SOP restored");
+  }
+
+  async function handleDeleteForever(sopId: string) {
+    const { error } = await supabase.from("sops").delete().eq("id", sopId);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setTrashedSops((prev) => prev.filter((s) => s.id !== sopId));
+    setDeleteForeverOpen(false);
+    setDeleteForeverId(null);
+    toast.success("SOP permanently deleted");
+  }
+
+  async function handleEmptyTrash() {
+    const ids = trashedSops.map((s) => s.id);
+    if (ids.length === 0) return;
+    const { error } = await supabase.from("sops").delete().in("id", ids);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setTrashedSops([]);
+    setEmptyTrashOpen(false);
+    toast.success("Trash emptied");
+  }
+
   async function handleMove(sopId: string, targetFolderId: string) {
-    // Optimistic: update folder_id in local state
     setAllSops((prev) => prev.map((s) => s.id === sopId ? { ...s, folder_id: targetFolderId } : s));
     toast.success(`Moved to ${folders.find((f) => f.id === targetFolderId)?.name ?? "folder"}`);
     const { error } = await supabase.from("sops").update({ folder_id: targetFolderId }).eq("id", sopId);
-    if (error) fetchData(); // Rollback
+    if (error) fetchData();
   }
 
   async function handleDuplicate(sopId: string) {
@@ -348,7 +398,6 @@ export default function SOPsPage() {
   }
 
   async function handleDeleteFolder(folderId: string) {
-    // Move SOPs to unfiled, then delete folder
     setAllSops((prev) => prev.map((s) => s.folder_id === folderId ? { ...s, folder_id: null } : s));
     setFolders((prev) => prev.filter((f) => f.id !== folderId));
     if (selectedFolder === folderId) setSelectedFolder("unfiled");
@@ -362,7 +411,6 @@ export default function SOPsPage() {
     setDragOverFolder(null);
     const sopId = e.dataTransfer.getData("text/plain");
     if (!sopId) return;
-    // Optimistic
     setAllSops((prev) => prev.map((s) => s.id === sopId ? { ...s, folder_id: targetFolderId } : s));
     toast.success("SOP moved");
     const { error } = await supabase.from("sops").update({ folder_id: targetFolderId }).eq("id", sopId);
@@ -375,7 +423,6 @@ export default function SOPsPage() {
     const list = [...unpinnedSops];
     const idx = list.findIndex((s) => s.id === sopId);
     if (idx <= 0) return;
-    // Swap updated_at with the one above to swap positions
     const thisTs = list[idx].updated_at;
     const aboveTs = list[idx - 1].updated_at;
     setAllSops((prev) => prev.map((s) => {
@@ -428,6 +475,8 @@ export default function SOPsPage() {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
+  const isTrashView = selectedFolder === "trash";
+
   return (
     <div className="-m-4 lg:-m-6 flex h-[calc(100vh-4rem)] overflow-hidden">
       {/* Context menu */}
@@ -456,6 +505,38 @@ export default function SOPsPage() {
           onNewSop={() => { router.push(`/dashboard/sops/new?folder=${folderCtxMenu.folderId}`); setFolderCtxMenu(null); }}
         />
       )}
+
+      {/* Delete forever confirmation */}
+      <Dialog open={deleteForeverOpen} onOpenChange={setDeleteForeverOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Forever</DialogTitle>
+            <DialogDescription>
+              This SOP will be permanently deleted. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setDeleteForeverOpen(false); setDeleteForeverId(null); }}>Cancel</Button>
+            <Button variant="destructive" onClick={() => deleteForeverId && handleDeleteForever(deleteForeverId)}>Delete Forever</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Empty trash confirmation */}
+      <Dialog open={emptyTrashOpen} onOpenChange={setEmptyTrashOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Empty Trash</DialogTitle>
+            <DialogDescription>
+              All {trashedSops.length} trashed SOPs will be permanently deleted. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEmptyTrashOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleEmptyTrash}>Empty Trash</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── LEFT PANEL: folder list ──────────────────────────────────────── */}
       <div className="flex w-64 shrink-0 flex-col border-r bg-card">
@@ -510,6 +591,25 @@ export default function SOPsPage() {
               <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{unfiledCount}</span>
             </button>
           )}
+
+          {/* Trash */}
+          {trashedSops.length > 0 && (
+            <>
+              <div className="mx-3 my-1 h-px bg-border/50" />
+              <button
+                type="button"
+                onClick={() => { setSelectedFolder("trash"); setSelectedSopId(null); }}
+                className={cn(
+                  "flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors duration-100",
+                  selectedFolder === "trash" ? "bg-destructive/10 text-destructive" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                )}
+              >
+                <Trash2 className="h-4 w-4 shrink-0" />
+                <span className="min-w-0 flex-1 truncate">Trash</span>
+                <span className="shrink-0 text-xs tabular-nums">{trashedSops.length}</span>
+              </button>
+            </>
+          )}
         </div>
         <div className="border-t p-2">
           {isCreatingFolder ? (
@@ -548,20 +648,30 @@ export default function SOPsPage() {
             <span className="text-foreground font-medium">{currentFolderName}</span>
           </div>
           <div className="flex-1" />
-          <div className="relative w-48">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 pl-8 text-sm"
-            />
-          </div>
-          <Link href={selectedFolder && selectedFolder !== "unfiled" ? `/dashboard/sops/new?folder=${selectedFolder}` : "/dashboard/sops/new"}>
-            <Button size="sm">
-              <Plus className="mr-1 h-3.5 w-3.5" /> New SOP
-            </Button>
-          </Link>
+          {isTrashView ? (
+            trashedSops.length > 0 && (
+              <Button size="sm" variant="destructive" onClick={() => setEmptyTrashOpen(true)}>
+                <Trash2 className="mr-1 h-3.5 w-3.5" /> Empty Trash
+              </Button>
+            )
+          ) : (
+            <>
+              <div className="relative w-48">
+                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-8 pl-8 text-sm"
+                />
+              </div>
+              <Link href={selectedFolder && selectedFolder !== "unfiled" ? `/dashboard/sops/new?folder=${selectedFolder}` : "/dashboard/sops/new"}>
+                <Button size="sm">
+                  <Plus className="mr-1 h-3.5 w-3.5" /> New SOP
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Document list */}
@@ -572,6 +682,45 @@ export default function SOPsPage() {
                 <div key={i} className="h-9 animate-pulse rounded bg-muted/30" />
               ))}
             </div>
+          ) : isTrashView ? (
+            /* ── Trash view ──────────────────────────────────────────────── */
+            trashedSops.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+                <Trash2 className="h-10 w-10 text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground">Trash is empty</p>
+              </div>
+            ) : (
+              <div>
+                {trashedSops.map((sop) => (
+                  <div
+                    key={sop.id}
+                    className="group flex h-10 items-center gap-2 border-b border-border/30 px-4 text-sm"
+                  >
+                    <FileText className="h-4 w-4 shrink-0 text-muted-foreground/40" />
+                    <span className="min-w-0 flex-1 truncate text-muted-foreground">{sop.title}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {sop.deleted_at ? formatDate(sop.deleted_at) : ""}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleRestore(sop.id)}
+                    >
+                      <RotateCcw className="h-3 w-3" /> Restore
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 text-xs text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => { setDeleteForeverId(sop.id); setDeleteForeverOpen(true); }}
+                    >
+                      <Trash2 className="h-3 w-3" /> Delete Forever
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )
           ) : !selectedFolder ? (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
               Select a folder from the left panel

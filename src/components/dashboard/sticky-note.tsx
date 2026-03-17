@@ -91,7 +91,7 @@ export function StickyNote() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500 text-white shadow-lg hover:bg-amber-600 transition-colors"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-amber-500 text-white shadow-lg hover:bg-amber-600 transition-colors"
         title="Quick Notes"
       >
         <StickyNoteIcon className="h-5 w-5" />
@@ -107,11 +107,11 @@ export function StickyNote() {
   return (
     <div
       ref={noteRef}
-      className="fixed z-50 w-72 rounded-lg border shadow-2xl"
+      className="fixed z-50 rounded-lg border shadow-2xl w-[calc(100vw-2rem)] sm:w-72 max-w-sm"
       style={{
         ...(position
           ? { left: position.x, top: position.y }
-          : { bottom: 80, right: 24 }),
+          : { bottom: 80, right: 16 }),
         backgroundColor: "var(--card)",
         borderColor: "var(--border)",
       }}

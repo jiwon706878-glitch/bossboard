@@ -1,11 +1,14 @@
 "use client";
 
 import { format } from "date-fns";
+import Link from "next/link";
+import { Sparkles } from "lucide-react";
 import { useDashboard } from "@/hooks/use-dashboard";
 import { OverdueSection } from "@/components/dashboard/overdue-section";
 import { TodayChecklists } from "@/components/dashboard/today-checklists";
 import { TodayTodos } from "@/components/dashboard/today-todos";
 import { StatsSection } from "@/components/dashboard/stats-section";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardPage() {
   const {
@@ -53,6 +56,16 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {overdueChecklists.length === 0 && todayChecklists.length === 0 && overdueTodos.length === 0 && todayTodos.length === 0 && (
+        <div className="flex flex-col items-center justify-center rounded-md border bg-card py-16 text-center">
+          <Sparkles className="mb-3 h-10 w-10 text-muted-foreground/50" />
+          <h3 className="text-lg font-medium text-foreground">Welcome to BossBoard</h3>
+          <p className="mt-1 text-sm text-muted-foreground">Start by creating your first SOP in the Wiki.</p>
+          <Button asChild variant="outline" size="sm" className="mt-4">
+            <Link href="/dashboard/sops">Go to Wiki &rarr;</Link>
+          </Button>
+        </div>
+      )}
       <OverdueSection overdueChecklists={overdueChecklists} overdueTodos={overdueTodos} onToggleTodo={handleToggleTodo} />
       <TodayChecklists checklists={todayChecklists} />
       <TodayTodos todos={todayTodos} todoText={todoText} setTodoText={setTodoText} addingTodo={addingTodo} onAddTodo={handleAddTodo} onToggleTodo={handleToggleTodo} onDeleteTodo={handleDeleteTodo} />

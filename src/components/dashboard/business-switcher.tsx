@@ -40,7 +40,16 @@ export function BusinessSwitcher() {
       if (data && data.length > 0) {
         setBusinesses(data);
         if (!currentBusiness) {
+          // No cached business — set first one
           setCurrentBusiness(data[0]);
+        } else {
+          // Verify cached business still exists, update if data changed
+          const fresh = data.find((b) => b.id === currentBusiness.id);
+          if (fresh && JSON.stringify(fresh) !== JSON.stringify(currentBusiness)) {
+            setCurrentBusiness(fresh);
+          } else if (!fresh) {
+            setCurrentBusiness(data[0]);
+          }
         }
       }
     }

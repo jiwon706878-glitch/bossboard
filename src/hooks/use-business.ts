@@ -18,15 +18,24 @@ interface Business {
 
 interface BusinessState {
   currentBusiness: Business | null;
+  _hasHydrated: boolean;
   setCurrentBusiness: (business: Business | null) => void;
+  setHasHydrated: (v: boolean) => void;
 }
 
 export const useBusinessStore = create<BusinessState>()(
   persist(
     (set) => ({
       currentBusiness: null,
+      _hasHydrated: false,
       setCurrentBusiness: (business) => set({ currentBusiness: business }),
+      setHasHydrated: (v) => set({ _hasHydrated: v }),
     }),
-    { name: "bossboard-business" }
+    {
+      name: "bossboard-business",
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
+    }
   )
 );

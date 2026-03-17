@@ -56,7 +56,7 @@ export function SopRow({
     <div
       data-has-context-menu
       className={cn(
-        "group flex h-9 cursor-default items-center gap-1.5 border-b border-border/30 px-4 text-sm transition-colors duration-75",
+        "group flex h-9 cursor-default items-center gap-1.5 border-b border-border/30 px-2 sm:px-4 text-sm transition-colors duration-75",
         isSelected ? "bg-primary/5 border-l-2 border-l-primary" : "hover:bg-muted/30"
       )}
       draggable
@@ -68,8 +68,8 @@ export function SopRow({
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
     >
-      {/* Reorder arrows */}
-      <div className="flex shrink-0 flex-col opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Reorder arrows — hidden on mobile */}
+      <div className="hidden sm:flex shrink-0 flex-col opacity-0 group-hover:opacity-100 transition-opacity">
         {onMoveUp && (
           <button
             type="button"
@@ -92,7 +92,7 @@ export function SopRow({
       <FileText className="h-4 w-4 shrink-0 text-muted-foreground/40" />
       {sop.isUnread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
       {sop.pinned && <Pin className="h-3 w-3 shrink-0 text-amber-400" />}
-      <span className="min-w-0 truncate" style={{ maxWidth: "35ch" }}>
+      <span className="min-w-0 truncate max-w-[20ch] sm:max-w-[35ch]">
         {sop.title}
       </span>
       <Badge

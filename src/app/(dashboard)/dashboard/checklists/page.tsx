@@ -154,8 +154,13 @@ export default function ChecklistsPage() {
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <CheckSquare className="mb-3 h-10 w-10 text-muted-foreground/50" />
             <p className="text-sm text-muted-foreground">
-              No checklists yet. Create one using the button above.
+              No checklists yet. Create one to get started.
             </p>
+            <Button asChild variant="outline" size="sm" className="mt-4">
+              <Link href="/dashboard/checklists/new">
+                <Plus className="mr-1 h-3.5 w-3.5" /> Create Checklist
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       ) : (

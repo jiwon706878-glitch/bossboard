@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { Trash2, Pencil, Loader2 } from "lucide-react";
+import { Trash2, Pencil, Loader2, ListTodo } from "lucide-react";
 import { toast } from "sonner";
 
 interface TodoRow {
@@ -198,9 +198,11 @@ export default function TodosPage() {
       {/* Today's todos */}
       <div className="space-y-1">
         {todayTodos.length === 0 && overdueTodos.length === 0 && (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            No todos yet. Type above and press Enter to add one.
-          </p>
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <ListTodo className="mb-3 h-10 w-10 text-muted-foreground/50" />
+            <p className="text-sm font-medium text-foreground">All caught up!</p>
+            <p className="mt-1 text-xs text-muted-foreground">Type above and press Enter to add a todo.</p>
+          </div>
         )}
         {todayTodos.map((todo) => (
           <TodoItem

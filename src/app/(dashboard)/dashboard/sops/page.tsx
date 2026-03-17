@@ -9,6 +9,7 @@ import {
   Dialog, DialogContent, DialogDescription,
   DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useSops } from "@/hooks/use-sops";
 import { useFolders } from "@/hooks/use-folders";
 import { SOPContextMenu } from "@/components/sops/sop-context-menu";
@@ -16,6 +17,7 @@ import { FolderContextMenu } from "@/components/sops/folder-context-menu";
 import { FolderPanel } from "@/components/sops/folder-panel";
 import { TrashView } from "@/components/sops/trash-view";
 import { SopList } from "@/components/sops/sop-list";
+import { Folder } from "lucide-react";
 import { toast } from "sonner";
 import type { SOP } from "@/types/sops";
 
@@ -32,6 +34,7 @@ export default function SOPsPage() {
   const [deleteForeverOpen, setDeleteForeverOpen] = useState(false);
   const [deleteForeverId, setDeleteForeverId] = useState<string | null>(null);
   const [emptyTrashOpen, setEmptyTrashOpen] = useState(false);
+  const [mobileFolderOpen, setMobileFolderOpen] = useState(false);
 
   const supabase = createClient();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
@@ -130,18 +133,37 @@ export default function SOPsPage() {
           <DialogFooter><Button variant="outline" onClick={() => setEmptyTrashOpen(false)}>Cancel</Button><Button variant="destructive" onClick={handleEmptyTrashConfirmed}>Empty Trash</Button></DialogFooter></DialogContent>
       </Dialog>
 
-      <FolderPanel folders={foldersHook.folders} rootFolders={rootFolders} folderCounts={folderCounts} unfiledCount={unfiledCount}
-        trashedCount={sops.trashedSops.length} selectedFolder={selectedFolder} dragOverFolder={dragOverFolder}
-        isCreatingFolder={isCreatingFolder} newFolderName={newFolderName}
-        onSelectFolder={(id) => { setSelectedFolder(id); setSelectedSopId(null); }}
-        onFolderContextMenu={(e, fid) => setFolderCtxMenu({ x: e.clientX, y: e.clientY, folderId: fid })}
-        onDragOver={(fid) => setDragOverFolder(fid)} onDragLeave={() => setDragOverFolder(null)} onDrop={handleDropOnFolder}
-        onFolderMoveUp={foldersHook.handleFolderMoveUp} onFolderMoveDown={foldersHook.handleFolderMoveDown}
-        onSetIsCreatingFolder={setIsCreatingFolder} onSetNewFolderName={setNewFolderName} onCreateFolder={handleCreateFolder} />
+      {/* Desktop folder panel */}
+      <div className="hidden lg:flex lg:shrink-0">
+        <FolderPanel folders={foldersHook.folders} rootFolders={rootFolders} folderCounts={folderCounts} unfiledCount={unfiledCount}
+          trashedCount={sops.trashedSops.length} selectedFolder={selectedFolder} dragOverFolder={dragOverFolder}
+          isCreatingFolder={isCreatingFolder} newFolderName={newFolderName}
+          onSelectFolder={(id) => { setSelectedFolder(id); setSelectedSopId(null); }}
+          onFolderContextMenu={(e, fid) => setFolderCtxMenu({ x: e.clientX, y: e.clientY, folderId: fid })}
+          onDragOver={(fid) => setDragOverFolder(fid)} onDragLeave={() => setDragOverFolder(null)} onDrop={handleDropOnFolder}
+          onFolderMoveUp={foldersHook.handleFolderMoveUp} onFolderMoveDown={foldersHook.handleFolderMoveDown}
+          onSetIsCreatingFolder={setIsCreatingFolder} onSetNewFolderName={setNewFolderName} onCreateFolder={handleCreateFolder} />
+      </div>
+
+      {/* Mobile folder panel in Sheet */}
+      <Sheet open={mobileFolderOpen} onOpenChange={setMobileFolderOpen}>
+        <SheetContent side="left" className="w-64 p-0">
+          <SheetTitle className="sr-only">Folders</SheetTitle>
+          <FolderPanel folders={foldersHook.folders} rootFolders={rootFolders} folderCounts={folderCounts} unfiledCount={unfiledCount}
+            trashedCount={sops.trashedSops.length} selectedFolder={selectedFolder} dragOverFolder={dragOverFolder}
+            isCreatingFolder={isCreatingFolder} newFolderName={newFolderName}
+            onSelectFolder={(id) => { setSelectedFolder(id); setSelectedSopId(null); setMobileFolderOpen(false); }}
+            onFolderContextMenu={(e, fid) => setFolderCtxMenu({ x: e.clientX, y: e.clientY, folderId: fid })}
+            onDragOver={(fid) => setDragOverFolder(fid)} onDragLeave={() => setDragOverFolder(null)} onDrop={handleDropOnFolder}
+            onFolderMoveUp={foldersHook.handleFolderMoveUp} onFolderMoveDown={foldersHook.handleFolderMoveDown}
+            onSetIsCreatingFolder={setIsCreatingFolder} onSetNewFolderName={setNewFolderName} onCreateFolder={handleCreateFolder} />
+        </SheetContent>
+      </Sheet>
 
       {isTrashView ? (
         <div className="flex flex-1 flex-col overflow-hidden">
-          <div className="flex items-center gap-3 border-b px-4 py-2">
+          <div className="flex items-center gap-2 border-b px-4 py-2">
+            <button type="button" className="lg:hidden shrink-0 rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted" onClick={() => setMobileFolderOpen(true)}><Folder className="h-4 w-4" /></button>
             <div className="flex items-center gap-1 text-sm text-muted-foreground"><span>Wiki</span><span className="text-foreground font-medium">Trash</span></div>
             <div className="flex-1" />
             {sops.trashedSops.length > 0 && <Button size="sm" variant="destructive" onClick={() => setEmptyTrashOpen(true)}>Empty Trash</Button>}
@@ -153,11 +175,12 @@ export default function SOPsPage() {
       ) : (
         <SopList currentFolderName={currentFolderName} selectedFolder={selectedFolder} isTrashView={false}
           searchQuery={searchQuery} onSearchChange={setSearchQuery} loading={sops.loading} displaySops={displaySops}
-          pinnedSops={pinnedSops} unpinnedSops={unpinnedSops} trashedSopsCount={sops.trashedSops.length}
+          pinnedSops={pinnedSops} unpinnedSops={unpinnedSops} trashedSopsCount={sops.trashedSops.length} totalSopsCount={sops.allSops.length}
           selectedSopId={selectedSopId} onSelectSop={setSelectedSopId} router={router}
           onPin={sops.handlePin} onDelete={sops.handleDelete} folders={foldersHook.folders} onMove={handleMove}
           onSopMoveUp={(id) => sops.handleSopMoveUp(id, unpinnedSops)} onSopMoveDown={(id) => sops.handleSopMoveDown(id, unpinnedSops)}
-          onContextMenu={(e, sop) => setCtxMenu({ x: e.clientX, y: e.clientY, sop })} onEmptyTrash={() => setEmptyTrashOpen(true)} />
+          onContextMenu={(e, sop) => setCtxMenu({ x: e.clientX, y: e.clientY, sop })} onEmptyTrash={() => setEmptyTrashOpen(true)}
+          onOpenMobileFolders={() => setMobileFolderOpen(true)} />
       )}
     </div>
   );

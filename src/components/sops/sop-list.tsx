@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, FileText, Search, ChevronRight, Pin, Trash2 } from "lucide-react";
+import { Plus, FileText, Search, ChevronRight, Pin, Trash2, Folder } from "lucide-react";
 import type { SOP, FolderRow } from "@/types/sops";
 import { SopRow } from "@/components/sops/sop-row";
 
@@ -19,6 +19,7 @@ interface SopListProps {
   pinnedSops: SOP[];
   unpinnedSops: SOP[];
   trashedSopsCount: number;
+  totalSopsCount?: number;
   selectedSopId: string | null;
   onSelectSop: (sopId: string) => void;
   router: ReturnType<typeof useRouter>;
@@ -30,6 +31,7 @@ interface SopListProps {
   onSopMoveDown: (sopId: string) => void;
   onContextMenu: (e: React.MouseEvent, sop: SOP) => void;
   onEmptyTrash: () => void;
+  onOpenMobileFolders?: () => void;
 }
 
 export function SopList({
@@ -43,6 +45,7 @@ export function SopList({
   pinnedSops,
   unpinnedSops,
   trashedSopsCount,
+  totalSopsCount = 0,
   selectedSopId,
   onSelectSop,
   router,
@@ -54,15 +57,21 @@ export function SopList({
   onSopMoveDown,
   onContextMenu,
   onEmptyTrash,
+  onOpenMobileFolders,
 }: SopListProps) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b px-4 py-2">
-        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-          <span>Wiki</span>
-          <ChevronRight className="h-3 w-3" />
-          <span className="text-foreground font-medium">{currentFolderName}</span>
+      <div className="flex items-center gap-2 border-b px-3 py-2 lg:px-4 lg:gap-3">
+        {onOpenMobileFolders && (
+          <button type="button" className="lg:hidden shrink-0 rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted" onClick={onOpenMobileFolders}>
+            <Folder className="h-4 w-4" />
+          </button>
+        )}
+        <div className="flex items-center gap-1 text-sm text-muted-foreground min-w-0">
+          <span className="hidden sm:inline">Wiki</span>
+          <ChevronRight className="h-3 w-3 hidden sm:block shrink-0" />
+          <span className="text-foreground font-medium truncate">{currentFolderName}</span>
         </div>
         <div className="flex-1" />
         {isTrashView ? (
@@ -73,7 +82,7 @@ export function SopList({
           )
         ) : (
           <>
-            <div className="relative w-48">
+            <div className="relative hidden sm:block w-48">
               <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search..."
@@ -89,8 +98,9 @@ export function SopList({
                   : "/dashboard/sops/new"
               }
             >
-              <Button size="sm">
-                <Plus className="mr-1 h-3.5 w-3.5" /> New SOP
+              <Button size="sm" className="shrink-0">
+                <Plus className="h-3.5 w-3.5 sm:mr-1" />
+                <span className="hidden sm:inline">New SOP</span>
               </Button>
             </Link>
           </>
@@ -106,23 +116,29 @@ export function SopList({
             ))}
           </div>
         ) : !selectedFolder ? (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            Select a folder from the left panel
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+            <span className="hidden lg:inline">Select a folder from the left panel</span>
+            <span className="lg:hidden">Tap the folder icon to select a folder</span>
           </div>
         ) : displaySops.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
             <FileText className="h-10 w-10 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground">
-              {searchQuery ? "No SOPs match your search" : "This folder is empty"}
+            <p className="text-sm font-medium text-foreground">
+              {searchQuery ? "No SOPs match your search" : totalSopsCount === 0 ? "No documents yet" : "This folder is empty"}
             </p>
             {!searchQuery && (
-              <Link
-                href={`/dashboard/sops/new${selectedFolder !== "unfiled" ? `?folder=${selectedFolder}` : ""}`}
-              >
-                <Button size="sm" variant="outline">
-                  <Plus className="mr-1 h-3.5 w-3.5" /> Create SOP
-                </Button>
-              </Link>
+              <>
+                {totalSopsCount === 0 && (
+                  <p className="text-xs text-muted-foreground">Create your first SOP to get started.</p>
+                )}
+                <Link
+                  href={`/dashboard/sops/new${selectedFolder && selectedFolder !== "unfiled" ? `?folder=${selectedFolder}` : ""}`}
+                >
+                  <Button size="sm" variant="outline">
+                    <Plus className="mr-1 h-3.5 w-3.5" /> Create SOP
+                  </Button>
+                </Link>
+              </>
             )}
           </div>
         ) : (

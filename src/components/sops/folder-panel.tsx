@@ -52,7 +52,7 @@ export function FolderPanel({
   const newFolderInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="flex w-64 shrink-0 flex-col border-r bg-card">
+    <div className="flex w-full lg:w-64 shrink-0 flex-col border-r bg-card h-full">
       <div className="flex items-center justify-between border-b px-3 py-2">
         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
           Folders

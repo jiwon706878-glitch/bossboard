@@ -100,6 +100,7 @@ export function useSops(businessId: string | undefined) {
       return;
     }
     toast.success("SOP restored");
+    fetchSops();
   }
 
   async function handleDeleteForever(sopId: string) {

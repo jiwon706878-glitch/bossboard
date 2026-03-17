@@ -10,21 +10,18 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
   CheckSquare,
-  GraduationCap,
+  ListTodo,
   Users,
   Settings,
-  Shield,
   LogOut,
 } from "lucide-react";
-import { useRoleStore } from "@/hooks/use-role";
 import { toast } from "sonner";
 import { FolderTree } from "@/components/sops/folder-tree";
-import { QuickNoteSidebarButton } from "@/components/dashboard/quick-note";
 
 const navLinks = [
   { key: "checklists", href: "/dashboard/checklists", label: "Checklists", icon: CheckSquare },
-  { key: "onboarding", href: "/dashboard/onboarding-paths", label: "Onboarding", icon: GraduationCap },
-  { key: "team", href: "/dashboard/team", label: "Team", icon: Users },
+  { key: "todos", href: "/dashboard/todos", label: "Todos", icon: ListTodo },
+  { key: "team", href: "/dashboard/team", label: "Team & Admin", icon: Users },
   { key: "settings", href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
@@ -66,7 +63,6 @@ export function DashboardSidebar({ className }: { className?: string }) {
   const [creditsUsed, setCreditsUsed] = useState(0);
   const [creditsLimit, setCreditsLimit] = useState(30);
   const [unlimited, setUnlimited] = useState(false);
-  const { loadRole, isAdmin } = useRoleStore();
 
   useEffect(() => {
     async function load() {
@@ -105,8 +101,7 @@ export function DashboardSidebar({ className }: { className?: string }) {
       setCreditsUsed(total);
     }
     load();
-    loadRole();
-  }, [supabase, loadRole]);
+  }, [supabase]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -183,25 +178,10 @@ export function DashboardSidebar({ className }: { className?: string }) {
             </Suspense>
           </div>
 
-          {/* Quick Note */}
-          <div className="py-1">
-            <QuickNoteSidebarButton />
-          </div>
-
           {/* Other nav links */}
           {navLinks.map(({ key, ...link }) => (
             <NavLink key={key} {...link} pathname={pathname} />
           ))}
-
-          {/* Admin link — only for owner/admin */}
-          {isAdmin() && (
-            <NavLink
-              href="/dashboard/admin"
-              label="Admin"
-              icon={Shield}
-              pathname={pathname}
-            />
-          )}
         </div>
       </nav>
 

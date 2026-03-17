@@ -33,7 +33,7 @@ export default async function DashboardLayout({
       <DashboardSidebar className="hidden lg:flex" />
       <div className="flex min-h-0 flex-1 flex-col">
         <DashboardTopbar />
-        <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
+        <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6 animate-fade-in">
           {children}
         </main>
         <StickyNote />

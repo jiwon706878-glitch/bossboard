@@ -337,10 +337,10 @@ export default function ChecklistDetailPage() {
                   type="button"
                   disabled={isCompleted}
                   onClick={() => toggleItem(index)}
-                  className="mt-0.5 shrink-0"
+                  className="mt-0.5 shrink-0 cursor-pointer transition-all duration-200"
                 >
                   {isChecked ? (
-                    <CheckSquare className="h-4 w-4 text-emerald-400" />
+                    <CheckSquare className="h-4 w-4 text-emerald-400 scale-110" />
                   ) : (
                     <Square className="h-4 w-4 text-muted-foreground" />
                   )}
@@ -348,7 +348,7 @@ export default function ChecklistDetailPage() {
 
                 {/* Text + assignment info */}
                 <div className="min-w-0 flex-1">
-                  <span className={cn("text-sm", isChecked && "line-through text-muted-foreground")}>
+                  <span className={cn("text-sm transition-all duration-200", isChecked && "line-through text-muted-foreground opacity-60")}>
                     {item.text}
                   </span>
                   {isAssigned && (

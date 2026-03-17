@@ -4,7 +4,8 @@
       "Bash(cd:*)",
       "Bash(find:*)",
       "Bash(wc:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(taskkill:*)"
     ]
   }
 }

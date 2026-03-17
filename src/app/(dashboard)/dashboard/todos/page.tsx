@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { format, differenceInDays, isToday, isYesterday } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
@@ -31,6 +31,7 @@ export default function TodosPage() {
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+  const [todoCtxMenu, setTodoCtxMenu] = useState<{ x: number; y: number; todoId: string; completed: boolean } | null>(null);
 
   const todayStr = format(new Date(), "yyyy-MM-dd");
 
@@ -190,6 +191,7 @@ export default function TodosPage() {
               onEditChange={setEditText}
               onEditSubmit={() => handleEdit(todo.id)}
               onEditCancel={() => setEditingId(null)}
+              onContextMenu={(e) => { e.preventDefault(); setTodoCtxMenu({ x: e.clientX, y: e.clientY, todoId: todo.id, completed: todo.completed }); }}
             />
           ))}
         </div>
@@ -217,9 +219,19 @@ export default function TodosPage() {
             onEditChange={setEditText}
             onEditSubmit={() => handleEdit(todo.id)}
             onEditCancel={() => setEditingId(null)}
+            onContextMenu={(e) => { e.preventDefault(); setTodoCtxMenu({ x: e.clientX, y: e.clientY, todoId: todo.id, completed: todo.completed }); }}
           />
         ))}
       </div>
+
+      {todoCtxMenu && (
+        <TodoContextMenu
+          menu={todoCtxMenu}
+          onClose={() => setTodoCtxMenu(null)}
+          onComplete={() => { handleToggle(todoCtxMenu.todoId, !todoCtxMenu.completed); setTodoCtxMenu(null); }}
+          onDelete={() => { handleDelete(todoCtxMenu.todoId); setTodoCtxMenu(null); }}
+        />
+      )}
 
       {/* Completed todos */}
       {completedTodos.length > 0 && (
@@ -231,6 +243,7 @@ export default function TodosPage() {
             <div
               key={todo.id}
               className="group flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted/50"
+              onContextMenu={(e) => { e.preventDefault(); setTodoCtxMenu({ x: e.clientX, y: e.clientY, todoId: todo.id, completed: todo.completed }); }}
             >
               <button
                 type="button"
@@ -262,6 +275,29 @@ export default function TodosPage() {
   );
 }
 
+function TodoContextMenu({ menu, onClose, onComplete, onDelete }: { menu: { x: number; y: number; completed: boolean }; onClose: () => void; onComplete: () => void; onDelete: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const h1 = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+    const h2 = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("mousedown", h1);
+    document.addEventListener("keydown", h2);
+    return () => { document.removeEventListener("mousedown", h1); document.removeEventListener("keydown", h2); };
+  }, [onClose]);
+
+  return (
+    <div ref={ref} className="fixed z-50 w-40 rounded-md border bg-popover p-1 shadow-md"
+      style={{ left: Math.min(menu.x, window.innerWidth - 170), top: Math.min(menu.y, window.innerHeight - 100) }}>
+      <button type="button" className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs cursor-pointer hover:bg-muted text-foreground" onClick={onComplete}>
+        {menu.completed ? "Undo complete" : "Complete"}
+      </button>
+      <button type="button" className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs cursor-pointer hover:bg-destructive/10 text-destructive" onClick={onDelete}>
+        Delete
+      </button>
+    </div>
+  );
+}
+
 function TodoItem({
   todo,
   carried,
@@ -273,6 +309,7 @@ function TodoItem({
   onEditChange,
   onEditSubmit,
   onEditCancel,
+  onContextMenu,
 }: {
   todo: TodoRow;
   carried: string | null;
@@ -284,13 +321,14 @@ function TodoItem({
   onEditChange: (v: string) => void;
   onEditSubmit: () => void;
   onEditCancel: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }) {
   return (
-    <div className="group flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted/50">
+    <div className="group flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted/50" onContextMenu={onContextMenu}>
       <button
         type="button"
         onClick={onToggle}
-        className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-muted-foreground/30 hover:border-primary hover:bg-primary/10 transition-colors"
+        className="flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded border border-muted-foreground/30 hover:border-primary hover:bg-primary/10 transition-all duration-200"
       />
       {editing ? (
         <form

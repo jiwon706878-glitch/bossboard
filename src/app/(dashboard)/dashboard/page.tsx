@@ -66,7 +66,7 @@ export default function DashboardPage() {
           </Button>
         </div>
       )}
-      <OverdueSection overdueChecklists={overdueChecklists} overdueTodos={overdueTodos} onToggleTodo={handleToggleTodo} />
+      <OverdueSection overdueChecklists={overdueChecklists} overdueTodos={overdueTodos} onToggleTodo={handleToggleTodo} onDeleteTodo={handleDeleteTodo} />
       <TodayChecklists checklists={todayChecklists} />
       <TodayTodos todos={todayTodos} todoText={todoText} setTodoText={setTodoText} addingTodo={addingTodo} onAddTodo={handleAddTodo} onToggleTodo={handleToggleTodo} onDeleteTodo={handleDeleteTodo} />
       <StatsSection totalSops={totalSops} publishedSops={publishedSops} draftSops={draftSops} teamCount={teamCount} creditsUsed={creditsUsed} creditsLimit={creditsLimit} unlimitedCredits={unlimitedCredits} />

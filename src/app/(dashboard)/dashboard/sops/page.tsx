@@ -23,7 +23,6 @@ import type { SOP } from "@/types/sops";
 
 export default function SOPsPage() {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
-  const [selectedSopId, setSelectedSopId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; sop: SOP } | null>(null);
   const [folderCtxMenu, setFolderCtxMenu] = useState<{ x: number; y: number; folderId: string } | null>(null);
@@ -35,6 +34,7 @@ export default function SOPsPage() {
   const [deleteForeverId, setDeleteForeverId] = useState<string | null>(null);
   const [emptyTrashOpen, setEmptyTrashOpen] = useState(false);
   const [mobileFolderOpen, setMobileFolderOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
   const supabase = createClient();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
@@ -62,6 +62,41 @@ export default function SOPsPage() {
     window.addEventListener("wiki-refresh", onRefresh);
     return () => { window.removeEventListener("create-folder", onCreateFolder); window.removeEventListener("wiki-sort", onSort); window.removeEventListener("wiki-refresh", onRefresh); };
   }, [currentBusiness?.id, fetchData]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const isInputFocused = document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement;
+      // Ctrl+K / Cmd+K -> focus search
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        const searchInput = document.querySelector<HTMLInputElement>('input[placeholder="Search..."]');
+        searchInput?.focus();
+      }
+      // Ctrl+N / Cmd+N -> new SOP
+      if ((e.ctrlKey || e.metaKey) && e.key === "n") {
+        e.preventDefault();
+        router.push(selectedFolder && selectedFolder !== "unfiled" && selectedFolder !== "trash"
+          ? `/dashboard/sops/new?folder=${selectedFolder}`
+          : "/dashboard/sops/new");
+      }
+      // Escape -> close modals/menus
+      if (e.key === "Escape") {
+        setCtxMenu(null);
+        setFolderCtxMenu(null);
+        setDeleteForeverOpen(false);
+        setEmptyTrashOpen(false);
+        setMobileFolderOpen(false);
+        setShortcutsOpen(false);
+      }
+      // ? -> show shortcuts help
+      if (e.key === "?" && !isInputFocused) {
+        setShortcutsOpen(true);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [router, selectedFolder]);
 
   // Derived state
   const rootFolders = foldersHook.folders.filter((f) => !f.parent_id);
@@ -138,11 +173,12 @@ export default function SOPsPage() {
         <FolderPanel folders={foldersHook.folders} rootFolders={rootFolders} folderCounts={folderCounts} unfiledCount={unfiledCount}
           trashedCount={sops.trashedSops.length} selectedFolder={selectedFolder} dragOverFolder={dragOverFolder}
           isCreatingFolder={isCreatingFolder} newFolderName={newFolderName}
-          onSelectFolder={(id) => { setSelectedFolder(id); setSelectedSopId(null); }}
+          onSelectFolder={(id) => { setSelectedFolder(id); }}
           onFolderContextMenu={(e, fid) => setFolderCtxMenu({ x: e.clientX, y: e.clientY, folderId: fid })}
           onDragOver={(fid) => setDragOverFolder(fid)} onDragLeave={() => setDragOverFolder(null)} onDrop={handleDropOnFolder}
           onFolderMoveUp={foldersHook.handleFolderMoveUp} onFolderMoveDown={foldersHook.handleFolderMoveDown}
-          onSetIsCreatingFolder={setIsCreatingFolder} onSetNewFolderName={setNewFolderName} onCreateFolder={handleCreateFolder} />
+          onSetIsCreatingFolder={setIsCreatingFolder} onSetNewFolderName={setNewFolderName} onCreateFolder={handleCreateFolder}
+          onRenameFolder={foldersHook.handleRenameFolder} />
       </div>
 
       {/* Mobile folder panel in Sheet */}
@@ -152,11 +188,12 @@ export default function SOPsPage() {
           <FolderPanel folders={foldersHook.folders} rootFolders={rootFolders} folderCounts={folderCounts} unfiledCount={unfiledCount}
             trashedCount={sops.trashedSops.length} selectedFolder={selectedFolder} dragOverFolder={dragOverFolder}
             isCreatingFolder={isCreatingFolder} newFolderName={newFolderName}
-            onSelectFolder={(id) => { setSelectedFolder(id); setSelectedSopId(null); setMobileFolderOpen(false); }}
+            onSelectFolder={(id) => { setSelectedFolder(id); setMobileFolderOpen(false); }}
             onFolderContextMenu={(e, fid) => setFolderCtxMenu({ x: e.clientX, y: e.clientY, folderId: fid })}
             onDragOver={(fid) => setDragOverFolder(fid)} onDragLeave={() => setDragOverFolder(null)} onDrop={handleDropOnFolder}
             onFolderMoveUp={foldersHook.handleFolderMoveUp} onFolderMoveDown={foldersHook.handleFolderMoveDown}
-            onSetIsCreatingFolder={setIsCreatingFolder} onSetNewFolderName={setNewFolderName} onCreateFolder={handleCreateFolder} />
+            onSetIsCreatingFolder={setIsCreatingFolder} onSetNewFolderName={setNewFolderName} onCreateFolder={handleCreateFolder}
+            onRenameFolder={foldersHook.handleRenameFolder} />
         </SheetContent>
       </Sheet>
 
@@ -176,12 +213,42 @@ export default function SOPsPage() {
         <SopList currentFolderName={currentFolderName} selectedFolder={selectedFolder} isTrashView={false}
           searchQuery={searchQuery} onSearchChange={setSearchQuery} loading={sops.loading} displaySops={displaySops}
           pinnedSops={pinnedSops} unpinnedSops={unpinnedSops} trashedSopsCount={sops.trashedSops.length} totalSopsCount={sops.allSops.length}
-          selectedSopId={selectedSopId} onSelectSop={setSelectedSopId} router={router}
+          router={router}
           onPin={sops.handlePin} onDelete={sops.handleDelete} folders={foldersHook.folders} onMove={handleMove}
           onSopMoveUp={(id) => sops.handleSopMoveUp(id, unpinnedSops)} onSopMoveDown={(id) => sops.handleSopMoveDown(id, unpinnedSops)}
           onContextMenu={(e, sop) => setCtxMenu({ x: e.clientX, y: e.clientY, sop })} onEmptyTrash={() => setEmptyTrashOpen(true)}
           onOpenMobileFolders={() => setMobileFolderOpen(true)} />
       )}
+
+      {/* Keyboard shortcuts help */}
+      <button
+        type="button"
+        onClick={() => setShortcutsOpen(true)}
+        className="fixed bottom-4 left-4 z-40 flex h-8 w-8 items-center justify-center rounded-full border bg-card text-muted-foreground hover:text-foreground hover:bg-muted text-xs font-mono shadow-sm"
+      >
+        ?
+      </button>
+      <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Keyboard Shortcuts</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm">
+            {[
+              ["Ctrl+K", "Focus search"],
+              ["Ctrl+N", "New SOP"],
+              ["Ctrl+Z", "Undo delete"],
+              ["Escape", "Close modal"],
+              ["?", "Shortcuts"],
+            ].map(([key, desc]) => (
+              <div key={key} className="flex items-center justify-between">
+                <span className="text-muted-foreground">{desc}</span>
+                <kbd className="rounded border bg-muted px-2 py-0.5 font-mono text-xs">{key}</kbd>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

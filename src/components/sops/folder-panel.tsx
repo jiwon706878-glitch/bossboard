@@ -27,6 +27,7 @@ interface FolderPanelProps {
   onSetIsCreatingFolder: (v: boolean) => void;
   onSetNewFolderName: (v: string) => void;
   onCreateFolder: (name: string) => void;
+  onRenameFolder?: (folderId: string) => void;
 }
 
 export function FolderPanel({
@@ -48,6 +49,7 @@ export function FolderPanel({
   onSetIsCreatingFolder,
   onSetNewFolderName,
   onCreateFolder,
+  onRenameFolder,
 }: FolderPanelProps) {
   const newFolderInputRef = useRef<HTMLInputElement>(null);
 
@@ -71,6 +73,7 @@ export function FolderPanel({
               dragOverFolder === f.id && "ring-2 ring-primary bg-primary/10"
             )}
             onClick={() => onSelectFolder(f.id)}
+            onDoubleClick={(e) => { e.stopPropagation(); onRenameFolder?.(f.id); }}
             onContextMenu={(e) => {
               e.preventDefault();
               e.stopPropagation();

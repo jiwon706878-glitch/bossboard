@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formatDistanceToNow, format, isToday, isPast } from "date-fns";
 import {
   CheckSquare,
@@ -42,12 +43,37 @@ const STATUS_LABELS: Record<string, string> = {
   completed: "Completed",
 };
 
+function ChecklistContextMenu({ menu, onClose, onOpen, onDelete }: { menu: { x: number; y: number }; onClose: () => void; onOpen: () => void; onDelete: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const h1 = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+    const h2 = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("mousedown", h1);
+    document.addEventListener("keydown", h2);
+    return () => { document.removeEventListener("mousedown", h1); document.removeEventListener("keydown", h2); };
+  }, [onClose]);
+
+  return (
+    <div ref={ref} className="fixed z-50 w-40 rounded-md border bg-popover p-1 shadow-md"
+      style={{ left: Math.min(menu.x, window.innerWidth - 170), top: Math.min(menu.y, window.innerHeight - 100) }}>
+      <button type="button" className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs cursor-pointer hover:bg-muted text-foreground" onClick={onOpen}>
+        Open
+      </button>
+      <button type="button" className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs cursor-pointer hover:bg-destructive/10 text-destructive" onClick={onDelete}>
+        Delete
+      </button>
+    </div>
+  );
+}
+
 export default function ChecklistsPage() {
   const supabase = createClient();
+  const router = useRouter();
   const { currentBusiness } = useBusinessStore();
   const [checklists, setChecklists] = useState<Checklist[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [clCtxMenu, setClCtxMenu] = useState<{ x: number; y: number; id: string } | null>(null);
 
   const loadChecklists = useCallback(async () => {
     if (!currentBusiness?.id) return;
@@ -121,7 +147,7 @@ export default function ChecklistsPage() {
             Daily executable checklists from your SOPs.
           </p>
         </div>
-        <Button asChild className="gap-2">
+        <Button asChild className="gap-2 active:scale-[0.98]">
           <Link href="/dashboard/checklists/new">
             <Plus className="h-4 w-4" />
             New Checklist
@@ -183,6 +209,7 @@ export default function ChecklistsPage() {
                   isOverdue && "border-l-2"
                 )}
                 style={isOverdue ? { borderLeftColor: "var(--destructive)" } : undefined}
+                onContextMenu={(e) => { e.preventDefault(); setClCtxMenu({ x: e.clientX, y: e.clientY, id: checklist.id }); }}
               >
                 <CardContent className="flex items-center gap-4 py-4">
                   <div className="min-w-0 flex-1">
@@ -254,6 +281,15 @@ export default function ChecklistsPage() {
             );
           })}
         </div>
+      )}
+
+      {clCtxMenu && (
+        <ChecklistContextMenu
+          menu={clCtxMenu}
+          onClose={() => setClCtxMenu(null)}
+          onOpen={() => { router.push(`/dashboard/checklists/${clCtxMenu.id}`); setClCtxMenu(null); }}
+          onDelete={() => { handleDelete(clCtxMenu.id); setClCtxMenu(null); }}
+        />
       )}
     </div>
   );

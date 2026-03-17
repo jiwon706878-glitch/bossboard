@@ -26,8 +26,7 @@ import { STATUS_COLORS, formatShortDate } from "@/types/sops";
 interface SopRowProps {
   sop: SOP;
   isSelected: boolean;
-  onSelect: () => void;
-  onDoubleClick: () => void;
+  onClick: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
   router: ReturnType<typeof useRouter>;
   onPin: (id: string, pinned: boolean) => void;
@@ -41,8 +40,7 @@ interface SopRowProps {
 export function SopRow({
   sop,
   isSelected,
-  onSelect,
-  onDoubleClick,
+  onClick,
   onContextMenu,
   router,
   onPin,
@@ -56,16 +54,16 @@ export function SopRow({
     <div
       data-has-context-menu
       className={cn(
-        "group flex h-9 cursor-default items-center gap-1.5 border-b border-border/30 px-2 sm:px-4 text-sm transition-colors duration-75",
+        "group flex h-9 cursor-pointer items-center gap-1.5 border-b border-border/30 px-2 sm:px-4 text-sm transition-colors duration-75 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
         isSelected ? "bg-primary/5 border-l-2 border-l-primary" : "hover:bg-muted/30"
       )}
+      tabIndex={0}
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData("text/plain", sop.id);
         e.dataTransfer.effectAllowed = "move";
       }}
-      onClick={onSelect}
-      onDoubleClick={onDoubleClick}
+      onClick={onClick}
       onContextMenu={onContextMenu}
     >
       {/* Reorder arrows — hidden on mobile */}

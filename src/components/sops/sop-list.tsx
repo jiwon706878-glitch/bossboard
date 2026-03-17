@@ -20,8 +20,6 @@ interface SopListProps {
   unpinnedSops: SOP[];
   trashedSopsCount: number;
   totalSopsCount?: number;
-  selectedSopId: string | null;
-  onSelectSop: (sopId: string) => void;
   router: ReturnType<typeof useRouter>;
   onPin: (id: string, pinned: boolean) => void;
   onDelete: (id: string) => void;
@@ -46,8 +44,6 @@ export function SopList({
   unpinnedSops,
   trashedSopsCount,
   totalSopsCount = 0,
-  selectedSopId,
-  onSelectSop,
   router,
   onPin,
   onDelete,
@@ -98,7 +94,7 @@ export function SopList({
                   : "/dashboard/sops/new"
               }
             >
-              <Button size="sm" className="shrink-0">
+              <Button size="sm" className="shrink-0 active:scale-[0.98]">
                 <Plus className="h-3.5 w-3.5 sm:mr-1" />
                 <span className="hidden sm:inline">New SOP</span>
               </Button>
@@ -152,9 +148,8 @@ export function SopList({
                   <SopRow
                     key={sop.id}
                     sop={sop}
-                    isSelected={selectedSopId === sop.id}
-                    onSelect={() => onSelectSop(sop.id)}
-                    onDoubleClick={() => router.push(`/dashboard/sops/${sop.id}`)}
+                    isSelected={false}
+                    onClick={() => router.push(`/dashboard/sops/${sop.id}`)}
                     onContextMenu={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -174,9 +169,8 @@ export function SopList({
               <SopRow
                 key={sop.id}
                 sop={sop}
-                isSelected={selectedSopId === sop.id}
-                onSelect={() => onSelectSop(sop.id)}
-                onDoubleClick={() => router.push(`/dashboard/sops/${sop.id}`)}
+                isSelected={false}
+                onClick={() => router.push(`/dashboard/sops/${sop.id}`)}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   e.stopPropagation();

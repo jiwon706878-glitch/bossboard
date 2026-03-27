@@ -23,11 +23,16 @@ import {
   Undo,
   Redo,
 } from "lucide-react";
+import { WikiLink } from "./wiki-link/extension";
+import { createSuggestionItems } from "./wiki-link/suggestion";
+import { createSuggestionRenderer } from "./wiki-link/suggestion-renderer";
 
 interface SOPEditorProps {
   content?: JSONContent | null;
   onChange?: (content: JSONContent) => void;
   editable?: boolean;
+  businessId?: string;
+  onNavigate?: (docId: string) => void;
 }
 
 function ToolbarButton({
@@ -60,7 +65,7 @@ function ToolbarButton({
   );
 }
 
-export function SOPEditor({ content, onChange, editable = true }: SOPEditorProps) {
+export function SOPEditor({ content, onChange, editable = true, businessId, onNavigate }: SOPEditorProps) {
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -70,13 +75,20 @@ export function SOPEditor({ content, onChange, editable = true }: SOPEditorProps
         },
       }),
       Placeholder.configure({
-        placeholder: "Start writing your SOP...",
+        placeholder: "Start writing your SOP... Type [[ to link documents.",
       }),
-      Highlight,
-      Underline,
-      TaskList,
+      Highlight.configure({}),
+      Underline.configure({}),
+      TaskList.configure({}),
       TaskItem.configure({
         nested: true,
+      }),
+      WikiLink.configure({
+        suggestion: {
+          items: createSuggestionItems(businessId),
+          render: createSuggestionRenderer,
+        },
+        onNavigate,
       }),
     ],
     content: content || undefined,
@@ -93,6 +105,19 @@ export function SOPEditor({ content, onChange, editable = true }: SOPEditorProps
           "[&_ul[data-type=taskList]_li_label]:mt-0.5",
         ),
       },
+      handleClick: (_view, _pos, event) => {
+        const target = event.target as HTMLElement;
+        const wikiLink = target.closest("[data-wiki-link]");
+        if (wikiLink && !editable) {
+          const docId = wikiLink.getAttribute("data-doc-id");
+          if (docId && onNavigate) {
+            event.preventDefault();
+            onNavigate(docId);
+            return true;
+          }
+        }
+        return false;
+      },
     },
   });
 
@@ -100,6 +125,27 @@ export function SOPEditor({ content, onChange, editable = true }: SOPEditorProps
 
   return (
     <div className="rounded-md border bg-card">
+      {/* Wiki link styles */}
+      <style>{`
+        .wiki-link {
+          color: hsl(var(--primary));
+          text-decoration: underline;
+          text-decoration-style: dotted;
+          text-underline-offset: 2px;
+          cursor: pointer;
+          border-radius: 2px;
+          padding: 0 2px;
+          transition: background-color 0.1s;
+        }
+        .wiki-link:hover {
+          background-color: hsl(var(--primary) / 0.1);
+        }
+        .wiki-link[data-broken="true"] {
+          color: hsl(var(--destructive));
+          text-decoration-color: hsl(var(--destructive));
+        }
+      `}</style>
+
       {editable && (
         <div className="flex flex-wrap items-center gap-0.5 border-b bg-muted/50 px-2 py-1.5">
           <ToolbarButton

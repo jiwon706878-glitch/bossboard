@@ -33,9 +33,9 @@ export function ReadTracking({
             team {teamSize === 1 ? "member" : "members"}
           </span>
           <div className="flex -space-x-2">
-            {readBy.slice(0, 8).map((reader) => (
+            {readBy.slice(0, 8).map((reader, idx) => (
               <div
-                key={reader.id}
+                key={`${reader.id}-${idx}`}
                 className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-card bg-accent text-accent-foreground text-[10px] font-bold"
                 title={`${reader.full_name ?? "User"}${reader.signed ? " (signed off)" : ""}`}
               >

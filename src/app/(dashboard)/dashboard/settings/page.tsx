@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { ApiKeysSection } from "@/components/settings/api-keys-section";
 
 interface TeamMember {
   id: string;
@@ -390,6 +391,8 @@ export default function SettingsPage() {
           </form>
         </CardContent>
       </Card>
+
+      <ApiKeysSection />
     </div>
   );
 }

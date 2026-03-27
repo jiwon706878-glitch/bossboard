@@ -1,13 +1,22 @@
 import { NextResponse } from "next/server";
+import { Webhooks } from "@paddle/paddle-node-sdk";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPlanByPaddlePriceId } from "@/config/plans";
 
 // Paddle sends webhooks as POST with JSON body + Paddle-Signature header
 export async function POST(req: Request) {
   const body = await req.text();
+  const signature = req.headers.get("paddle-signature");
 
-  // TODO: verify webhook signature once PADDLE_WEBHOOK_SECRET is configured
-  // const signature = req.headers.get("paddle-signature");
+  if (!signature) {
+    return NextResponse.json({ error: "Missing signature" }, { status: 401 });
+  }
+
+  const webhookSecret = process.env.PADDLE_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    console.error("PADDLE_WEBHOOK_SECRET is not configured");
+    return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
+  }
 
   let event: {
     event_type: string;
@@ -15,9 +24,14 @@ export async function POST(req: Request) {
   };
 
   try {
-    event = JSON.parse(body);
+    const webhooks = new Webhooks();
+    const parsed = await webhooks.unmarshal(body, webhookSecret, signature);
+    event = {
+      event_type: parsed.eventType as string,
+      data: parsed.data as unknown as Record<string, unknown>,
+    };
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
   const supabase = createAdminClient();

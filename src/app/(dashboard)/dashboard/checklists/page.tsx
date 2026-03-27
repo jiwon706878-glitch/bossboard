@@ -80,7 +80,7 @@ export default function ChecklistsPage() {
 
     const { data, error } = await supabase
       .from("checklists")
-      .select("*")
+      .select("id, title, status, due_date, items, assigned_to, recurrence_type, sop_id, created_at")
       .eq("business_id", currentBusiness.id)
       .order("created_at", { ascending: false });
 

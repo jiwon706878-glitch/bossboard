@@ -19,6 +19,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -136,6 +137,7 @@ export function QuickNoteButton() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Quick Note</DialogTitle>
+            <DialogDescription className="sr-only">Write a quick note</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
@@ -255,7 +257,7 @@ function QuickNoteInline() {
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Quick Note</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Quick Note</DialogTitle><DialogDescription className="sr-only">Write a quick note</DialogDescription></DialogHeader>
           <div className="space-y-3 pt-1">
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
             <Textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="Write..." rows={4} autoFocus />

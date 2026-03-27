@@ -1,6 +1,10 @@
+import dynamic from "next/dynamic";
 import { MarketingNavbar } from "@/components/marketing/navbar";
 import { MarketingFooter } from "@/components/marketing/footer";
-import { Chatbot } from "@/components/marketing/chatbot";
+
+const Chatbot = dynamic(
+  () => import("@/components/marketing/chatbot").then((m) => ({ default: m.Chatbot }))
+);
 
 export default function MarketingLayout({
   children,

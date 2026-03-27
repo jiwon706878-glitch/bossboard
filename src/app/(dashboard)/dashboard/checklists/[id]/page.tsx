@@ -68,7 +68,7 @@ export default function ChecklistDetailPage() {
   const loadChecklist = useCallback(async () => {
     const { data, error } = await supabase
       .from("checklists")
-      .select("*")
+      .select("id, title, status, due_date, items, assigned_to, sop_id, business_id, created_by, created_at, updated_at")
       .eq("id", checklistId)
       .single();
 

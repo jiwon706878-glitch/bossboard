@@ -11,16 +11,24 @@ import {
   LayoutDashboard,
   CheckSquare,
   ListTodo,
+  CalendarDays,
+  NotebookPen,
+  MessageSquare,
   Users,
   Settings,
+  Activity,
   LogOut,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useBusinessStore } from "@/hooks/use-business";
 import { FolderTree } from "@/components/sops/folder-tree";
 
 const navLinks = [
   { key: "checklists", href: "/dashboard/checklists", label: "Checklists", icon: CheckSquare },
   { key: "todos", href: "/dashboard/todos", label: "Todos", icon: ListTodo },
+  { key: "calendar", href: "/dashboard/calendar", label: "Calendar", icon: CalendarDays },
+  { key: "journal", href: "/dashboard/journal", label: "Journal", icon: NotebookPen },
+  { key: "board", href: "/dashboard/board", label: "Board", icon: MessageSquare },
   { key: "team", href: "/dashboard/team", label: "Team & Admin", icon: Users },
   { key: "settings", href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
@@ -63,6 +71,7 @@ export function DashboardSidebar({ className }: { className?: string }) {
   const [creditsUsed, setCreditsUsed] = useState(0);
   const [creditsLimit, setCreditsLimit] = useState(30);
   const [unlimited, setUnlimited] = useState(false);
+  const [hasApiKeys, setHasApiKeys] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -99,11 +108,18 @@ export function DashboardSidebar({ className }: { className?: string }) {
 
       const total = usage?.reduce((sum, row) => sum + row.credits_used, 0) ?? 0;
       setCreditsUsed(total);
+
+      // Check if user has any API keys
+      const { count } = await supabase
+        .from("api_keys")
+        .select("id", { count: "exact", head: true });
+      setHasApiKeys((count ?? 0) > 0);
     }
     load();
   }, [supabase]);
 
   async function handleLogout() {
+    useBusinessStore.getState().clear();
     await supabase.auth.signOut();
     toast.success("Logged out");
     router.push("/login");
@@ -182,6 +198,9 @@ export function DashboardSidebar({ className }: { className?: string }) {
           {navLinks.map(({ key, ...link }) => (
             <NavLink key={key} {...link} pathname={pathname} />
           ))}
+          {hasApiKeys && (
+            <NavLink href="/dashboard/agent-activity" label="Agent Activity" icon={Activity} pathname={pathname} />
+          )}
         </div>
       </nav>
 

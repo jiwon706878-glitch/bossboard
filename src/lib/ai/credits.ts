@@ -4,6 +4,7 @@ import { plans, type PlanId } from "@/config/plans";
 export const CREDIT_COSTS: Record<string, number> = {
   sop_generate: 3,
   sop_reformat: 2,
+  file_convert: 3,
   chat: 1,
 };
 

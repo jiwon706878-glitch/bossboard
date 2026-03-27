@@ -15,7 +15,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Lock } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import { TagInput } from "@/components/sops/tag-input";
@@ -51,7 +52,9 @@ export default function EditSOPPage() {
   const [folderId, setFolderId] = useState("");
   const [docType, setDocType] = useState("sop");
   const [tags, setTags] = useState<string[]>([]);
+  const [copyProtected, setCopyProtected] = useState(false);
   const [availableFolders, setAvailableFolders] = useState<{ id: string; name: string }[]>([]);
+  const [sopBusinessId, setSopBusinessId] = useState<string>("");
   const [editorContent, setEditorContent] = useState<JSONContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -65,7 +68,7 @@ export default function EditSOPPage() {
     async function fetchSOP() {
       const { data, error } = await supabase
         .from("sops")
-        .select("*")
+        .select("id, title, content, summary, category, status, version, folder_id, business_id, doc_type, tags, copy_protected")
         .eq("id", sopId)
         .single();
 
@@ -81,7 +84,9 @@ export default function EditSOPPage() {
       setFolderId(data.folder_id || "");
       setDocType(data.doc_type || "sop");
       setTags(data.tags || []);
+      setCopyProtected(data.copy_protected || false);
       setEditorContent(data.content || null);
+      setSopBusinessId(data.business_id || "");
 
       // Load folders for this business
       if (data.business_id) {
@@ -150,6 +155,7 @@ export default function EditSOPPage() {
         folder_id: folderId && folderId !== "none" ? folderId : null,
         doc_type: docType,
         tags: tags.length > 0 ? tags : [],
+        copy_protected: copyProtected,
         status,
         updated_at: new Date().toISOString(),
       })
@@ -260,9 +266,20 @@ export default function EditSOPPage() {
             <TagInput tags={tags} onChange={setTags} />
           </div>
 
+          <div className="flex items-center justify-between rounded-md border px-4 py-3">
+            <div className="flex items-center gap-2">
+              <Lock className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <Label className="text-foreground cursor-pointer" htmlFor="copy-protection">Copy Protection</Label>
+                <p className="text-xs text-muted-foreground">Prevent copying, printing, and right-click on this document</p>
+              </div>
+            </div>
+            <Switch id="copy-protection" checked={copyProtected} onCheckedChange={setCopyProtected} />
+          </div>
+
           <div className="space-y-2">
             <Label className="text-foreground">Content</Label>
-            <SOPEditor content={editorContent} onChange={setEditorContent} />
+            <SOPEditor content={editorContent} onChange={setEditorContent} businessId={sopBusinessId} />
           </div>
 
           <div className="flex items-center gap-3">

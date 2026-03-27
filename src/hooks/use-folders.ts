@@ -13,22 +13,25 @@ export function useFolders(businessId: string | undefined) {
     if (!businessId) return [];
     const { data: allFolders } = await supabase
       .from("folders")
-      .select("id, name, parent_id")
+      .select("id, name, parent_id, permissions")
       .eq("business_id", businessId);
     setFolders(allFolders ?? []);
     return allFolders ?? [];
   }, [businessId, supabase]);
 
-  async function handleCreateFolder(name: string) {
+  async function handleCreateFolder(name: string, parentId?: string | null) {
     if (!businessId || !name.trim()) return null;
     const { data: { user } } = await supabase.auth.getUser();
+    const siblings = folders.filter((f) =>
+      parentId ? f.parent_id === parentId : !f.parent_id
+    );
     const { data } = await supabase
       .from("folders")
       .insert({
         business_id: businessId,
         name: name.trim(),
-        parent_id: null,
-        sort_order: folders.length,
+        parent_id: parentId || null,
+        sort_order: siblings.length,
         created_by: user?.id,
       })
       .select("id")
@@ -80,12 +83,47 @@ export function useFolders(businessId: string | undefined) {
     fetchSops: () => Promise<void>
   ) {
     e.preventDefault();
-    const sopId = e.dataTransfer.getData("text/plain");
-    if (!sopId) return;
-    setAllSops((prev) => prev.map((s) => s.id === sopId ? { ...s, folder_id: targetFolderId } : s));
-    toast.success("SOP moved");
-    const { error } = await supabase.from("sops").update({ folder_id: targetFolderId }).eq("id", sopId);
-    if (error) fetchSops();
+    const dragType = e.dataTransfer.getData("application/x-drag-type");
+    const dragId = e.dataTransfer.getData("text/plain");
+    if (!dragId) return;
+
+    if (dragType === "folder") {
+      // Prevent dropping folder into itself or its own descendants
+      if (dragId === targetFolderId) return;
+      if (isDescendant(dragId, targetFolderId)) {
+        toast.error("Cannot move folder into its own subfolder");
+        return;
+      }
+      setFolders((prev) => prev.map((f) => f.id === dragId ? { ...f, parent_id: targetFolderId } : f));
+      toast.success("Folder moved");
+      await supabase.from("folders").update({ parent_id: targetFolderId }).eq("id", dragId);
+      fetchFolders();
+    } else {
+      // SOP drop
+      setAllSops((prev) => prev.map((s) => s.id === dragId ? { ...s, folder_id: targetFolderId } : s));
+      toast.success("SOP moved");
+      const { error } = await supabase.from("sops").update({ folder_id: targetFolderId }).eq("id", dragId);
+      if (error) fetchSops();
+    }
+  }
+
+  function isDescendant(folderId: string, potentialChildId: string): boolean {
+    let current = folders.find((f) => f.id === potentialChildId);
+    while (current?.parent_id) {
+      if (current.parent_id === folderId) return true;
+      current = folders.find((f) => f.id === current!.parent_id);
+    }
+    return false;
+  }
+
+  function getFolderPath(folderId: string): FolderRow[] {
+    const path: FolderRow[] = [];
+    let current = folders.find((f) => f.id === folderId);
+    while (current) {
+      path.unshift(current);
+      current = current.parent_id ? folders.find((f) => f.id === current!.parent_id) : undefined;
+    }
+    return path;
   }
 
   return {
@@ -98,5 +136,6 @@ export function useFolders(businessId: string | undefined) {
     handleFolderMoveUp,
     handleFolderMoveDown,
     handleDropOnFolder,
+    getFolderPath,
   };
 }

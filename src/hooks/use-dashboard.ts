@@ -43,6 +43,7 @@ export function useDashboard() {
   const [totalSops, setTotalSops] = useState(0);
   const [draftSops, setDraftSops] = useState(0);
   const [publishedSops, setPublishedSops] = useState(0);
+  const [staleSops, setStaleSops] = useState(0);
   const [teamCount, setTeamCount] = useState(0);
   const [creditsUsed, setCreditsUsed] = useState(0);
   const [creditsLimit, setCreditsLimit] = useState(30);
@@ -90,7 +91,7 @@ export function useDashboard() {
         // Auto-generate recurring checklist instances
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
-        const { data: recurringTemplates } = await supabase.from("checklists").select("*").eq("business_id", businessId).eq("is_template", true).neq("recurrence_type", "none");
+        const { data: recurringTemplates } = await supabase.from("checklists").select("id, sop_id, title, items, recurrence_type, recurrence_days, last_generated_at, created_by").eq("business_id", businessId).eq("is_template", true).neq("recurrence_type", "none");
         if (recurringTemplates) {
           for (const tmpl of recurringTemplates) {
             const lastGen = tmpl.last_generated_at ? new Date(tmpl.last_generated_at) : null;
@@ -112,15 +113,17 @@ export function useDashboard() {
           setTodayTodos(todoData.filter((t) => !t.due_date || t.due_date >= todayStr));
         }
 
-        const { data: sops } = await supabase.from("sops").select("id, status").eq("business_id", businessId).is("deleted_at", null);
+        const { data: sops } = await supabase.from("sops").select("id, status, updated_at").eq("business_id", businessId).is("deleted_at", null);
         if (sops) {
           setTotalSops(sops.length);
           setDraftSops(sops.filter((s) => s.status === "draft").length);
           setPublishedSops(sops.filter((s) => s.status === "published").length);
+          const staleThreshold = Date.now() - 90 * 24 * 60 * 60 * 1000;
+          setStaleSops(sops.filter((s) => s.updated_at && new Date(s.updated_at).getTime() < staleThreshold).length);
         }
 
-        const { data: members } = await supabase.from("profiles").select("id").eq("business_id", businessId);
-        setTeamCount(members?.length ?? 1);
+        // profiles table has no business_id column — count owner as 1 for now
+        setTeamCount(1);
       } catch {
         // Dashboard will show zeros
       } finally {
@@ -157,7 +160,7 @@ export function useDashboard() {
     userName, loading,
     overdueChecklists, todayChecklists, overdueTodos, todayTodos,
     todoText, setTodoText, addingTodo,
-    totalSops, draftSops, publishedSops, teamCount,
+    totalSops, draftSops, publishedSops, staleSops, teamCount,
     creditsUsed, creditsLimit, unlimitedCredits,
     handleAddTodo, handleToggleTodo, handleDeleteTodo,
   };

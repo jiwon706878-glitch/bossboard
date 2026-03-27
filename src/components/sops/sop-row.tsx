@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,6 +19,7 @@ import {
   Pencil,
   Trash2,
   FolderInput,
+  Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SOP, FolderRow } from "@/types/sops";
@@ -37,7 +39,7 @@ interface SopRowProps {
   onMoveDown?: () => void;
 }
 
-export function SopRow({
+export const SopRow = memo(function SopRow({
   sop,
   isSelected,
   onClick,
@@ -90,6 +92,7 @@ export function SopRow({
       <FileText className="h-4 w-4 shrink-0 text-muted-foreground/40" />
       {sop.isUnread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
       {sop.pinned && <Pin className="h-3 w-3 shrink-0 text-amber-400" />}
+      {sop.copy_protected && <span title="Copy protected"><Lock className="h-3 w-3 shrink-0 text-muted-foreground/60" /></span>}
       <span className="min-w-0 truncate max-w-[20ch] sm:max-w-[35ch]">
         {sop.title}
       </span>
@@ -99,6 +102,11 @@ export function SopRow({
       >
         {sop.status}
       </Badge>
+      {sop.updated_at && Date.now() - new Date(sop.updated_at).getTime() > 90 * 24 * 60 * 60 * 1000 && (
+        <Badge variant="secondary" className="hidden shrink-0 text-[10px] leading-none px-1.5 py-0.5 bg-amber-500/15 text-amber-600 dark:text-amber-400 sm:inline-flex">
+          90+ days
+        </Badge>
+      )}
       {sop.tags?.slice(0, 1).map((tag) => (
         <span key={tag} className="hidden shrink-0 text-[10px] text-muted-foreground lg:inline">
           #{tag}
@@ -170,4 +178,4 @@ export function SopRow({
       </DropdownMenu>
     </div>
   );
-}
+});

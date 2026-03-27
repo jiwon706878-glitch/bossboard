@@ -79,7 +79,7 @@ export default function OnboardingPathDetailPage() {
     // Load path
     const { data: pathData, error } = await supabase
       .from("onboarding_paths")
-      .select("*")
+      .select("id, title, description, steps, sop_ids, business_id, assigned_to, checklist_ids, created_at")
       .eq("id", pathId)
       .single();
 
@@ -93,7 +93,7 @@ export default function OnboardingPathDetailPage() {
     // Load assignments
     const { data: assignments } = await supabase
       .from("onboarding_assignments")
-      .select("*")
+      .select("id, path_id, user_id, started_at, completed_at, created_at")
       .eq("path_id", pathId);
 
     // Load team members for assignment dropdown

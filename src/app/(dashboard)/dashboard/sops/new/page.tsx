@@ -84,6 +84,11 @@ export default function NewSOPPage() {
   const [uploadText, setUploadText] = useState("");
   const [reformatting, setReformatting] = useState(false);
 
+  // File convert state
+  const [fileConverting, setFileConverting] = useState(false);
+  const [sourceFileUrl, setSourceFileUrl] = useState<string | null>(null);
+  const [sourceFileName, setSourceFileName] = useState<string | null>(null);
+
   // Auto-save state
   const [savedSopId, setSavedSopId] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
@@ -140,13 +145,11 @@ export default function NewSOPPage() {
       if (lines.length > 1) {
         const secondLine = lines[1].trim();
         const title = secondLine.replace(/^\d+\.\s*/, "").replace(/^Title:\s*/i, "").trim();
-        console.log("[extractTitle] Using second line:", title);
         return title.length > 80 ? title.substring(0, 80) : title;
       }
       return "Untitled SOP";
     }
 
-    console.log("[extractTitle] Using first line:", cleaned);
     return cleaned.length > 80 ? cleaned.substring(0, 80) : cleaned;
   }
 
@@ -157,21 +160,24 @@ export default function NewSOPPage() {
     const summary = text.substring(0, 200).replace(/\n/g, " ").trim();
     const { data: user } = await supabase.auth.getUser();
 
+    const insertPayload = {
+      business_id: bizId,
+      title: titleText.trim() || "Untitled SOP",
+      content,
+      summary: summary || null,
+      category: category || null,
+      folder_id: folderId && folderId !== "none" ? folderId : null,
+      doc_type: docType,
+      tags: tags.length > 0 ? tags : [],
+      source_file_url: sourceFileUrl,
+      source_file_name: sourceFileName,
+      status: "draft",
+      version: 1,
+      created_by: user.user?.id,
+    };
     const { data, error } = await supabase
       .from("sops")
-      .insert({
-        business_id: bizId,
-        title: titleText.trim() || "Untitled SOP",
-        content,
-        summary: summary || null,
-        category: category || null,
-        folder_id: folderId && folderId !== "none" ? folderId : null,
-        doc_type: docType,
-        tags: tags.length > 0 ? tags : [],
-        status: "draft",
-        version: 1,
-        created_by: user.user?.id,
-      })
+      .insert(insertPayload)
       .select("id")
       .single();
 
@@ -189,7 +195,13 @@ export default function NewSOPPage() {
     const json = textToTipTapJSON(text);
     setEditorContent(json);
 
-    const titleText = extractTitle(text);
+    const extracted = extractTitle(text);
+    // Use the AI-extracted title if it looks meaningful, otherwise fall back to the user's topic
+    const generic = ["untitled sop", "제목", "title", "sop"];
+    const titleText =
+      extracted && !generic.includes(extracted.toLowerCase())
+        ? extracted
+        : topic.trim() || extracted;
     setTitle(titleText);
 
     // Auto-save as draft
@@ -298,21 +310,29 @@ export default function NewSOPPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 4_718_592) {
-      toast.error("File too large. Max file size: 4.5MB.");
+    if (file.size > 10_485_760) {
+      toast.error("File too large. Max file size: 10MB.");
       return;
     }
 
     const ext = file.name.split(".").pop()?.toLowerCase();
-    const supported = ["txt", "md", "csv", "docx", "pdf"];
+    const imageExts = ["jpg", "jpeg", "png", "webp"];
+    const textExts = ["txt", "md", "csv"];
+    const supported = [...textExts, "docx", "pdf", ...imageExts];
 
     if (!ext || !supported.includes(ext)) {
-      toast.error("Unsupported file format. Please use TXT, MD, DOCX, PDF, or CSV.");
+      toast.error("Unsupported format. Use TXT, MD, DOCX, PDF, JPG, PNG, or WebP.");
       return;
     }
 
     try {
-      if (ext === "txt" || ext === "md" || ext === "csv") {
+      // Images and PDFs: upload + AI convert in one step
+      if (imageExts.includes(ext) || ext === "pdf") {
+        await handleFileConvert(file);
+        return;
+      }
+
+      if (textExts.includes(ext)) {
         const text = await file.text();
         setUploadText(text);
         toast.success(`Loaded ${file.name}`);
@@ -326,30 +346,60 @@ export default function NewSOPPage() {
         }
         setUploadText(result.value);
         toast.success(`Loaded ${file.name}`);
-      } else if (ext === "pdf") {
-        const formData = new FormData();
-        formData.append("file", file);
-        const res = await fetch("/api/extract-text", {
-          method: "POST",
-          body: formData,
-        });
-        if (!res.ok) {
-          const data = await res.json().catch(() => null);
-          throw new Error(data?.error || "Failed to extract text from PDF");
-        }
-        const data = await res.json();
-        if (!data.text?.trim()) {
-          toast.error("Could not extract text from this PDF.");
-          return;
-        }
-        setUploadText(data.text);
-        toast.success(`Loaded ${file.name}`);
       }
     } catch (error) {
       console.error("File upload error:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to read file"
       );
+    }
+  }
+
+  async function handleFileConvert(file: File) {
+    setFileConverting(true);
+    setGeneratedText("");
+    setEditorContent(null);
+    setTitle("");
+    setSourceFileUrl(null);
+    setSourceFileName(null);
+
+    try {
+      const businessId = await getBusinessId();
+      const formData = new FormData();
+      formData.append("file", file);
+      if (businessId) formData.append("businessId", businessId);
+
+      const res = await fetch("/api/ai/file-convert", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || `Server error (${res.status})`);
+      }
+
+      const data = await res.json();
+      if (!data.text?.trim()) {
+        toast.error("AI returned empty response. Please try again.");
+        setFileConverting(false);
+        return;
+      }
+
+      setSourceFileUrl(data.fileUrl);
+      setSourceFileName(data.fileName);
+      if (data.suggestedDocType) {
+        setDocType(data.suggestedDocType);
+      }
+      handleResult(data.text);
+      toast.success(`"${file.name}" uploaded and converted!`);
+    } catch (error) {
+      console.error("File convert error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to convert file"
+      );
+    } finally {
+      setFileConverting(false);
     }
   }
 
@@ -413,25 +463,30 @@ export default function NewSOPPage() {
         summary = generatedText.substring(0, 200).replace(/\n/g, " ").trim();
       }
 
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      const publishPayload = {
+        business_id: bizId,
+        title: title.trim(),
+        content: editorContent,
+        summary: summary || null,
+        category: category || null,
+        folder_id: folderId && folderId !== "none" ? folderId : null,
+        doc_type: docType,
+        tags: tags.length > 0 ? tags : [],
+        source_file_url: sourceFileUrl,
+        source_file_name: sourceFileName,
+        status: "published",
+        version: 1,
+        created_by: userId,
+      };
       const { data, error } = await supabase
         .from("sops")
-        .insert({
-          business_id: bizId,
-          title: title.trim(),
-          content: editorContent,
-          summary: summary || null,
-          category: category || null,
-          folder_id: folderId && folderId !== "none" ? folderId : null,
-          doc_type: docType,
-          tags: tags.length > 0 ? tags : [],
-          status: "published",
-          version: 1,
-          created_by: (await supabase.auth.getUser()).data.user?.id,
-        })
+        .insert(publishPayload)
         .select("id")
         .single();
 
       if (error) {
+        console.error("SOP publish failed:", error.message);
         toast.error(error.message);
         setPublishing(false);
         return;
@@ -443,7 +498,7 @@ export default function NewSOPPage() {
     }
   }
 
-  const isProcessing = generating || reformatting;
+  const isProcessing = generating || reformatting || fileConverting;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -602,6 +657,9 @@ export default function NewSOPPage() {
                         onChange={setEditorContent}
                       />
                     </Suspense>
+                    <p className="text-xs text-muted-foreground/70">
+                      AI-generated content may contain inaccuracies. Please review and customize numerical values, procedures, and details to match your specific business requirements before use.
+                    </p>
                   </div>
                   <div className="flex items-center gap-3">
                     <Button onClick={handlePublish} disabled={publishing}>
@@ -657,7 +715,7 @@ export default function NewSOPPage() {
                   <input
                     id="file-upload"
                     type="file"
-                    accept=".txt,.md,.docx,.pdf,.csv"
+                    accept=".txt,.md,.docx,.pdf,.csv,.jpg,.jpeg,.png,.webp"
                     className="hidden"
                     onChange={handleFileUpload}
                   />
@@ -668,7 +726,7 @@ export default function NewSOPPage() {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Supports: TXT, MD, DOCX, PDF, CSV (Notion, Obsidian, Google Docs, Word compatible)
+                  Supports: TXT, MD, DOCX, PDF, CSV, JPG, PNG, WebP. Images and PDFs are AI-converted (3 credits).
                 </p>
               </div>
               <div className="space-y-2">
@@ -700,6 +758,26 @@ export default function NewSOPPage() {
             </CardContent>
           </Card>
 
+          {/* File converting skeleton */}
+          {fileConverting && !editorContent && (
+            <Card className="border bg-card">
+              <CardHeader>
+                <CardTitle className="text-foreground">Converting your file...</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="h-5 w-3/4 animate-pulse rounded bg-muted" />
+                <div className="h-4 w-full animate-pulse rounded bg-muted" />
+                <div className="h-4 w-full animate-pulse rounded bg-muted" />
+                <div className="h-4 w-5/6 animate-pulse rounded bg-muted" />
+                <div className="h-4 w-full animate-pulse rounded bg-muted" />
+                <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+                <p className="pt-2 text-center text-sm text-muted-foreground animate-pulse">
+                  Uploading file and converting with AI — this may take 15-30 seconds...
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Reformatting skeleton */}
           {reformatting && !editorContent && (
             <Card className="border bg-card">
@@ -724,7 +802,14 @@ export default function NewSOPPage() {
             <div ref={resultRef}>
               <Card className="border bg-card">
                 <CardHeader>
-                  <CardTitle className="text-foreground">Reformatted SOP</CardTitle>
+                  <CardTitle className="text-foreground">
+                    {sourceFileName ? "Converted from File" : "Reformatted SOP"}
+                  </CardTitle>
+                  {sourceFileName && (
+                    <p className="text-xs text-muted-foreground">
+                      Source: {sourceFileName}
+                    </p>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -749,6 +834,9 @@ export default function NewSOPPage() {
                         onChange={setEditorContent}
                       />
                     </Suspense>
+                    <p className="text-xs text-muted-foreground/70">
+                      AI-generated content may contain inaccuracies. Please review and customize numerical values, procedures, and details to match your specific business requirements before use.
+                    </p>
                   </div>
                   <div className="flex items-center gap-3">
                     <Button onClick={handlePublish} disabled={publishing}>

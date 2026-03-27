@@ -10,7 +10,9 @@ import { SopRow } from "@/components/sops/sop-row";
 
 interface SopListProps {
   currentFolderName: string;
+  folderPath?: { id: string; name: string }[];
   selectedFolder: string | null;
+  onSelectFolder?: (id: string) => void;
   isTrashView: boolean;
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -34,7 +36,9 @@ interface SopListProps {
 
 export function SopList({
   currentFolderName,
+  folderPath,
   selectedFolder,
+  onSelectFolder,
   isTrashView,
   searchQuery,
   onSearchChange,
@@ -65,9 +69,24 @@ export function SopList({
           </button>
         )}
         <div className="flex items-center gap-1 text-sm text-muted-foreground min-w-0">
-          <span className="hidden sm:inline">Wiki</span>
-          <ChevronRight className="h-3 w-3 hidden sm:block shrink-0" />
-          <span className="text-foreground font-medium truncate">{currentFolderName}</span>
+          <button type="button" className="hidden sm:inline hover:text-foreground transition-colors" onClick={() => onSelectFolder?.("")}>Wiki</button>
+          {folderPath && folderPath.length > 0 ? (
+            folderPath.map((f, i) => (
+              <span key={f.id} className="flex items-center gap-1 min-w-0">
+                <ChevronRight className="h-3 w-3 shrink-0" />
+                {i === folderPath.length - 1 ? (
+                  <span className="text-foreground font-medium truncate">{f.name}</span>
+                ) : (
+                  <button type="button" className="truncate hover:text-foreground transition-colors" onClick={() => onSelectFolder?.(f.id)}>{f.name}</button>
+                )}
+              </span>
+            ))
+          ) : (
+            <>
+              <ChevronRight className="h-3 w-3 hidden sm:block shrink-0" />
+              <span className="text-foreground font-medium truncate">{currentFolderName}</span>
+            </>
+          )}
         </div>
         <div className="flex-1" />
         {isTrashView ? (
@@ -146,7 +165,7 @@ export function SopList({
                 </div>
                 {pinnedSops.map((sop) => (
                   <SopRow
-                    key={sop.id}
+                    key={`pin-${sop.id}`}
                     sop={sop}
                     isSelected={false}
                     onClick={() => router.push(`/dashboard/sops/${sop.id}`)}

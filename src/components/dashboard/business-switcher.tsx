@@ -27,23 +27,35 @@ interface Business {
 
 export function BusinessSwitcher() {
   const [businesses, setBusinesses] = useState<Business[]>([]);
-  const { currentBusiness, setCurrentBusiness } = useBusinessStore();
+  const { currentBusiness, userId, setCurrentBusiness, setUserId, clear } =
+    useBusinessStore();
   const supabase = createClient();
 
   useEffect(() => {
     async function loadBusinesses() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Different user logged in — clear stale store
+      if (userId && userId !== user.id) {
+        clear();
+      }
+      setUserId(user.id);
+
       const { data } = await supabase
         .from("businesses")
-        .select("*")
+        .select("id, name, type, address, google_place_id, menu_or_services, brand_tone, target_customers, competitive_advantage, seasonal_promotions")
+        .eq("user_id", user.id)
         .order("created_at");
 
       if (data && data.length > 0) {
         setBusinesses(data);
-        if (!currentBusiness) {
-          // No cached business — set first one
+        if (!currentBusiness || userId !== user.id) {
           setCurrentBusiness(data[0]);
         } else {
-          // Verify cached business still exists, update if data changed
+          // Verify cached business still belongs to this user
           const fresh = data.find((b) => b.id === currentBusiness.id);
           if (fresh && JSON.stringify(fresh) !== JSON.stringify(currentBusiness)) {
             setCurrentBusiness(fresh);
@@ -51,6 +63,9 @@ export function BusinessSwitcher() {
             setCurrentBusiness(data[0]);
           }
         }
+      } else {
+        // User has no businesses — clear any stale cached business
+        setCurrentBusiness(null);
       }
     }
     loadBusinesses();

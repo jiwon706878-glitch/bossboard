@@ -18,8 +18,11 @@ interface Business {
 
 interface BusinessState {
   currentBusiness: Business | null;
+  userId: string | null;
   _hasHydrated: boolean;
   setCurrentBusiness: (business: Business | null) => void;
+  setUserId: (id: string | null) => void;
+  clear: () => void;
   setHasHydrated: (v: boolean) => void;
 }
 
@@ -27,8 +30,11 @@ export const useBusinessStore = create<BusinessState>()(
   persist(
     (set) => ({
       currentBusiness: null,
+      userId: null,
       _hasHydrated: false,
       setCurrentBusiness: (business) => set({ currentBusiness: business }),
+      setUserId: (id) => set({ userId: id }),
+      clear: () => set({ currentBusiness: null, userId: null }),
       setHasHydrated: (v) => set({ _hasHydrated: v }),
     }),
     {

@@ -67,12 +67,6 @@ export default function SOPsPage() {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       const isInputFocused = document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement;
-      // Ctrl+K / Cmd+K -> focus search
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-        e.preventDefault();
-        const searchInput = document.querySelector<HTMLInputElement>('input[placeholder="Search..."]');
-        searchInput?.focus();
-      }
       // Ctrl+N / Cmd+N -> new SOP
       if ((e.ctrlKey || e.metaKey) && e.key === "n") {
         e.preventDefault();
@@ -113,6 +107,9 @@ export default function SOPsPage() {
   const pinnedSops = sortedDisplay.filter((s) => s.pinned);
   const unpinnedSops = sortedDisplay.filter((s) => !s.pinned);
   const currentFolderName = selectedFolder === "unfiled" ? "Unfiled" : selectedFolder === "trash" ? "Trash" : foldersHook.folders.find((f) => f.id === selectedFolder)?.name ?? "All Documents";
+  const folderPath = selectedFolder && selectedFolder !== "unfiled" && selectedFolder !== "trash"
+    ? foldersHook.getFolderPath(selectedFolder)
+    : [];
 
   // Coordinated actions
   async function handleCreateFolder(name: string) {
@@ -210,7 +207,7 @@ export default function SOPsPage() {
           </div>
         </div>
       ) : (
-        <SopList currentFolderName={currentFolderName} selectedFolder={selectedFolder} isTrashView={false}
+        <SopList currentFolderName={currentFolderName} folderPath={folderPath} selectedFolder={selectedFolder} onSelectFolder={setSelectedFolder} isTrashView={false}
           searchQuery={searchQuery} onSearchChange={setSearchQuery} loading={sops.loading} displaySops={displaySops}
           pinnedSops={pinnedSops} unpinnedSops={unpinnedSops} trashedSopsCount={sops.trashedSops.length} totalSopsCount={sops.allSops.length}
           router={router}
@@ -232,6 +229,7 @@ export default function SOPsPage() {
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Keyboard Shortcuts</DialogTitle>
+            <DialogDescription className="sr-only">Available keyboard shortcuts for the SOP list</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 text-sm">
             {[

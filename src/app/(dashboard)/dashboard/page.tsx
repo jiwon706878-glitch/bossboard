@@ -8,6 +8,7 @@ import { OverdueSection } from "@/components/dashboard/overdue-section";
 import { TodayChecklists } from "@/components/dashboard/today-checklists";
 import { TodayTodos } from "@/components/dashboard/today-todos";
 import { StatsSection } from "@/components/dashboard/stats-section";
+import { FeedbackCard } from "@/components/dashboard/feedback-card";
 import { Button } from "@/components/ui/button";
 
 export default function DashboardPage() {
@@ -15,7 +16,7 @@ export default function DashboardPage() {
     userName, loading,
     overdueChecklists, todayChecklists, overdueTodos, todayTodos,
     todoText, setTodoText, addingTodo,
-    totalSops, draftSops, publishedSops, teamCount,
+    totalSops, draftSops, publishedSops, staleSops, teamCount,
     creditsUsed, creditsLimit, unlimitedCredits,
     handleAddTodo, handleToggleTodo, handleDeleteTodo,
   } = useDashboard();
@@ -29,6 +30,7 @@ export default function DashboardPage() {
   if (totalOverdue > 0) summaryParts.push(`${totalOverdue} overdue`);
   if (todayChecklists.length > 0) summaryParts.push(`${todayChecklists.length} checklist${todayChecklists.length > 1 ? "s" : ""} today`);
   if (todayTodos.length > 0) summaryParts.push(`${todayTodos.length} todo${todayTodos.length > 1 ? "s" : ""}`);
+  if (staleSops > 0) summaryParts.push(`${staleSops} document${staleSops > 1 ? "s" : ""} need review`);
 
   if (loading) {
     return (
@@ -70,6 +72,7 @@ export default function DashboardPage() {
       <TodayChecklists checklists={todayChecklists} />
       <TodayTodos todos={todayTodos} todoText={todoText} setTodoText={setTodoText} addingTodo={addingTodo} onAddTodo={handleAddTodo} onToggleTodo={handleToggleTodo} onDeleteTodo={handleDeleteTodo} />
       <StatsSection totalSops={totalSops} publishedSops={publishedSops} draftSops={draftSops} teamCount={teamCount} creditsUsed={creditsUsed} creditsLimit={creditsLimit} unlimitedCredits={unlimitedCredits} />
+      <FeedbackCard />
     </div>
   );
 }

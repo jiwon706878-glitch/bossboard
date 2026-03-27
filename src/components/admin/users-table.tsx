@@ -16,6 +16,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -188,6 +189,7 @@ export function UsersTable({ users }: { users: User[] }) {
                             <DialogTitle>
                               Change plan for {user.email}
                             </DialogTitle>
+                            <DialogDescription>Select a new subscription plan for this user.</DialogDescription>
                           </DialogHeader>
                           <div className="grid grid-cols-2 gap-3 pt-2">
                             {(

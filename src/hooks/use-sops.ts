@@ -19,13 +19,13 @@ export function useSops(businessId: string | undefined) {
     const [{ data: sopsData }, { data: trashed }] = await Promise.all([
       supabase
         .from("sops")
-        .select("id, title, summary, category, status, version, folder_id, doc_type, tags, pinned, created_at, updated_at, deleted_at")
+        .select("id, title, summary, category, status, version, folder_id, doc_type, tags, pinned, source_file_url, source_file_name, copy_protected, created_at, updated_at, deleted_at")
         .eq("business_id", businessId)
         .is("deleted_at", null)
         .order("updated_at", { ascending: false }),
       supabase
         .from("sops")
-        .select("id, title, summary, category, status, version, folder_id, doc_type, tags, pinned, created_at, updated_at, deleted_at")
+        .select("id, title, summary, category, status, version, folder_id, doc_type, tags, pinned, source_file_url, source_file_name, copy_protected, created_at, updated_at, deleted_at")
         .eq("business_id", businessId)
         .not("deleted_at", "is", null)
         .order("deleted_at", { ascending: false }),
@@ -128,7 +128,7 @@ export function useSops(businessId: string | undefined) {
 
   async function handleDuplicate(sopId: string) {
     if (!businessId) return;
-    const { data: full } = await supabase.from("sops").select("*").eq("id", sopId).single();
+    const { data: full } = await supabase.from("sops").select("id, title, content, summary, category, status, version, folder_id, doc_type, tags, pinned, source_file_url, source_file_name, copy_protected, created_at, updated_at, deleted_at").eq("id", sopId).single();
     if (!full) return;
     const { data: { user } } = await supabase.auth.getUser();
     await supabase.from("sops").insert({

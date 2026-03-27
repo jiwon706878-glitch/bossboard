@@ -43,7 +43,7 @@ export function NotificationBell() {
 
     const { data } = await supabase
       .from("notifications")
-      .select("*")
+      .select("id, type, title, message, link, read, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(20);

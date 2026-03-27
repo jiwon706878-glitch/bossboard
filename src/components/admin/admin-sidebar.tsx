@@ -14,6 +14,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useBusinessStore } from "@/hooks/use-business";
 
 const links = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
@@ -28,6 +29,7 @@ export function AdminSidebar({ className }: { className?: string }) {
   const supabase = createClient();
 
   async function handleLogout() {
+    useBusinessStore.getState().clear();
     await supabase.auth.signOut();
     toast.success("Logged out");
     router.push("/login");

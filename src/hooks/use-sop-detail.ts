@@ -66,14 +66,16 @@ export function useSopDetail(sopId: string) {
     }
 
     if (currentBusiness?.id) {
-      const { data: members } = await supabase.from("profiles").select("id").eq("business_id", currentBusiness.id);
-      setTeamSize(members?.length ?? 1);
+      const { count } = await supabase.from("businesses").select("id", { count: "exact", head: true }).eq("id", currentBusiness.id);
+      // Team size: for now count is 1 (owner) since profiles has no business_id FK.
+      // When team invites are implemented, query the invites/users table instead.
+      setTeamSize(count ?? 1);
     }
   }, [sopId, supabase, currentBusiness?.id]);
 
   useEffect(() => {
     async function fetchSOP() {
-      const { data, error } = await supabase.from("sops").select("*").eq("id", sopId).single();
+      const { data, error } = await supabase.from("sops").select("id, title, content, summary, category, status, version, doc_type, tags, pinned, source_file_url, source_file_name, copy_protected, created_by, created_at, updated_at").eq("id", sopId).single();
       if (error || !data) { toast.error("SOP not found"); router.push("/dashboard/sops"); return; }
       setSop(data);
       setLoading(false);

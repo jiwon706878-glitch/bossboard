@@ -11,16 +11,24 @@ export interface SOP {
   doc_type: string;
   tags: string[];
   pinned: boolean;
+  source_file_url: string | null;
+  source_file_name: string | null;
+  copy_protected: boolean;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
   isUnread?: boolean;
 }
 
+export interface FolderPermissions {
+  visible_to: string[]; // ["all"] or ["user-uuid-1", "user-uuid-2"]
+}
+
 export interface FolderRow {
   id: string;
   name: string;
   parent_id: string | null;
+  permissions?: FolderPermissions | null;
 }
 
 export const STATUS_COLORS: Record<string, string> = {
@@ -45,6 +53,9 @@ export interface SOPDetail {
   doc_type: string;
   tags: string[];
   pinned: boolean;
+  source_file_url: string | null;
+  source_file_name: string | null;
+  copy_protected: boolean;
   created_by: string | null;
   created_at: string;
   updated_at: string;

@@ -24,7 +24,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { ChevronDown, FileText, Users, Zap } from "lucide-react";
+import { ChevronDown, FileText, Users, Zap, Link2, Copy, Check } from "lucide-react";
 
 interface TeamMember {
   id: string;
@@ -49,6 +49,8 @@ export default function TeamPage() {
   const [inviteRole, setInviteRole] = useState("member");
   const [inviteLoading, setInviteLoading] = useState(false);
   const [revokeLoadingId, setRevokeLoadingId] = useState<string | null>(null);
+  const [linkLoading, setLinkLoading] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Admin section state
   const [adminOpen, setAdminOpen] = useState(false);
@@ -68,12 +70,26 @@ export default function TeamPage() {
   const loadTeamData = useCallback(async () => {
     if (!currentBusiness) return;
 
-    const { data: members } = await supabase
-      .from("profiles")
-      .select("id, full_name, email, role, created_at")
-      .eq("business_id", currentBusiness.id);
+    // Load the business owner as the first team member
+    const { data: business } = await supabase
+      .from("businesses")
+      .select("user_id")
+      .eq("id", currentBusiness.id)
+      .single();
 
-    if (members) setTeamMembers(members);
+    if (business) {
+      const { data: ownerProfile } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, role, created_at")
+        .eq("id", business.user_id)
+        .single();
+
+      // For now, team = owner. When invite acceptance writes to a team_members
+      // table, query that here too.
+      if (ownerProfile) {
+        setTeamMembers([{ ...ownerProfile, role: ownerProfile.role || "owner" }]);
+      }
+    }
 
     const { data: invites } = await supabase
       .from("invites")
@@ -192,6 +208,40 @@ export default function TeamPage() {
     toast.success("Role updated");
   }
 
+  async function handleCopyInviteLink() {
+    if (!currentBusiness) return;
+    setLinkLoading(true);
+
+    try {
+      const res = await fetch("/api/team/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role: "member",
+          businessId: currentBusiness.id,
+          linkOnly: true,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Failed to generate link");
+        setLinkLoading(false);
+        return;
+      }
+
+      await navigator.clipboard.writeText(data.inviteUrl);
+      setLinkCopied(true);
+      toast.success("Invite link copied!");
+      loadTeamData();
+      setTimeout(() => setLinkCopied(false), 3000);
+    } catch {
+      toast.error("Failed to generate invite link");
+    }
+
+    setLinkLoading(false);
+  }
+
   const totalUsed = teamMembers.length + pendingInvites.length;
 
   // Admin helpers
@@ -295,9 +345,24 @@ export default function TeamPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" disabled={inviteLoading || !currentBusiness}>
-                {inviteLoading ? "Sending..." : "Send Invite"}
-              </Button>
+              <div className="flex gap-3">
+                <Button type="submit" disabled={inviteLoading || !currentBusiness}>
+                  {inviteLoading ? "Sending..." : "Send Invite"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={linkLoading || !currentBusiness}
+                  onClick={handleCopyInviteLink}
+                >
+                  {linkCopied ? (
+                    <Check className="mr-2 h-4 w-4 text-emerald-500" />
+                  ) : (
+                    <Link2 className="mr-2 h-4 w-4" />
+                  )}
+                  {linkLoading ? "Generating..." : linkCopied ? "Copied!" : "Copy Invite Link"}
+                </Button>
+              </div>
             </form>
           )}
         </CardContent>

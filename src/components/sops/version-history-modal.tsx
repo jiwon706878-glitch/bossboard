@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -48,6 +49,7 @@ export function VersionHistoryModal({
       <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Version History</DialogTitle>
+          <DialogDescription className="sr-only">View and restore previous versions of this SOP</DialogDescription>
         </DialogHeader>
         {versions.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4">No previous versions found.</p>

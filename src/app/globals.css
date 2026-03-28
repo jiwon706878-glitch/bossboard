@@ -146,14 +146,12 @@
     @apply border-border outline-ring/50;
   }
   html {
-    overflow: hidden;
-    height: 100dvh;
+    height: 100%;
   }
   body {
     @apply bg-background text-foreground;
     font-family: "A2Z", sans-serif;
-    overflow: hidden;
-    height: 100dvh;
+    min-height: 100%;
   }
   h1 {
     font-weight: 700;

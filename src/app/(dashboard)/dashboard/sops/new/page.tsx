@@ -17,6 +17,15 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Sparkles, Loader2, Save, ArrowLeft, Upload, FileUp, ExternalLink, Send } from "lucide-react";
 import { toast } from "sonner";
 import type { JSONContent } from "@tiptap/react";
@@ -88,6 +97,10 @@ export default function NewSOPPage() {
   const [fileConverting, setFileConverting] = useState(false);
   const [sourceFileUrl, setSourceFileUrl] = useState<string | null>(null);
   const [sourceFileName, setSourceFileName] = useState<string | null>(null);
+
+  // Generation warning state
+  const [warningOpen, setWarningOpen] = useState(false);
+  const [warningDismiss, setWarningDismiss] = useState(false);
 
   // Auto-save state
   const [savedSopId, setSavedSopId] = useState<string | null>(null);
@@ -213,11 +226,28 @@ export default function NewSOPPage() {
     }, 100);
   }
 
-  async function handleGenerate() {
+  function onGenerateClick() {
     if (!topic) {
       toast.error("Please enter a topic");
       return;
     }
+    const dismissed = localStorage.getItem("bossboard_sop_warning_dismissed") === "true";
+    if (dismissed) {
+      handleGenerate();
+    } else {
+      setWarningOpen(true);
+    }
+  }
+
+  function confirmGenerate() {
+    if (warningDismiss) {
+      localStorage.setItem("bossboard_sop_warning_dismissed", "true");
+    }
+    setWarningOpen(false);
+    handleGenerate();
+  }
+
+  async function handleGenerate() {
 
     setGenerating(true);
     setGeneratedText("");
@@ -574,7 +604,7 @@ export default function NewSOPPage() {
               )}
               <Button
                 id="generate-btn"
-                onClick={handleGenerate}
+                onClick={onGenerateClick}
                 disabled={generating || !topic}
               >
                 {generating ? (
@@ -918,6 +948,32 @@ export default function NewSOPPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Generation warning dialog */}
+      <Dialog open={warningOpen} onOpenChange={setWarningOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Before you generate</DialogTitle>
+            <DialogDescription>
+              AI-generated SOPs are drafts based on your input. Please review and customize all details — numbers, procedures, safety steps — to match your specific business before publishing.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center gap-2 py-2">
+            <Checkbox
+              id="dismiss-warning"
+              checked={warningDismiss}
+              onCheckedChange={(v) => setWarningDismiss(v === true)}
+            />
+            <label htmlFor="dismiss-warning" className="text-sm text-muted-foreground cursor-pointer">
+              Don&apos;t show this again
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setWarningOpen(false)}>Cancel</Button>
+            <Button onClick={confirmGenerate}>Got it, generate</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

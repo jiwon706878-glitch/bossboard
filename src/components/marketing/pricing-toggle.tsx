@@ -60,7 +60,7 @@ export function PricingToggle() {
         {planOrder.map((planId) => {
           const plan = plans[planId];
           const price = annual ? plan.annualPrice : plan.monthlyPrice;
-          const isRecommended = planId === "pro";
+          const isRecommended = planId === "starter";
 
           return (
             <div
@@ -87,7 +87,7 @@ export function PricingToggle() {
                       color: "var(--primary-foreground)",
                     }}
                   >
-                    Recommended
+                    Most Popular
                   </span>
                 </div>
               )}

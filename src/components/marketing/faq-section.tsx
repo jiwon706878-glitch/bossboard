@@ -17,7 +17,7 @@ const faqs = [
   {
     question: "Can I try it for free?",
     answer:
-      "Yes. The free plan includes 5 documents, 1 team member, and 5 AI generations per month. No credit card required to sign up.",
+      "Yes. The free plan includes 20 documents, 3 team members, and 5 AI generations per month. No credit card required to sign up.",
   },
   {
     question: "How does team management work?",

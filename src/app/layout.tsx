@@ -7,7 +7,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "BossBoard — AI SOP Generator for Business Teams",
+    default: "BossBoard — AI-Powered Operations Wiki for Small Business",
     template: "%s — BossBoard",
   },
   description:

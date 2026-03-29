@@ -16,7 +16,7 @@ export function PricingToggle() {
       <div className="mb-10 flex items-center justify-center gap-4">
         <span
           className="text-sm font-medium"
-          style={{ color: annual ? "#5A6480" : "#E8ECF4" }}
+          style={{ color: annual ? "var(--muted-foreground)" : "var(--foreground)" }}
         >
           Monthly
         </span>
@@ -39,7 +39,7 @@ export function PricingToggle() {
         </button>
         <span
           className="text-sm font-medium flex items-center gap-2"
-          style={{ color: annual ? "#E8ECF4" : "#5A6480" }}
+          style={{ color: annual ? "var(--foreground)" : "var(--muted-foreground)" }}
         >
           Annual
           <span

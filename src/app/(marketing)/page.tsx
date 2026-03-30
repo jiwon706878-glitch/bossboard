@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PricingToggle } from "@/components/marketing/pricing-toggle";
 import { FaqSection } from "@/components/marketing/faq-section";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, FileUp, Sparkles, UsersRound } from "lucide-react";
 
 /* ─── Inline mini-mockup components ───────────────────────────────────────── */
 
@@ -191,7 +191,7 @@ export default function HomePage() {
       `}</style>
       <section className="relative overflow-hidden">
         <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2" style={{ width: "900px", height: "600px", background: "radial-gradient(ellipse at center, rgba(74,108,247,0.08) 0%, transparent 70%)" }} />
-        <div className="relative mx-auto max-w-[1080px] px-6 pt-24 pb-16 sm:pt-28 sm:pb-20 lg:pt-32 lg:pb-20">
+        <div className="relative mx-auto max-w-[1080px] px-6 pt-16 pb-16 sm:pt-20 sm:pb-20 lg:pt-24 lg:pb-20">
           <div className="flex flex-col lg:flex-row lg:items-center lg:gap-12">
             {/* Left — text */}
             <div className="max-w-2xl lg:max-w-[480px] lg:flex-shrink-0">
@@ -300,15 +300,15 @@ export default function HomePage() {
       </section>
 
       {/* ── Trust Bar ──────────────────────────────────────────────────── */}
-      <section className="py-8" style={{ opacity: 0.6 }}>
+      <section className="py-8">
         <div className="mx-auto max-w-[1080px] px-6">
-          <p className="text-center text-xs font-medium uppercase tracking-wide mb-5" style={{ color: "var(--muted-foreground)", fontFamily: "'A2Z', sans-serif", letterSpacing: "0.08em" }}>
+          <p className="text-center text-xs font-medium uppercase tracking-wide mb-5" style={{ color: "var(--muted-foreground)", fontFamily: "'A2Z', sans-serif", letterSpacing: "0.08em", opacity: 0.7 }}>
             Trusted by small businesses everywhere
           </p>
           <div className="flex flex-wrap justify-center gap-8">
             {["Caf\u00e9", "Brewery", "Restaurant", "Office", "Factory"].map((name) => (
-              <div key={name} className="flex items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-700" style={{ width: "100px", height: "40px" }}>
-                <span className="text-xs font-medium" style={{ color: "var(--muted-foreground)", fontFamily: "'A2Z', sans-serif" }}>{name}</span>
+              <div key={name} className="flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800" style={{ width: "100px", height: "40px" }}>
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400" style={{ fontFamily: "'A2Z', sans-serif" }}>{name}</span>
               </div>
             ))}
           </div>
@@ -349,10 +349,10 @@ export default function HomePage() {
       <section>
         <div className="mx-auto max-w-[1080px] px-6 py-16 sm:py-20">
           <div className="grid gap-8 md:grid-cols-3">
-            {[{ value: "30s", desc: "Time to generate a full SOP" }, { value: "90%", desc: "Faster than writing from scratch" }, { value: "0", desc: "Knowledge lost to turnover" }].map((s) => (
-              <div key={s.value} className="text-center md:text-left">
+            {[{ value: "30s", desc: "To generate a full SOP" }, { value: "90%", desc: "Faster than manual writing" }, { value: "0", desc: "Knowledge lost to turnover" }].map((s) => (
+              <div key={s.value} className="text-center">
                 <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "2.5rem", fontWeight: 700, color: "var(--foreground)", letterSpacing: "-0.02em", lineHeight: 1 }}>{s.value}</div>
-                <p className="mt-2 text-sm" style={{ color: "var(--muted-foreground)", maxWidth: "260px" }}>{s.desc}</p>
+                <p className="mt-2 text-xs mx-auto" style={{ color: "var(--foreground)", opacity: 0.55, maxWidth: "220px" }}>{s.desc}</p>
               </div>
             ))}
           </div>
@@ -363,16 +363,16 @@ export default function HomePage() {
       <section id="features" className="mx-auto max-w-[1080px] px-6 py-24 sm:py-32 lg:py-40">
         <div className="max-w-lg">
           <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: "'A2Z', sans-serif", letterSpacing: "0.08em" }}>Features</p>
-          <h2 className="mt-3" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(1.75rem, 3vw, 2.5rem)", fontWeight: 700, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>Everything your team needs — in one place</h2>
+          <h2 className="mt-3" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(1.75rem, 3vw, 2.5rem)", fontWeight: 700, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>Built for how small teams actually work</h2>
         </div>
         <div className="mt-24 space-y-24 lg:space-y-32">
           {[
-            { label: "AI Manual Generator", headline: "Describe any task.\nAI writes the manual.", body: "Type a topic or paste existing notes \u2014 BossBoard generates a structured, step-by-step procedure in 30 seconds. Upload PDFs, Word docs, or photos of handwritten notes and AI converts them into clean, searchable documents.", accent: "#4A6CF7" },
+            { label: "AI Manual Generator", headline: "Describe any task.\nAI writes the manual.", body: "Type a topic or paste existing notes \u2014 BossBoard generates a structured procedure in 30 seconds. Upload PDFs, Word docs, or photos and AI converts them into clean, searchable documents.", accent: "#4A6CF7" },
             { label: "Smart Search", headline: "Ask questions.\nGet instant answers.", body: "Search across every document instantly with Ctrl+K. Ask questions in plain English and AI finds the answer from your wiki \u2014 with source references.", accent: "#34D399" },
-            { label: "Checklists & Tracking", headline: "Convert knowledge\ninto daily action.", body: "Turn any SOP into a daily checklist that resets automatically. Track who completed what in real-time. Overdue items surface on every team member\u2019s dashboard \u2014 nothing falls through the cracks.", accent: "#FBBF24" },
+            { label: "Checklists & Tracking", headline: "Convert knowledge\ninto daily action.", body: "Turn any SOP into a daily checklist that resets automatically. Track who completed what in real-time. Overdue items surface on every dashboard \u2014 nothing falls through the cracks.", accent: "#FBBF24" },
             { label: "Document Hub", headline: "Upload anything.\nAI organizes it.", body: "Upload PDFs, Word docs, or photos of handwritten procedures. AI converts them into clean, structured documents \u2014 while keeping the originals safe.", accent: "#4A6CF7" },
           ].map((feature, i) => (
-            <div key={feature.label} className={`flex flex-col gap-8 lg:flex-row lg:gap-16 lg:items-stretch ${i % 2 === 1 ? "lg:flex-row-reverse" : ""}`}>
+            <div key={feature.label} className={`flex flex-col gap-8 lg:flex-row lg:gap-16 lg:items-stretch rounded-2xl ${i % 2 === 1 ? "lg:flex-row-reverse" : ""} ${i % 2 === 0 ? "bg-gray-50/60 dark:bg-gray-900/20 p-6 lg:p-10 -mx-6 lg:-mx-10" : ""}`}>
               <div className="flex-1 lg:max-w-md flex flex-col justify-center">
                 <p className="text-xs font-medium uppercase tracking-wide" style={{ color: feature.accent, fontFamily: "'A2Z', sans-serif", letterSpacing: "0.08em" }}>{feature.label}</p>
                 <h3 className="mt-3 whitespace-pre-line" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(1.5rem, 2.5vw, 2rem)", fontWeight: 700, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>{feature.headline}</h3>
@@ -389,6 +389,10 @@ export default function HomePage() {
       {/* ── Testimonials ──────────────────────────────────────────────── */}
       <section style={{ backgroundColor: "var(--card)" }}>
         <div className="mx-auto max-w-[1080px] px-6 py-24 sm:py-32">
+          <div className="max-w-lg mb-14">
+            <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: "'A2Z', sans-serif", letterSpacing: "0.08em" }}>Testimonials</p>
+            <h2 className="mt-3" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(1.75rem, 3vw, 2.5rem)", fontWeight: 700, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>What our users are saying</h2>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
@@ -440,15 +444,18 @@ export default function HomePage() {
           </div>
           <div className="mt-16 grid gap-0 divide-y" style={{ borderColor: "var(--border)" }}>
             {[
-              { step: "01", title: "Describe or upload", desc: "Type a task description, paste your existing notes, or upload a PDF, Word doc, or photo. AI handles any format." },
-              { step: "02", title: "AI creates your manual", desc: "Get a structured, professional SOP in 30 seconds — numbered steps, safety notes, extractable checklists." },
-              { step: "03", title: "Team follows, you track", desc: "Share with your team, convert to daily checklists, and track completion. One subscription covers everyone." },
+              { step: "01", title: "Describe or upload", desc: "Type a task, paste notes, or upload a PDF, Word doc, or photo. AI handles any format.", Icon: FileUp },
+              { step: "02", title: "AI creates your manual", desc: "Get a structured SOP in 30 seconds — numbered steps, safety notes, and checklists.", Icon: Sparkles },
+              { step: "03", title: "Team follows, you track", desc: "Share with your team, convert to daily checklists, and track completion. One subscription covers everyone.", Icon: UsersRound },
             ].map((item) => (
-              <div key={item.step} className="flex gap-8 py-10 sm:py-12">
+              <div key={item.step} className="flex items-center gap-8 py-10 sm:py-12">
                 <div className="shrink-0" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "13px", fontWeight: 500, color: "#4A6CF7", opacity: 0.6 }}>{item.step}</div>
-                <div>
+                <div className="flex-1">
                   <h3 style={{ fontFamily: "'A2Z', sans-serif", fontSize: "20px", fontWeight: 600, letterSpacing: "-0.01em", color: "var(--foreground)" }}>{item.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed max-w-md" style={{ color: "var(--foreground)", opacity: 0.6, lineHeight: 1.7 }}>{item.desc}</p>
+                </div>
+                <div className="hidden sm:flex shrink-0 items-center justify-center" style={{ width: "100px", height: "100px" }}>
+                  <item.Icon className="h-16 w-16" style={{ color: "#4A6CF7", opacity: 0.15 }} />
                 </div>
               </div>
             ))}

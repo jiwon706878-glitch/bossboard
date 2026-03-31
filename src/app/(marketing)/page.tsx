@@ -232,7 +232,7 @@ export default function HomePage() {
             {/* Right — 3D perspective mockup (desktop only) */}
             <div className="hidden lg:block flex-1 min-w-0 max-w-full overflow-hidden">
               <div style={{ animation: "hero-float 4s ease-in-out infinite", transformStyle: "preserve-3d", willChange: "transform" }}>
-                <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-md" style={{ backgroundColor: "#ffffff" }}>
+                <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 ring-1 ring-gray-100 dark:ring-gray-800" style={{ backgroundColor: "#ffffff" }}>
                   {/* Browser chrome */}
                   <div className="flex items-center gap-2 px-3.5 py-2.5" style={{ backgroundColor: "#f4f4f5", borderBottom: "1px solid #e4e4e7" }}>
                     <div className="flex gap-1.5">

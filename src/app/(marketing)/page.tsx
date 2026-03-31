@@ -79,7 +79,7 @@ function HeroMockup() {
 function FeatureMockAi() {
   const bd = "var(--border)"; const mt = "var(--muted)"; const mg = "var(--muted-foreground)"; const fg = "var(--foreground)"; const f = "'A2Z', sans-serif";
   return (
-    <div className="p-5 h-full flex flex-col justify-center gap-3">
+    <div className="p-6 h-full flex flex-col justify-center gap-3">
       <div className="rounded-md p-3" style={{ border: `1px solid ${bd}`, backgroundColor: mt }}>
         <span style={{ fontSize: "9px", color: mg, fontFamily: f }}>Topic / Task</span>
         <div className="mt-1" style={{ fontSize: "11px", color: fg, fontFamily: f }}>CIP cleaning procedure for brewing tanks</div>
@@ -100,7 +100,7 @@ function FeatureMockAi() {
 function FeatureMockSearch() {
   const bd = "var(--border)"; const mt = "var(--muted)"; const mg = "var(--muted-foreground)"; const fg = "var(--foreground)"; const f = "'A2Z', sans-serif";
   return (
-    <div className="p-5 h-full flex flex-col justify-center gap-3">
+    <div className="p-6 h-full flex flex-col justify-center gap-3">
       <div className="rounded-md flex items-center gap-2 px-3 py-2" style={{ border: `1px solid ${bd}`, backgroundColor: mt }}>
         <span style={{ fontSize: "10px", color: mg }}>&#128269;</span>
         <span style={{ fontSize: "10px", color: fg, fontFamily: f }}>How often should we clean the tanks?</span>
@@ -126,7 +126,7 @@ function FeatureMockChecklist() {
     { t: "Rinse with clean water", done: false }, { t: "Sanitize with peracetic acid", done: false }, { t: "Final rinse and visual check", done: false },
   ];
   return (
-    <div className="p-5 h-full flex flex-col justify-center">
+    <div className="p-6 h-full flex flex-col justify-center">
       <div className="flex items-center justify-between mb-3">
         <span style={{ fontSize: "11px", fontWeight: 600, color: fg, fontFamily: f }}>Daily CIP Checklist</span>
         <span style={{ fontSize: "9px", fontFamily: m, color: "#34D399" }}>3/6</span>
@@ -151,7 +151,7 @@ function FeatureMockChecklist() {
 function FeatureMockDocHub() {
   const bd = "var(--border)"; const mt = "var(--muted)"; const mg = "var(--muted-foreground)"; const fg = "var(--foreground)"; const f = "'A2Z', sans-serif";
   return (
-    <div className="p-5 h-full flex flex-col justify-center gap-3">
+    <div className="p-6 h-full flex flex-col justify-center gap-3">
       <div className="flex items-center gap-3 rounded-md p-3" style={{ border: `1px dashed ${bd}` }}>
         {[{ ext: "PDF", c: "#E74C3C" }, { ext: "DOCX", c: "#2B7CD3" }, { ext: "IMG", c: "#8B5CF6" }].map((file) => (
           <div key={file.ext} className="flex items-center gap-1.5 rounded px-2 py-1.5" style={{ backgroundColor: mt, border: `1px solid ${bd}` }}>
@@ -202,13 +202,13 @@ export default function HomePage() {
               <p className="mt-6 max-w-lg" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "18px", lineHeight: 1.7, color: "var(--foreground)", fontWeight: 400, opacity: 0.65 }}>
                 Stop explaining the same thing twice. BossBoard generates your manuals with AI, organizes every document in one place, and turns SOPs into daily checklists your team actually follows.
               </p>
-              <div className="mt-10 flex items-center gap-4">
-                <Link href="/signup" className="inline-flex items-center gap-2.5 rounded-lg px-6 py-3 text-sm font-semibold transition-all duration-200 hover:brightness-110" style={{ backgroundColor: "#4A6CF7", color: "#fff", fontFamily: "'A2Z', sans-serif" }}>
+              <div className="mt-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+                <Link href="/signup" className="inline-flex items-center justify-center gap-2.5 rounded-lg px-6 py-4 sm:py-3 text-sm font-semibold transition-all duration-200 hover:brightness-110 w-full sm:w-auto" style={{ backgroundColor: "#4A6CF7", color: "#fff", fontFamily: "'A2Z', sans-serif" }}>
                   Start for free <ArrowRight className="h-4 w-4" />
                 </Link>
-                <Link href="/#how-it-works" className="text-sm font-medium transition-colors duration-200" style={{ color: "var(--muted-foreground)", fontFamily: "'A2Z', sans-serif" }}>See how it works</Link>
+                <Link href="/#how-it-works" className="text-sm font-medium transition-colors duration-200 text-center sm:text-left" style={{ color: "var(--muted-foreground)", fontFamily: "'A2Z', sans-serif" }}>See how it works</Link>
               </div>
-              <p className="mt-5 text-xs" style={{ color: "var(--muted-foreground)", fontFamily: "'A2Z', sans-serif", opacity: 0.7 }}>No credit card required. Free for up to 3 team members.</p>
+              <p className="mt-5 text-xs text-center sm:text-left" style={{ color: "var(--muted-foreground)", fontFamily: "'A2Z', sans-serif", opacity: 0.7 }}>No credit card required. Free for up to 3 team members.</p>
             </div>
 
             {/* Right — 3D perspective mockup (desktop only) */}
@@ -305,7 +305,7 @@ export default function HomePage() {
           <p className="text-center text-xs font-medium uppercase tracking-wide mb-5" style={{ color: "var(--muted-foreground)", fontFamily: "'A2Z', sans-serif", letterSpacing: "0.08em", opacity: 0.7 }}>
             Trusted by small businesses everywhere
           </p>
-          <div className="flex flex-wrap justify-center gap-8">
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-8">
             {["Caf\u00e9", "Brewery", "Restaurant", "Office", "Factory"].map((name) => (
               <div key={name} className="flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800" style={{ width: "100px", height: "40px" }}>
                 <span className="text-xs font-medium text-gray-500 dark:text-gray-400" style={{ fontFamily: "'A2Z', sans-serif" }}>{name}</span>
@@ -413,8 +413,7 @@ export default function HomePage() {
             ].map((t) => (
               <div
                 key={t.name}
-                className="rounded-xl p-6 bg-white dark:bg-gray-800 shadow-sm"
-                style={{ border: "1px solid var(--border)" }}
+                className="rounded-xl p-8 bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700"
               >
                 <div className="flex gap-0.5 mb-4">
                   {[1, 2, 3, 4, 5].map((s) => (
@@ -482,11 +481,11 @@ export default function HomePage() {
         <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2" style={{ width: "800px", height: "400px", background: "radial-gradient(ellipse at center, rgba(74,108,247,0.08) 0%, transparent 70%)" }} />
         <div className="relative mx-auto max-w-[1080px] px-6 py-24 sm:py-28 text-center">
           <h2 style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(1.75rem, 3vw, 2.5rem)", fontWeight: 700, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
-            Stop losing knowledge.<br />Start building structure.
+            Your team is waiting for structure.
           </h2>
-          <p className="mt-5 mx-auto max-w-md text-sm" style={{ color: "var(--foreground)", opacity: 0.6, lineHeight: 1.7 }}>Every undocumented process is a risk. Every untrained employee costs you time. BossBoard fixes both — in 30 seconds.</p>
+          <p className="mt-5 mx-auto max-w-md text-sm" style={{ color: "var(--foreground)", opacity: 0.6, lineHeight: 1.7 }}>Join hundreds of small businesses that stopped losing knowledge and started growing with BossBoard.</p>
           <div className="mt-10">
-            <Link href="/signup" className="inline-flex items-center gap-2.5 rounded-lg px-7 py-3.5 text-sm font-semibold transition-all duration-200 hover:brightness-110" style={{ backgroundColor: "#4A6CF7", color: "#fff", fontFamily: "'A2Z', sans-serif" }}>
+            <Link href="/signup" className="inline-flex items-center justify-center gap-2.5 rounded-lg px-7 py-4 sm:py-3.5 text-sm font-semibold transition-all duration-200 hover:brightness-110 w-full sm:w-auto max-w-xs mx-auto sm:max-w-none" style={{ backgroundColor: "#4A6CF7", color: "#fff", fontFamily: "'A2Z', sans-serif" }}>
               Get Started Free <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

@@ -147,9 +147,11 @@
   }
   html {
     height: 100%;
+    overflow-x: hidden;
   }
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
     font-family: "A2Z", sans-serif;
     min-height: 100%;
   }

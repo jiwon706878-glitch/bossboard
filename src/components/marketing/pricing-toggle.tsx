@@ -65,14 +65,12 @@ export function PricingToggle() {
           return (
             <div
               key={planId}
-              className="relative flex flex-col rounded-md p-6"
+              className={`relative flex flex-col rounded-lg px-8 py-8 ${isRecommended ? "border-2 shadow-md bg-blue-50/30 dark:bg-blue-900/10" : "border border-gray-200 dark:border-gray-700"}`}
               style={{
-                backgroundColor: "var(--card)",
-                border: isRecommended
-                  ? "1px solid #4F8BFF"
-                  : "1px solid var(--border)",
+                backgroundColor: isRecommended ? undefined : "var(--card)",
+                borderColor: isRecommended ? "#4A6CF7" : undefined,
                 ...(isRecommended
-                  ? { marginTop: "-8px", paddingTop: "32px", paddingBottom: "32px" }
+                  ? { marginTop: "-8px", paddingTop: "36px", paddingBottom: "36px" }
                   : {}),
               }}
             >

@@ -17,6 +17,7 @@ export interface Business {
   target_customers: string | null;
   competitive_advantage: string | null;
   seasonal_promotions: string | null;
+  [key: string]: unknown; // allow extra DB columns from select("*")
 }
 
 interface BusinessState {

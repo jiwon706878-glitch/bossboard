@@ -35,7 +35,7 @@ export function BusinessSwitcher() {
 
       const { data } = await supabase
         .from("businesses")
-        .select("id, name, type, address, google_place_id, plan, language, timezone, menu_or_services, brand_tone, target_customers, competitive_advantage, seasonal_promotions")
+        .select("*")
         .eq("user_id", user.id)
         .order("created_at");
 

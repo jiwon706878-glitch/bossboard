@@ -73,28 +73,6 @@ function FieldSkeleton() {
 }
 
 export default function SettingsPage() {
-  // Profile state
-  const [fullName, setFullName] = useState("");
-  const [businessName, setBusinessName] = useState("");
-
-  // Language & Region
-  const [language, setLanguage] = useState("en");
-  const [timezone, setTimezone] = useState("");
-  const [tzSearch, setTzSearch] = useState("");
-
-  // Notifications
-  const [notifications, setNotifications] = useState<NotificationSettings>({});
-
-  // Developer mode
-  const [developerMode, setDeveloperMode] = useState(false);
-
-  // Loading states
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [savingBusiness, setSavingBusiness] = useState(false);
-  const [savingLangRegion, setSavingLangRegion] = useState(false);
-  const [savingNotifications, setSavingNotifications] = useState(false);
-  const [savingDevMode, setSavingDevMode] = useState(false);
-
   const supabase = createClient();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -105,18 +83,6 @@ export default function SettingsPage() {
   const planId = (currentBusiness?.plan || "free") as PlanId;
   const plan = plans[planId];
   const isProOrAbove = planId === "pro" || planId === "business";
-
-  const groupedTimezones = useMemo(() => getGroupedTimezones(), []);
-  const filteredTimezones = useMemo(() => {
-    if (!tzSearch.trim()) return groupedTimezones;
-    const q = tzSearch.toLowerCase();
-    const result: Record<string, TimezoneEntry[]> = {};
-    for (const [region, tzs] of Object.entries(groupedTimezones)) {
-      const filtered = tzs.filter((tz) => tz.label.toLowerCase().includes(q) || tz.value.toLowerCase().includes(q) || region.toLowerCase().includes(q));
-      if (filtered.length > 0) result[region] = filtered;
-    }
-    return result;
-  }, [groupedTimezones, tzSearch]);
 
   // Queries — shared cache with sidebar/dashboard
   const { data: user } = useQuery({ queryKey: userKeys.current, queryFn: fetchCurrentUser, retry: false });
@@ -135,28 +101,52 @@ export default function SettingsPage() {
   });
 
   const dataLoaded = !profileLoading && (!businessId || !bizLoading);
+  const detectedTz = typeof window !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "";
 
-  // Sync query data to form state
-  useEffect(() => {
-    if (profile) {
-      setFullName(profile.full_name || "");
-      setNotifications(profile.notification_settings || {});
-      setDeveloperMode(profile.developer_mode || false);
+  // Initialize state from cache (instant on revisit), fall back to defaults
+  const [fullName, setFullName] = useState(() => profile?.full_name || "");
+  const [businessName, setBusinessName] = useState(() => currentBusiness?.name || "");
+  const [language, setLanguage] = useState(() => bizSettings?.language || (currentBusiness as any)?.language || "en");
+  const [timezone, setTimezone] = useState(() => bizSettings?.timezone || (currentBusiness as any)?.timezone || detectedTz);
+  const [tzSearch, setTzSearch] = useState("");
+  const [notifications, setNotifications] = useState<NotificationSettings>(() => profile?.notification_settings || {});
+  const [developerMode, setDeveloperMode] = useState(() => profile?.developer_mode || false);
+
+  // Loading states
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingBusiness, setSavingBusiness] = useState(false);
+  const [savingLangRegion, setSavingLangRegion] = useState(false);
+  const [savingNotifications, setSavingNotifications] = useState(false);
+  const [savingDevMode, setSavingDevMode] = useState(false);
+
+  const groupedTimezones = useMemo(() => getGroupedTimezones(), []);
+  const filteredTimezones = useMemo(() => {
+    if (!tzSearch.trim()) return groupedTimezones;
+    const q = tzSearch.toLowerCase();
+    const result: Record<string, TimezoneEntry[]> = {};
+    for (const [region, tzs] of Object.entries(groupedTimezones)) {
+      const filtered = tzs.filter((tz) => tz.label.toLowerCase().includes(q) || tz.value.toLowerCase().includes(q) || region.toLowerCase().includes(q));
+      if (filtered.length > 0) result[region] = filtered;
     }
-  }, [profile]);
+    return result;
+  }, [groupedTimezones, tzSearch]);
+
+  // Sync from query cache on first load (only fills empty state)
+  useEffect(() => {
+    if (profile?.full_name && !fullName) setFullName(profile.full_name);
+    if (profile?.notification_settings && Object.keys(notifications).length === 0) setNotifications(profile.notification_settings);
+    if (profile?.developer_mode !== undefined && profile.developer_mode !== developerMode) setDeveloperMode(profile.developer_mode);
+  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (currentBusiness) setBusinessName(currentBusiness.name);
-  }, [currentBusiness]);
+    if (currentBusiness?.name && !businessName) setBusinessName(currentBusiness.name);
+  }, [currentBusiness?.name]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (bizSettings) {
-      setLanguage(bizSettings.language || "en");
-      setTimezone(bizSettings.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
-    } else if (!businessId) {
-      setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
-    }
-  }, [bizSettings, businessId]);
+    if (bizSettings?.language && language === "en" && bizSettings.language !== "en") setLanguage(bizSettings.language);
+    if (bizSettings?.timezone && !timezone) setTimezone(bizSettings.timezone);
+    if (!bizSettings && !businessId && !timezone) setTimezone(detectedTz);
+  }, [bizSettings, businessId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -164,8 +154,13 @@ export default function SettingsPage() {
     setSavingProfile(true);
 
     const { error } = await supabase.from("profiles").update({ full_name: fullName }).eq("id", userId);
-    if (error) toast.error(error.message);
-    else { toast.success("Profile updated"); queryClient.invalidateQueries({ queryKey: userKeys.profile(userId) }); }
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Profile updated");
+      queryClient.setQueryData(userKeys.profile(userId), (old: any) => ({ ...old, full_name: fullName }));
+      queryClient.invalidateQueries({ queryKey: userKeys.profile(userId) });
+    }
     setSavingProfile(false);
   }
 
@@ -201,8 +196,13 @@ export default function SettingsPage() {
       .update({ language, timezone })
       .eq("id", currentBusiness.id);
 
-    if (error) toast.error(error.message);
-    else toast.success("Language & region saved");
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Language & region saved");
+      queryClient.setQueryData(settingsKeys.business(currentBusiness.id), (old: any) => ({ ...old, language, timezone }));
+      queryClient.invalidateQueries({ queryKey: settingsKeys.business(currentBusiness.id) });
+    }
     setSavingLangRegion(false);
   }
 
@@ -210,8 +210,13 @@ export default function SettingsPage() {
     if (!userId) return;
     setSavingNotifications(true);
     const { error } = await supabase.from("profiles").update({ notification_settings: notifications }).eq("id", userId);
-    if (error) toast.error(error.message);
-    else { toast.success("Notification preferences saved"); queryClient.invalidateQueries({ queryKey: userKeys.profile(userId) }); }
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Notification preferences saved");
+      queryClient.setQueryData(userKeys.profile(userId), (old: any) => ({ ...old, notification_settings: notifications }));
+      queryClient.invalidateQueries({ queryKey: userKeys.profile(userId) });
+    }
     setSavingNotifications(false);
   }
 
@@ -220,8 +225,14 @@ export default function SettingsPage() {
     setDeveloperMode(enabled);
     setSavingDevMode(true);
     const { error } = await supabase.from("profiles").update({ developer_mode: enabled }).eq("id", userId);
-    if (error) { toast.error(error.message); setDeveloperMode(!enabled); }
-    else { toast.success(enabled ? "Developer mode enabled" : "Developer mode disabled"); queryClient.invalidateQueries({ queryKey: userKeys.profile(userId) }); }
+    if (error) {
+      toast.error(error.message);
+      setDeveloperMode(!enabled);
+    } else {
+      toast.success(enabled ? "Developer mode enabled" : "Developer mode disabled");
+      queryClient.setQueryData(userKeys.profile(userId), (old: any) => ({ ...old, developer_mode: enabled }));
+      queryClient.invalidateQueries({ queryKey: userKeys.profile(userId) });
+    }
     setSavingDevMode(false);
   }
 

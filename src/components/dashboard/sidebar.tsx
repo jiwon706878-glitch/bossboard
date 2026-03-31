@@ -69,12 +69,12 @@ const NavLink = memo(function NavLink({
       <Button
         variant={isActive ? "secondary" : "ghost"}
         className={cn(
-          "w-full justify-start gap-3",
+          "w-full justify-start gap-3 h-9 flex-nowrap overflow-hidden",
           isActive && "bg-primary/10 text-primary"
         )}
       >
-        <Icon className="h-4 w-4" />
-        {label}
+        <Icon className="h-4 w-4 shrink-0 min-w-[16px]" />
+        <span className="truncate">{label}</span>
       </Button>
     </Link>
   );
@@ -209,10 +209,10 @@ export function DashboardSidebar({ className }: { className?: string }) {
           <SheetTrigger asChild>
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 text-muted-foreground"
+              className="w-full justify-start gap-3 h-9 flex-nowrap overflow-hidden text-muted-foreground"
             >
-              <MessageSquarePlus className="h-4 w-4" />
-              Feedback
+              <MessageSquarePlus className="h-4 w-4 shrink-0 min-w-[16px]" />
+              <span className="truncate">Feedback</span>
             </Button>
           </SheetTrigger>
           <SheetContent side="right">
@@ -226,11 +226,11 @@ export function DashboardSidebar({ className }: { className?: string }) {
         </Sheet>
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 text-muted-foreground"
+          className="w-full justify-start gap-3 h-9 flex-nowrap overflow-hidden text-muted-foreground"
           onClick={handleLogout}
         >
-          <LogOut className="h-4 w-4" />
-          Log out
+          <LogOut className="h-4 w-4 shrink-0 min-w-[16px]" />
+          <span className="truncate">Log out</span>
         </Button>
       </div>
     </aside>

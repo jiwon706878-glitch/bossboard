@@ -79,13 +79,31 @@ function HeroMockup() {
 function FeatureMockAi() {
   const bd = "var(--border)"; const mt = "var(--muted)"; const mg = "var(--muted-foreground)"; const fg = "var(--foreground)"; const f = "'A2Z', sans-serif";
   return (
-    <div className="p-6 h-full flex flex-col justify-center gap-3">
+    <div className="p-6 h-full flex flex-col justify-center gap-3 ai-mock-root">
+      <style>{`
+        @media (prefers-reduced-motion: no-preference) {
+          .ai-mock-root .ai-typewriter {
+            overflow: hidden; white-space: nowrap; width: 0;
+            animation: ai-type 1.8s steps(38) 0.5s both;
+          }
+          .ai-mock-root .ai-btn-pulse {
+            animation: ai-pulse 0.4s ease 2.5s both;
+          }
+          .ai-mock-root .ai-output-fade {
+            opacity: 0;
+            animation: ai-fade-up 0.6s ease 3s both;
+          }
+        }
+        @keyframes ai-type { from { width: 0 } to { width: 100% } }
+        @keyframes ai-pulse { 0%,100% { transform: scale(1) } 50% { transform: scale(1.04) } }
+        @keyframes ai-fade-up { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: translateY(0) } }
+      `}</style>
       <div className="rounded-md p-3" style={{ border: `1px solid ${bd}`, backgroundColor: mt }}>
         <span style={{ fontSize: "9px", color: mg, fontFamily: f }}>Topic / Task</span>
-        <div className="mt-1" style={{ fontSize: "11px", color: fg, fontFamily: f }}>CIP cleaning procedure for brewing tanks</div>
+        <div className="ai-typewriter mt-1" style={{ fontSize: "11px", color: fg, fontFamily: f }}>CIP cleaning procedure for brewing tanks</div>
       </div>
-      <div className="self-start rounded-md px-3 py-1.5" style={{ backgroundColor: "#4A6CF7", fontSize: "9px", color: "#fff", fontFamily: f, fontWeight: 600 }}>Generate SOP</div>
-      <div className="rounded-md p-3 flex-1" style={{ border: `1px solid ${bd}`, borderLeft: "3px solid #4A6CF7" }}>
+      <div className="ai-btn-pulse self-start rounded-md px-3 py-1.5" style={{ backgroundColor: "#4A6CF7", fontSize: "9px", color: "#fff", fontFamily: f, fontWeight: 600 }}>Generate SOP</div>
+      <div className="ai-output-fade rounded-md p-3 flex-1" style={{ border: `1px solid ${bd}`, borderLeft: "3px solid #4A6CF7" }}>
         <div style={{ fontSize: "10px", fontWeight: 600, color: fg, fontFamily: f }}>CIP Cleaning Procedure</div>
         <div className="mt-2 space-y-1.5">
           {["1. Rinse with water at 60\u00b0C for 5 min", "2. Circulate alkaline solution", "3. Rinse and inspect visually", "4. Sanitize with peracetic acid"].map((s) => (
@@ -196,7 +214,7 @@ export default function HomePage() {
             {/* Left — text */}
             <div className="max-w-2xl lg:max-w-[480px] lg:flex-shrink-0">
               <p className="text-sm font-medium tracking-wide uppercase" style={{ color: "#4A6CF7", fontFamily: "'A2Z', sans-serif", letterSpacing: "0.08em" }}>The Operations Wiki for Small Business</p>
-              <h1 className="mt-5" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(2.75rem, 5.5vw, 4rem)", fontWeight: 700, letterSpacing: "-0.035em", lineHeight: 1.08, color: "var(--foreground)" }}>
+              <h1 className="mt-5" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(2.75rem, 5.5vw, 4rem)", fontWeight: 800, letterSpacing: "-0.035em", lineHeight: 1.08, color: "var(--foreground)" }}>
                 Build structure.<br />Drive growth.
               </h1>
               <p className="mt-6 max-w-lg" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "18px", lineHeight: 1.7, color: "var(--foreground)", fontWeight: 400, opacity: 0.65 }}>
@@ -300,17 +318,27 @@ export default function HomePage() {
       </section>
 
       {/* ── Trust Bar ──────────────────────────────────────────────────── */}
-      <section className="py-8">
+      <section className="py-8 overflow-hidden">
+        <style>{`
+          @keyframes marquee { 0% { transform: translateX(0) } 100% { transform: translateX(-50%) } }
+          .trust-marquee { animation: marquee 30s linear infinite; }
+          .trust-marquee:hover { animation-play-state: paused; }
+          @media (prefers-reduced-motion: reduce) { .trust-marquee { animation: none; } }
+        `}</style>
         <div className="mx-auto max-w-[1080px] px-6">
           <p className="text-center text-xs font-medium uppercase tracking-wide mb-5" style={{ color: "var(--muted-foreground)", fontFamily: "'A2Z', sans-serif", letterSpacing: "0.08em", opacity: 0.7 }}>
             Trusted by small businesses everywhere
           </p>
-          <div className="flex flex-wrap justify-center gap-3 sm:gap-8">
-            {["Caf\u00e9", "Brewery", "Restaurant", "Office", "Factory"].map((name) => (
-              <div key={name} className="flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800" style={{ width: "100px", height: "40px" }}>
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400" style={{ fontFamily: "'A2Z', sans-serif" }}>{name}</span>
-              </div>
-            ))}
+        </div>
+        <div className="relative">
+          <div className="trust-marquee flex gap-4 w-max">
+            {[...Array(2)].map((_, setIdx) =>
+              ["Caf\u00e9", "Brewery", "Restaurant", "Office", "Factory", "Salon", "Clinic", "Warehouse"].map((name) => (
+                <div key={`${setIdx}-${name}`} className="flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-6 py-2.5 shrink-0">
+                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap" style={{ fontFamily: "'A2Z', sans-serif" }}>{name}</span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -351,7 +379,7 @@ export default function HomePage() {
           <div className="grid gap-8 md:grid-cols-3">
             {[{ value: "30s", desc: "To generate a full SOP" }, { value: "90%", desc: "Faster than manual writing" }, { value: "0", desc: "Knowledge lost to turnover" }].map((s) => (
               <div key={s.value} className="text-center">
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "2.5rem", fontWeight: 700, color: "var(--foreground)", letterSpacing: "-0.02em", lineHeight: 1 }}>{s.value}</div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "2.5rem", fontWeight: 800, color: "var(--foreground)", letterSpacing: "-0.02em", lineHeight: 1 }}>{s.value}</div>
                 <p className="mt-2 text-xs mx-auto" style={{ color: "var(--foreground)", opacity: 0.55, maxWidth: "220px" }}>{s.desc}</p>
               </div>
             ))}
@@ -363,7 +391,7 @@ export default function HomePage() {
       <section id="features" className="mx-auto max-w-[1080px] px-6 py-24 sm:py-32 lg:py-40">
         <div className="max-w-lg">
           <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: "'A2Z', sans-serif", letterSpacing: "0.08em" }}>Features</p>
-          <h2 className="mt-3" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(1.75rem, 3vw, 2.5rem)", fontWeight: 700, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>Built for how small teams actually work</h2>
+          <h2 className="mt-3" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(1.75rem, 3vw, 2.5rem)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>Built for how small teams actually work</h2>
         </div>
         <div className="mt-24 space-y-24 lg:space-y-32">
           {[
@@ -375,7 +403,7 @@ export default function HomePage() {
             <div key={feature.label} className={`flex flex-col gap-8 lg:flex-row lg:gap-16 lg:items-stretch rounded-2xl ${i % 2 === 1 ? "lg:flex-row-reverse" : ""} ${i % 2 === 0 ? "bg-gray-50/60 dark:bg-gray-900/20 p-6 lg:p-10 -mx-6 lg:-mx-10" : ""}`}>
               <div className="flex-1 lg:max-w-md flex flex-col justify-center">
                 <p className="text-xs font-medium uppercase tracking-wide" style={{ color: feature.accent, fontFamily: "'A2Z', sans-serif", letterSpacing: "0.08em" }}>{feature.label}</p>
-                <h3 className="mt-3 whitespace-pre-line" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(1.5rem, 2.5vw, 2rem)", fontWeight: 700, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>{feature.headline}</h3>
+                <h3 className="mt-3 whitespace-pre-line" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(1.5rem, 2.5vw, 2rem)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>{feature.headline}</h3>
                 <p className="mt-4 text-sm leading-relaxed" style={{ color: "var(--foreground)", opacity: 0.6, lineHeight: 1.8 }}>{feature.body}</p>
               </div>
               <div className="flex-1 rounded-lg min-h-[280px]" style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", overflow: "hidden" }}>
@@ -391,7 +419,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-[1080px] px-6 py-24 sm:py-32">
           <div className="max-w-lg mb-14">
             <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: "'A2Z', sans-serif", letterSpacing: "0.08em" }}>Testimonials</p>
-            <h2 className="mt-3" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(1.75rem, 3vw, 2.5rem)", fontWeight: 700, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>What our users are saying</h2>
+            <h2 className="mt-3" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(1.75rem, 3vw, 2.5rem)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>What our users are saying</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
@@ -439,7 +467,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-[1080px] px-6 py-24 sm:py-32 lg:py-40">
           <div className="max-w-lg">
             <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: "'A2Z', sans-serif", letterSpacing: "0.08em" }}>How it works</p>
-            <h2 className="mt-3" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(1.75rem, 3vw, 2.5rem)", fontWeight: 700, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>From idea to deployed manual in under a minute</h2>
+            <h2 className="mt-3" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(1.75rem, 3vw, 2.5rem)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>From idea to deployed manual in under a minute</h2>
           </div>
           <div className="mt-16 grid gap-0 divide-y" style={{ borderColor: "var(--border)" }}>
             {[
@@ -450,7 +478,7 @@ export default function HomePage() {
               <div key={item.step} className="flex items-center gap-8 py-10 sm:py-12">
                 <div className="shrink-0" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "13px", fontWeight: 500, color: "#4A6CF7", opacity: 0.6 }}>{item.step}</div>
                 <div className="flex-1">
-                  <h3 style={{ fontFamily: "'A2Z', sans-serif", fontSize: "20px", fontWeight: 600, letterSpacing: "-0.01em", color: "var(--foreground)" }}>{item.title}</h3>
+                  <h3 style={{ fontFamily: "'A2Z', sans-serif", fontSize: "20px", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--foreground)" }}>{item.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed max-w-md" style={{ color: "var(--foreground)", opacity: 0.6, lineHeight: 1.7 }}>{item.desc}</p>
                 </div>
                 <div className="hidden sm:flex shrink-0 items-center justify-center" style={{ width: "100px", height: "100px" }}>
@@ -467,7 +495,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-[1080px] px-6 py-24 sm:py-32 lg:py-40">
           <div className="max-w-lg">
             <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: "'A2Z', sans-serif", letterSpacing: "0.08em" }}>Pricing</p>
-            <h2 className="mt-3" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(1.75rem, 3vw, 2.5rem)", fontWeight: 700, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>Simple, transparent pricing</h2>
+            <h2 className="mt-3" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(1.75rem, 3vw, 2.5rem)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>Simple, transparent pricing</h2>
             <p className="mt-3 text-sm" style={{ color: "var(--muted-foreground)" }}>You subscribe. Your whole team uses it free.</p>
           </div>
           <div className="mt-14"><PricingToggle /></div>
@@ -480,7 +508,7 @@ export default function HomePage() {
       <section className="relative overflow-hidden" style={{ backgroundColor: "var(--card)" }}>
         <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2" style={{ width: "800px", height: "400px", background: "radial-gradient(ellipse at center, rgba(74,108,247,0.08) 0%, transparent 70%)" }} />
         <div className="relative mx-auto max-w-[1080px] px-6 py-24 sm:py-28 text-center">
-          <h2 style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(1.75rem, 3vw, 2.5rem)", fontWeight: 700, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
+          <h2 style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(1.75rem, 3vw, 2.5rem)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
             Your team is waiting for structure.
           </h2>
           <p className="mt-5 mx-auto max-w-md text-sm" style={{ color: "var(--foreground)", opacity: 0.6, lineHeight: 1.7 }}>Join hundreds of small businesses that stopped losing knowledge and started growing with BossBoard.</p>

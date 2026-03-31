@@ -204,7 +204,7 @@ export default function HomePage() {
       <style>{`
         @keyframes hero-float {
           0%, 100% { transform: perspective(1200px) rotateY(-8deg) rotateX(2deg) translateY(0); }
-          50% { transform: perspective(1200px) rotateY(-8deg) rotateX(2deg) translateY(-8px); }
+          50% { transform: perspective(1200px) rotateY(-8deg) rotateX(2deg) translateY(-4px); }
         }
       `}</style>
       <section className="relative overflow-hidden">
@@ -230,8 +230,8 @@ export default function HomePage() {
             </div>
 
             {/* Right — 3D perspective mockup (desktop only) */}
-            <div className="hidden lg:block flex-1 min-w-0 max-w-full overflow-hidden">
-              <div style={{ animation: "hero-float 4s ease-in-out infinite", transformStyle: "preserve-3d", willChange: "transform" }}>
+            <div className="hidden lg:block flex-1 min-w-0 max-w-[90%] ml-auto overflow-hidden py-2">
+              <div className="lg:scale-[0.85] origin-right" style={{ animation: "hero-float 4s ease-in-out infinite", transformStyle: "preserve-3d", willChange: "transform", transformOrigin: "right center" }}>
                 <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 ring-1 ring-gray-100 dark:ring-gray-800" style={{ backgroundColor: "#ffffff" }}>
                   {/* Browser chrome */}
                   <div className="flex items-center gap-2 px-3.5 py-2.5" style={{ backgroundColor: "#f4f4f5", borderBottom: "1px solid #e4e4e7" }}>

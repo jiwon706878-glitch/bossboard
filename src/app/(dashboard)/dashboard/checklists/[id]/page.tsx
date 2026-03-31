@@ -128,7 +128,7 @@ export default function ChecklistDetailPage() {
           table: "checklists",
           filter: `id=eq.${checklistId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const updated = payload.new as Checklist;
           setChecklist(updated);
           setLastUpdated(new Date());

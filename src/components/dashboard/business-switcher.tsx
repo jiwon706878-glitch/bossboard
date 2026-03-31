@@ -12,18 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Building2 } from "lucide-react";
 
-interface Business {
-  id: string;
-  name: string;
-  type: string;
-  address: string | null;
-  google_place_id: string | null;
-  menu_or_services: string | null;
-  brand_tone: string | null;
-  target_customers: string | null;
-  competitive_advantage: string | null;
-  seasonal_promotions: string | null;
-}
+import type { Business } from "@/hooks/use-business";
 
 export function BusinessSwitcher() {
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -46,7 +35,7 @@ export function BusinessSwitcher() {
 
       const { data } = await supabase
         .from("businesses")
-        .select("id, name, type, address, google_place_id, menu_or_services, brand_tone, target_customers, competitive_advantage, seasonal_promotions")
+        .select("id, name, type, address, google_place_id, plan, language, timezone, menu_or_services, brand_tone, target_customers, competitive_advantage, seasonal_promotions")
         .eq("user_id", user.id)
         .order("created_at");
 
@@ -56,7 +45,7 @@ export function BusinessSwitcher() {
           setCurrentBusiness(data[0]);
         } else {
           // Verify cached business still belongs to this user
-          const fresh = data.find((b) => b.id === currentBusiness.id);
+          const fresh = data.find((b: any) => b.id === currentBusiness.id);
           if (fresh && JSON.stringify(fresh) !== JSON.stringify(currentBusiness)) {
             setCurrentBusiness(fresh);
           } else if (!fresh) {

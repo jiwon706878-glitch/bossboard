@@ -9,6 +9,7 @@ import { TodayChecklists } from "@/components/dashboard/today-checklists";
 import { TodayTodos } from "@/components/dashboard/today-todos";
 import { StatsSection } from "@/components/dashboard/stats-section";
 import { FeedbackCard } from "@/components/dashboard/feedback-card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export default function DashboardPage() {
@@ -72,7 +73,12 @@ export default function DashboardPage() {
       <TodayChecklists checklists={todayChecklists} />
       <TodayTodos todos={todayTodos} todoText={todoText} setTodoText={setTodoText} addingTodo={addingTodo} onAddTodo={handleAddTodo} onToggleTodo={handleToggleTodo} onDeleteTodo={handleDeleteTodo} />
       <StatsSection totalSops={totalSops} publishedSops={publishedSops} draftSops={draftSops} teamCount={teamCount} creditsUsed={creditsUsed} creditsLimit={creditsLimit} unlimitedCredits={unlimitedCredits} />
-      <FeedbackCard />
+      <Card className="border bg-card">
+        <CardContent className="py-4">
+          <p className="text-xs font-medium text-muted-foreground mb-2">Have feedback or suggestions?</p>
+          <FeedbackCard />
+        </CardContent>
+      </Card>
     </div>
   );
 }

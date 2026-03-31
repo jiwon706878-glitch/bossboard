@@ -1,12 +1,27 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, memo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { plans, type PlanId } from "@/config/plans";
+import {
+  fetchCurrentUser,
+  fetchProfile,
+  fetchMonthlyUsage,
+  userKeys,
+  usageKeys,
+} from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   LayoutDashboard,
   CheckSquare,
@@ -14,6 +29,7 @@ import {
   CalendarDays,
   NotebookPen,
   MessageSquare,
+  MessageSquarePlus,
   Users,
   Settings,
   Activity,
@@ -22,6 +38,7 @@ import {
 import { toast } from "sonner";
 import { useBusinessStore } from "@/hooks/use-business";
 import { FolderTree } from "@/components/sops/folder-tree";
+import { FeedbackCard } from "@/components/dashboard/feedback-card";
 
 const navLinks = [
   { key: "checklists", href: "/dashboard/checklists", label: "Checklists", icon: CheckSquare },
@@ -33,7 +50,7 @@ const navLinks = [
   { key: "settings", href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
-function NavLink({
+const NavLink = memo(function NavLink({
   href,
   label,
   icon: Icon,
@@ -61,74 +78,56 @@ function NavLink({
       </Button>
     </Link>
   );
-}
+});
 
 export function DashboardSidebar({ className }: { className?: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
-  const [userName, setUserName] = useState("");
-  const [creditsUsed, setCreditsUsed] = useState(0);
-  const [creditsLimit, setCreditsLimit] = useState(30);
-  const [unlimited, setUnlimited] = useState(false);
-  const [hasApiKeys, setHasApiKeys] = useState(false);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    async function load() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+  // Shared queries — same cache as dashboard page
+  const { data: user } = useQuery({
+    queryKey: userKeys.current,
+    queryFn: fetchCurrentUser,
+    retry: false,
+  });
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name, plan_id")
-        .eq("id", user.id)
-        .single();
+  const userId = user?.id;
 
-      const name = profile?.full_name || user.email?.split("@")[0] || "User";
-      setUserName(name);
+  const { data: profile } = useQuery({
+    queryKey: userKeys.profile(userId ?? ""),
+    queryFn: () => fetchProfile(userId!),
+    enabled: !!userId,
+  });
 
-      const planId = (profile?.plan_id as PlanId) ?? "free";
-      const plan = plans[planId];
-      const limit = plan.limits.aiCredits;
-      if (limit === -1) {
-        setUnlimited(true);
-      } else {
-        setCreditsLimit(limit);
-      }
+  const { data: monthlyUsage = 0 } = useQuery({
+    queryKey: usageKeys.monthly(userId ?? ""),
+    queryFn: () => fetchMonthlyUsage(userId!),
+    enabled: !!userId,
+  });
 
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const { data: usage } = await supabase
-        .from("ai_usage")
-        .select("credits_used")
-        .eq("user_id", user.id)
-        .gte("created_at", startOfMonth.toISOString());
+  // Derived values
+  const userName = profile?.full_name || user?.email?.split("@")[0] || "";
+  const planId = (profile?.plan_id as PlanId) ?? "free";
+  const plan = plans[planId];
+  const creditsLimit = plan.limits.aiCredits;
+  const unlimited = creditsLimit === -1;
+  const creditsUsed = monthlyUsage;
+  const developerMode = profile?.developer_mode ?? false;
 
-      const total = usage?.reduce((sum, row) => sum + row.credits_used, 0) ?? 0;
-      setCreditsUsed(total);
+  const remaining = (unlimited ? 0 : creditsLimit) - creditsUsed;
+  const progressPct = unlimited ? 0 : Math.min(100, (creditsUsed / creditsLimit) * 100);
+  const initial = userName ? userName.charAt(0).toUpperCase() : "";
 
-      // Check if user has any API keys
-      const { count } = await supabase
-        .from("api_keys")
-        .select("id", { count: "exact", head: true });
-      setHasApiKeys((count ?? 0) > 0);
-    }
-    load();
-  }, [supabase]);
-
-  async function handleLogout() {
+  const handleLogout = useCallback(async () => {
     useBusinessStore.getState().clear();
+    queryClient.clear();
     await supabase.auth.signOut();
     toast.success("Logged out");
     router.push("/login");
     router.refresh();
-  }
-
-  const remaining = creditsLimit - creditsUsed;
-  const progressPct = unlimited ? 0 : Math.min(100, (creditsUsed / creditsLimit) * 100);
-  const initial = userName.charAt(0).toUpperCase();
+  }, [supabase, router, queryClient]);
 
   return (
     <aside
@@ -198,14 +197,33 @@ export function DashboardSidebar({ className }: { className?: string }) {
           {navLinks.map(({ key, ...link }) => (
             <NavLink key={key} {...link} pathname={pathname} />
           ))}
-          {hasApiKeys && (
+          {developerMode && (
             <NavLink href="/dashboard/agent-activity" label="Agent Activity" icon={Activity} pathname={pathname} />
           )}
         </div>
       </nav>
 
-      {/* Bottom: Log out */}
-      <div className="border-t p-3">
+      {/* Bottom: Feedback + Log out */}
+      <div className="border-t p-3 space-y-1">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 text-muted-foreground"
+            >
+              <MessageSquarePlus className="h-4 w-4" />
+              Feedback
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right">
+            <SheetHeader>
+              <SheetTitle>Send Feedback</SheetTitle>
+            </SheetHeader>
+            <div className="pt-4">
+              <FeedbackCard />
+            </div>
+          </SheetContent>
+        </Sheet>
         <Button
           variant="ghost"
           className="w-full justify-start gap-3 text-muted-foreground"

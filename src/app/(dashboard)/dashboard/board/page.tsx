@@ -115,7 +115,7 @@ export default function BoardPage() {
       return;
     }
 
-    const postIds = postsData.map((p) => p.id);
+    const postIds = postsData.map((p: any) => p.id);
 
     // Parallel fetches
     const [
@@ -127,13 +127,13 @@ export default function BoardPage() {
     ] = await Promise.all([
       supabase.from("board_comments").select("post_id").in("post_id", postIds),
       supabase.from("board_post_reads").select("post_id").in("post_id", postIds),
-      supabase.from("profiles").select("id, full_name").in("id", [...new Set(postsData.map((p) => p.user_id))]),
+      supabase.from("profiles").select("id, full_name").in("id", [...new Set(postsData.map((p: any) => p.user_id))]),
       supabase.from("poll_options").select("id, post_id, option_text, sort_order").in("post_id", postIds).order("sort_order"),
       user ? supabase.from("poll_votes").select("option_id, user_id").eq("user_id", user.id) : Promise.resolve({ data: [] }),
     ]);
 
     // Count votes per option
-    const optionIds = (pollOptions ?? []).map((o) => o.id);
+    const optionIds = (pollOptions ?? []).map((o: any) => o.id);
     const { data: allVotes } = optionIds.length > 0
       ? await supabase.from("poll_votes").select("option_id").in("option_id", optionIds)
       : { data: [] };
@@ -143,7 +143,7 @@ export default function BoardPage() {
       voteCounts.set(v.option_id, (voteCounts.get(v.option_id) ?? 0) + 1);
     }
 
-    const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+    const nameMap = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
     const commentCountMap = new Map<string, number>();
     for (const c of commentCounts ?? []) {
       commentCountMap.set(c.post_id, (commentCountMap.get(c.post_id) ?? 0) + 1);
@@ -153,18 +153,18 @@ export default function BoardPage() {
       readCountMap.set(r.post_id, (readCountMap.get(r.post_id) ?? 0) + 1);
     }
 
-    const userVotedOptions = new Set((pollVotes ?? []).map((v) => v.option_id));
+    const userVotedOptions = new Set((pollVotes ?? []).map((v: any) => v.option_id));
 
-    const enriched: Post[] = postsData.map((p) => {
+    const enriched: Post[] = postsData.map((p: any) => {
       const opts = (pollOptions ?? [])
-        .filter((o) => o.post_id === p.id)
-        .map((o) => ({
+        .filter((o: any) => o.post_id === p.id)
+        .map((o: any) => ({
           id: o.id,
           option_text: o.option_text,
           vote_count: voteCounts.get(o.id) ?? 0,
         }));
 
-      const votedOpt = opts.find((o) => userVotedOptions.has(o.id));
+      const votedOpt = opts.find((o: any) => userVotedOptions.has(o.id));
 
       return {
         id: p.id,
@@ -293,13 +293,13 @@ export default function BoardPage() {
       .order("created_at");
 
     if (data && data.length > 0) {
-      const userIds = [...new Set(data.filter((c) => !c.is_anonymous).map((c) => c.user_id))];
+      const userIds = [...new Set(data.filter((c: any) => !c.is_anonymous).map((c: any) => c.user_id))];
       const { data: profiles } = userIds.length > 0
         ? await supabase.from("profiles").select("id, full_name").in("id", userIds)
         : { data: [] };
-      const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+      const nameMap = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
 
-      setComments(data.map((c) => ({
+      setComments(data.map((c: any) => ({
         ...c,
         author_name: c.is_anonymous ? null : nameMap.get(c.user_id) ?? null,
       })));

@@ -104,6 +104,6 @@ export function createSuggestionItems(businessId: string | undefined) {
     }
 
     const { data } = await q;
-    return (data ?? []).map((s) => ({ id: s.id, title: s.title }));
+    return (data ?? []).map((s: any) => ({ id: s.id, title: s.title }));
   };
 }

@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Menu, Search } from "lucide-react";
+import { Menu, Search, MessageSquarePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
+  SheetHeader,
   SheetTrigger,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -14,6 +15,7 @@ import { DashboardSidebar } from "./sidebar";
 import { BusinessSwitcher } from "./business-switcher";
 import { NotificationBell } from "./notification-bell";
 import { SearchModal } from "./search-modal";
+import { FeedbackCard } from "./feedback-card";
 
 export function DashboardTopbar() {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -69,6 +71,22 @@ export function DashboardTopbar() {
             <Search className="h-4 w-4" />
           </Button>
           <NotificationBell />
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MessageSquarePlus className="h-4 w-4" />
+                <span className="sr-only">Send feedback</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right">
+              <SheetHeader>
+                <SheetTitle>Send Feedback</SheetTitle>
+              </SheetHeader>
+              <div className="pt-4">
+                <FeedbackCard />
+              </div>
+            </SheetContent>
+          </Sheet>
           <ThemeToggle />
         </div>
       </header>

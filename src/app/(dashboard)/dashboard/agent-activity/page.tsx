@@ -43,7 +43,7 @@ export default function AgentActivityPage() {
     }
 
     // Resolve API key names
-    const keyIds = [...new Set(logData.map((l) => l.api_key_id).filter(Boolean))];
+    const keyIds = [...new Set(logData.map((l: any) => l.api_key_id).filter(Boolean))];
     const keyMap: ApiKeyMap = {};
     if (keyIds.length > 0) {
       const { data: keys } = await supabase
@@ -55,7 +55,7 @@ export default function AgentActivityPage() {
       }
     }
 
-    const enriched: LogEntry[] = logData.map((l) => ({
+    const enriched: LogEntry[] = logData.map((l: any) => ({
       ...l,
       key_name: l.api_key_id ? keyMap[l.api_key_id] || "Unknown key" : "—",
     }));

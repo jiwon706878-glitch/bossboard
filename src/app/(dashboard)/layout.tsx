@@ -3,8 +3,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { DashboardTopbar } from "@/components/dashboard/topbar";
-import { StickyNote } from "@/components/dashboard/sticky-note";
-import { PageContextMenu } from "@/components/dashboard/page-context-menu";
+import { LazyOverlays } from "@/components/dashboard/lazy-overlays";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -36,8 +35,7 @@ export default async function DashboardLayout({
         <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6 animate-fade-in">
           {children}
         </main>
-        <StickyNote />
-        <PageContextMenu />
+        <LazyOverlays />
       </div>
     </div>
   );

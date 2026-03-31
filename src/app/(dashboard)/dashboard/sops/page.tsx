@@ -46,7 +46,7 @@ export default function SOPsPage() {
     if (!currentBusiness) return;
     const [, allFolders] = await Promise.all([sops.fetchSops(), foldersHook.fetchFolders()]);
     if (!selectedFolder && allFolders && allFolders.length > 0) {
-      const roots = allFolders.filter((f) => !f.parent_id);
+      const roots = allFolders.filter((f: any) => !f.parent_id);
       if (roots.length > 0) setSelectedFolder(roots[0].id);
     }
   }, [currentBusiness, sops.fetchSops, foldersHook.fetchFolders]);

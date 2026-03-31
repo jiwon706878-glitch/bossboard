@@ -1,10 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, differenceInDays } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { plans, type PlanId } from "@/config/plans";
+import {
+  fetchCurrentUser,
+  fetchProfile,
+  fetchMonthlyUsage,
+  userKeys,
+  todoKeys,
+  usageKeys,
+} from "@/lib/queries";
 import { toast } from "sonner";
 
 interface ChecklistRow {
@@ -28,140 +37,310 @@ interface TodoRow {
 
 export type { ChecklistRow, TodoRow };
 
-export function useDashboard() {
-  const supabase = createClient();
-  const { currentBusiness } = useBusinessStore();
+const supabase = createClient();
+const todayStr = format(new Date(), "yyyy-MM-dd");
 
-  const [userName, setUserName] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [overdueChecklists, setOverdueChecklists] = useState<ChecklistRow[]>([]);
-  const [todayChecklists, setTodayChecklists] = useState<ChecklistRow[]>([]);
-  const [overdueTodos, setOverdueTodos] = useState<TodoRow[]>([]);
-  const [todayTodos, setTodayTodos] = useState<TodoRow[]>([]);
+// ─── Fetch functions (dashboard-specific) ─────────
+
+async function fetchDashboardChecklists(businessId: string) {
+  const { data, error } = await supabase
+    .from("checklists")
+    .select("id, title, status, due_date, items, assigned_to")
+    .eq("business_id", businessId)
+    .neq("status", "completed")
+    .order("due_date");
+  if (error) throw error;
+  return data ?? [];
+}
+
+async function fetchDashboardTodos(userId: string) {
+  const { data, error } = await supabase
+    .from("todos")
+    .select("id, text, completed, completed_at, due_date, priority, created_at")
+    .eq("user_id", userId)
+    .eq("completed", false)
+    .order("sort_order")
+    .limit(30);
+  if (error) throw error;
+  return data ?? [];
+}
+
+async function fetchDashboardSopStats(businessId: string) {
+  const { data, error } = await supabase
+    .from("sops")
+    .select("id, status, updated_at")
+    .eq("business_id", businessId)
+    .is("deleted_at", null);
+  if (error) throw error;
+  const sops = data ?? [];
+  const staleThreshold = Date.now() - 90 * 24 * 60 * 60 * 1000;
+  return {
+    total: sops.length,
+    draft: sops.filter((s: any) => s.status === "draft").length,
+    published: sops.filter((s: any) => s.status === "published").length,
+    stale: sops.filter((s: any) => s.updated_at && new Date(s.updated_at).getTime() < staleThreshold).length,
+  };
+}
+
+async function generateRecurringChecklists(businessId: string) {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+  const { data: templates } = await supabase
+    .from("checklists")
+    .select("id, sop_id, title, items, recurrence_type, recurrence_days, last_generated_at, created_by")
+    .eq("business_id", businessId)
+    .eq("is_template", true)
+    .neq("recurrence_type", "none");
+
+  if (!templates) return;
+  for (const tmpl of templates) {
+    const lastGen = tmpl.last_generated_at ? new Date(tmpl.last_generated_at) : null;
+    let shouldGenerate = false;
+    if (!lastGen) shouldGenerate = true;
+    else if (tmpl.recurrence_type === "daily" && lastGen < startOfDay) shouldGenerate = true;
+    else if (tmpl.recurrence_type === "weekly" && differenceInDays(new Date(), lastGen) >= 7) shouldGenerate = true;
+    else if (tmpl.recurrence_type === "monthly" && differenceInDays(new Date(), lastGen) >= 28) shouldGenerate = true;
+    if (shouldGenerate) {
+      await supabase.from("checklists").insert({
+        business_id: businessId,
+        sop_id: tmpl.sop_id,
+        title: tmpl.title,
+        items: tmpl.items,
+        status: "pending",
+        due_date: todayStr,
+        created_by: tmpl.created_by,
+      });
+      await supabase.from("checklists").update({ last_generated_at: new Date().toISOString() }).eq("id", tmpl.id);
+    }
+  }
+}
+
+// ─── Query keys ───────────────────────────────────
+
+const dashboardKeys = {
+  checklists: (businessId: string) => ["dashboard", "checklists", businessId] as const,
+  todos: (userId: string) => ["dashboard", "todos", userId] as const,
+  sopStats: (businessId: string) => ["dashboard", "sopStats", businessId] as const,
+  recurring: (businessId: string) => ["dashboard", "recurring", businessId] as const,
+};
+
+// ─── Hook ─────────────────────────────────────────
+
+export function useDashboard() {
+  const queryClient = useQueryClient();
+  const { currentBusiness } = useBusinessStore();
+  const businessId = currentBusiness?.id;
+
+  // Local UI state only
   const [todoText, setTodoText] = useState("");
   const [addingTodo, setAddingTodo] = useState(false);
-  const [totalSops, setTotalSops] = useState(0);
-  const [draftSops, setDraftSops] = useState(0);
-  const [publishedSops, setPublishedSops] = useState(0);
-  const [staleSops, setStaleSops] = useState(0);
-  const [teamCount, setTeamCount] = useState(0);
-  const [creditsUsed, setCreditsUsed] = useState(0);
-  const [creditsLimit, setCreditsLimit] = useState(30);
-  const [unlimitedCredits, setUnlimitedCredits] = useState(false);
 
-  const todayStr = format(new Date(), "yyyy-MM-dd");
+  // Core queries — fire in parallel, share cache with sidebar
+  const { data: user } = useQuery({
+    queryKey: userKeys.current,
+    queryFn: fetchCurrentUser,
+    retry: false,
+  });
 
-  useEffect(() => {
-    async function loadDashboard() {
-      setLoading(true);
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+  const userId = user?.id;
 
-        const { data: profile } = await supabase.from("profiles").select("full_name, plan_id").eq("id", user.id).single();
-        setUserName(profile?.full_name || user.email?.split("@")[0] || "User");
+  const { data: profile } = useQuery({
+    queryKey: userKeys.profile(userId ?? ""),
+    queryFn: () => fetchProfile(userId!),
+    enabled: !!userId,
+  });
 
-        const planId = (profile?.plan_id as PlanId) ?? "free";
-        const plan = plans[planId];
-        const limit = plan.limits.aiCredits;
-        if (limit === -1) setUnlimitedCredits(true);
-        else setCreditsLimit(limit);
+  const { data: monthlyUsage = 0 } = useQuery({
+    queryKey: usageKeys.monthly(userId ?? ""),
+    queryFn: () => fetchMonthlyUsage(userId!),
+    enabled: !!userId,
+  });
 
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const { data: usage } = await supabase.from("ai_usage").select("credits_used").eq("user_id", user.id).gte("created_at", startOfMonth.toISOString());
-        setCreditsUsed(usage?.reduce((sum, r) => sum + r.credits_used, 0) ?? 0);
+  // Dashboard-specific queries
+  const { data: checklists = [], isLoading: checklistsLoading } = useQuery({
+    queryKey: dashboardKeys.checklists(businessId ?? ""),
+    queryFn: () => fetchDashboardChecklists(businessId!),
+    enabled: !!businessId,
+  });
 
-        const businessId = currentBusiness?.id;
-        if (!businessId) return;
+  const { data: todos = [], isLoading: todosLoading } = useQuery({
+    queryKey: dashboardKeys.todos(userId ?? ""),
+    queryFn: () => fetchDashboardTodos(userId!),
+    enabled: !!userId,
+  });
 
-        const { data: allChecklists } = await supabase.from("checklists").select("id, title, status, due_date, items, assigned_to").eq("business_id", businessId).neq("status", "completed").order("due_date");
-        if (allChecklists) {
-          const overdue: ChecklistRow[] = [];
-          const today: ChecklistRow[] = [];
-          for (const cl of allChecklists) {
-            if (!cl.due_date) { today.push(cl); continue; }
-            if (cl.due_date === todayStr) today.push(cl);
-            else if (cl.due_date < todayStr) overdue.push(cl);
-          }
-          setOverdueChecklists(overdue);
-          setTodayChecklists(today);
-        }
+  const { data: sopStats, isLoading: sopsLoading } = useQuery({
+    queryKey: dashboardKeys.sopStats(businessId ?? ""),
+    queryFn: () => fetchDashboardSopStats(businessId!),
+    enabled: !!businessId,
+  });
 
-        // Auto-generate recurring checklist instances
-        const startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0, 0);
-        const { data: recurringTemplates } = await supabase.from("checklists").select("id, sop_id, title, items, recurrence_type, recurrence_days, last_generated_at, created_by").eq("business_id", businessId).eq("is_template", true).neq("recurrence_type", "none");
-        if (recurringTemplates) {
-          for (const tmpl of recurringTemplates) {
-            const lastGen = tmpl.last_generated_at ? new Date(tmpl.last_generated_at) : null;
-            let shouldGenerate = false;
-            if (!lastGen) shouldGenerate = true;
-            else if (tmpl.recurrence_type === "daily" && lastGen < startOfDay) shouldGenerate = true;
-            else if (tmpl.recurrence_type === "weekly" && differenceInDays(new Date(), lastGen) >= 7) shouldGenerate = true;
-            else if (tmpl.recurrence_type === "monthly" && differenceInDays(new Date(), lastGen) >= 28) shouldGenerate = true;
-            if (shouldGenerate) {
-              await supabase.from("checklists").insert({ business_id: businessId, sop_id: tmpl.sop_id, title: tmpl.title, items: tmpl.items, status: "pending", due_date: todayStr, created_by: tmpl.created_by });
-              await supabase.from("checklists").update({ last_generated_at: new Date().toISOString() }).eq("id", tmpl.id);
-            }
-          }
-        }
+  // Auto-generate recurring checklists (fire-and-forget, runs once per mount)
+  useQuery({
+    queryKey: dashboardKeys.recurring(businessId ?? ""),
+    queryFn: () => generateRecurringChecklists(businessId!),
+    enabled: !!businessId,
+    staleTime: 5 * 60 * 1000, // only run every 5 min
+  });
 
-        const { data: todoData } = await supabase.from("todos").select("id, text, completed, completed_at, due_date, priority, created_at").eq("user_id", user.id).eq("completed", false).order("sort_order").limit(30);
-        if (todoData) {
-          setOverdueTodos(todoData.filter((t) => t.due_date && t.due_date < todayStr));
-          setTodayTodos(todoData.filter((t) => !t.due_date || t.due_date >= todayStr));
-        }
+  // Derived data
+  const userName = profile?.full_name || user?.email?.split("@")[0] || "";
+  const planId = (profile?.plan_id as PlanId) ?? "free";
+  const plan = plans[planId];
+  const creditsLimit = plan.limits.aiCredits;
+  const unlimitedCredits = creditsLimit === -1;
 
-        const { data: sops } = await supabase.from("sops").select("id, status, updated_at").eq("business_id", businessId).is("deleted_at", null);
-        if (sops) {
-          setTotalSops(sops.length);
-          setDraftSops(sops.filter((s) => s.status === "draft").length);
-          setPublishedSops(sops.filter((s) => s.status === "published").length);
-          const staleThreshold = Date.now() - 90 * 24 * 60 * 60 * 1000;
-          setStaleSops(sops.filter((s) => s.updated_at && new Date(s.updated_at).getTime() < staleThreshold).length);
-        }
+  const overdueChecklists = useMemo(
+    () => checklists.filter((cl: any) => cl.due_date && cl.due_date < todayStr),
+    [checklists]
+  );
+  const todayChecklists = useMemo(
+    () => checklists.filter((cl: any) => !cl.due_date || cl.due_date >= todayStr),
+    [checklists]
+  );
+  const overdueTodos = useMemo(
+    () => todos.filter((t: any) => t.due_date && t.due_date < todayStr),
+    [todos]
+  );
+  const todayTodos = useMemo(
+    () => todos.filter((t: any) => !t.due_date || t.due_date >= todayStr),
+    [todos]
+  );
 
-        // profiles table has no business_id column — count owner as 1 for now
-        setTeamCount(1);
-      } catch {
-        // Dashboard will show zeros
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadDashboard();
-  }, [supabase, currentBusiness?.id]);
+  const loading = !user || (!!businessId && (checklistsLoading || todosLoading || sopsLoading));
 
+  // ─── Mutations ────────────────────────────────────
+
+  const addTodoMutation = useMutation({
+    mutationFn: async (text: string) => {
+      const { data, error } = await supabase
+        .from("todos")
+        .insert({
+          business_id: businessId,
+          user_id: userId,
+          text: text.trim(),
+          due_date: todayStr,
+          priority: "normal",
+          sort_order: todayTodos.length,
+        })
+        .select("id, text, completed, completed_at, due_date, priority, created_at")
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onMutate: async (text) => {
+      await queryClient.cancelQueries({ queryKey: dashboardKeys.todos(userId!) });
+      const previous = queryClient.getQueryData(dashboardKeys.todos(userId!));
+      queryClient.setQueryData(dashboardKeys.todos(userId!), (old: any[]) => [
+        ...(old ?? []),
+        { id: `temp-${Date.now()}`, text: text.trim(), completed: false, completed_at: null, due_date: todayStr, priority: "normal", created_at: new Date().toISOString() },
+      ]);
+      return { previous };
+    },
+    onError: (_err, _text, context) => {
+      queryClient.setQueryData(dashboardKeys.todos(userId!), context?.previous);
+      toast.error("Failed to add todo");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.todos(userId!) });
+      // Also invalidate the dedicated todos page cache
+      queryClient.invalidateQueries({ queryKey: todoKeys.active(userId!) });
+    },
+  });
+
+  const toggleTodoMutation = useMutation({
+    mutationFn: async (todoId: string) => {
+      const { error } = await supabase
+        .from("todos")
+        .update({ completed: true, completed_at: new Date().toISOString() })
+        .eq("id", todoId);
+      if (error) throw error;
+    },
+    onMutate: async (todoId) => {
+      await queryClient.cancelQueries({ queryKey: dashboardKeys.todos(userId!) });
+      const previous = queryClient.getQueryData(dashboardKeys.todos(userId!));
+      queryClient.setQueryData(dashboardKeys.todos(userId!), (old: any[]) =>
+        (old ?? []).filter((t: any) => t.id !== todoId)
+      );
+      return { previous };
+    },
+    onError: (_err, _todoId, context) => {
+      queryClient.setQueryData(dashboardKeys.todos(userId!), context?.previous);
+    },
+    onSuccess: () => {
+      toast.success("Todo completed");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.todos(userId!) });
+      queryClient.invalidateQueries({ queryKey: todoKeys.active(userId!) });
+      queryClient.invalidateQueries({ queryKey: todoKeys.completed(userId!) });
+    },
+  });
+
+  const deleteTodoMutation = useMutation({
+    mutationFn: async (todoId: string) => {
+      const { error } = await supabase.from("todos").delete().eq("id", todoId);
+      if (error) throw error;
+    },
+    onMutate: async (todoId) => {
+      await queryClient.cancelQueries({ queryKey: dashboardKeys.todos(userId!) });
+      const previous = queryClient.getQueryData(dashboardKeys.todos(userId!));
+      queryClient.setQueryData(dashboardKeys.todos(userId!), (old: any[]) =>
+        (old ?? []).filter((t: any) => t.id !== todoId)
+      );
+      return { previous };
+    },
+    onError: (_err, _todoId, context) => {
+      queryClient.setQueryData(dashboardKeys.todos(userId!), context?.previous);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.todos(userId!) });
+      queryClient.invalidateQueries({ queryKey: todoKeys.active(userId!) });
+    },
+  });
+
+  // Stable handlers
   async function handleAddTodo() {
-    if (!todoText.trim() || !currentBusiness?.id) return;
+    if (!todoText.trim() || !businessId || !userId) return;
     setAddingTodo(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data, error } = await supabase.from("todos").insert({ business_id: currentBusiness.id, user_id: user?.id, text: todoText.trim(), due_date: todayStr, priority: "normal", sort_order: todayTodos.length }).select("id, text, completed, completed_at, due_date, priority, created_at").single();
-    if (error) toast.error(error.message);
-    else if (data) { setTodayTodos((prev) => [...prev, data]); setTodoText(""); }
+    try {
+      await addTodoMutation.mutateAsync(todoText);
+      setTodoText("");
+    } catch {
+      // error handled in mutation
+    }
     setAddingTodo(false);
   }
 
-  async function handleToggleTodo(todoId: string) {
-    await supabase.from("todos").update({ completed: true, completed_at: new Date().toISOString() }).eq("id", todoId);
-    setTodayTodos((prev) => prev.filter((t) => t.id !== todoId));
-    setOverdueTodos((prev) => prev.filter((t) => t.id !== todoId));
-    toast.success("Todo completed");
+  function handleToggleTodo(todoId: string) {
+    toggleTodoMutation.mutate(todoId);
   }
 
-  async function handleDeleteTodo(todoId: string) {
-    await supabase.from("todos").delete().eq("id", todoId);
-    setTodayTodos((prev) => prev.filter((t) => t.id !== todoId));
-    setOverdueTodos((prev) => prev.filter((t) => t.id !== todoId));
+  function handleDeleteTodo(todoId: string) {
+    deleteTodoMutation.mutate(todoId);
   }
 
   return {
-    userName, loading,
-    overdueChecklists, todayChecklists, overdueTodos, todayTodos,
-    todoText, setTodoText, addingTodo,
-    totalSops, draftSops, publishedSops, staleSops, teamCount,
-    creditsUsed, creditsLimit, unlimitedCredits,
-    handleAddTodo, handleToggleTodo, handleDeleteTodo,
+    userName,
+    loading,
+    overdueChecklists,
+    todayChecklists,
+    overdueTodos,
+    todayTodos,
+    todoText,
+    setTodoText,
+    addingTodo,
+    totalSops: sopStats?.total ?? 0,
+    draftSops: sopStats?.draft ?? 0,
+    publishedSops: sopStats?.published ?? 0,
+    staleSops: sopStats?.stale ?? 0,
+    teamCount: 1,
+    creditsUsed: monthlyUsage,
+    creditsLimit: unlimitedCredits ? -1 : creditsLimit,
+    unlimitedCredits,
+    handleAddTodo,
+    handleToggleTodo,
+    handleDeleteTodo,
   };
 }
+

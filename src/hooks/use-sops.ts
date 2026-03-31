@@ -40,9 +40,9 @@ export function useSops(businessId: string | undefined) {
         .from("sop_reads")
         .select("sop_id")
         .eq("user_id", user.id)
-        .in("sop_id", sopsData.map((s) => s.id));
-      const readIds = new Set((reads ?? []).map((r) => r.sop_id));
-      setAllSops(sopsData.map((s) => ({ ...s, isUnread: !readIds.has(s.id) })));
+        .in("sop_id", sopsData.map((s: any) => s.id));
+      const readIds = new Set((reads ?? []).map((r: any) => r.sop_id));
+      setAllSops(sopsData.map((s: any) => ({ ...s, isUnread: !readIds.has(s.id) })));
     } else {
       setAllSops(sopsData ?? []);
     }

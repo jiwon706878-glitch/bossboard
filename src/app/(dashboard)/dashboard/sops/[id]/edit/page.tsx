@@ -141,7 +141,7 @@ export default function EditSOPPage() {
         .order("created_at", { ascending: false });
 
       if (versions && versions.length > 3) {
-        const toDelete = versions.slice(3).map((v) => v.id);
+        const toDelete = versions.slice(3).map((v: any) => v.id);
         await supabase.from("sop_versions").delete().in("id", toDelete);
       }
     }

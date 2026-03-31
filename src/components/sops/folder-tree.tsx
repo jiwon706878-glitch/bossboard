@@ -418,7 +418,7 @@ export function FolderTree() {
     // Filter folders by permissions (owner/admin sees all)
     const folders = isOwner
       ? allFolders
-      : allFolders.filter((f) => {
+      : allFolders.filter((f: any) => {
           const visibleTo = (f.permissions as { visible_to?: string[] } | null)?.visible_to;
           if (!visibleTo || visibleTo.length === 0 || visibleTo.includes("all")) return true;
           return userId ? visibleTo.includes(userId) : false;

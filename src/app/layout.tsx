@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/shared/theme-provider";
 import { PaddleProvider } from "@/components/shared/paddle-provider";
+import { QueryProvider } from "@/providers/query-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -46,12 +47,14 @@ export default function RootLayout({
         className="antialiased"
       >
         <ThemeProvider>
-          <PaddleProvider>
-            <TooltipProvider>
-              {children}
-              <Toaster richColors position="bottom-right" />
-            </TooltipProvider>
-          </PaddleProvider>
+          <QueryProvider>
+            <PaddleProvider>
+              <TooltipProvider>
+                {children}
+                <Toaster richColors position="bottom-right" />
+              </TooltipProvider>
+            </PaddleProvider>
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>

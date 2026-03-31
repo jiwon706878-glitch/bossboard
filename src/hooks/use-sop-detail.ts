@@ -59,10 +59,10 @@ export function useSopDetail(sopId: string) {
 
     const { data: reads } = await supabase.from("sop_reads").select("user_id, signed").eq("sop_id", sopId);
     if (reads && reads.length > 0) {
-      const userIds = reads.map((r) => r.user_id);
+      const userIds = reads.map((r: any) => r.user_id);
       const { data: profiles } = await supabase.from("profiles").select("id, full_name").in("id", userIds);
-      const profileMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
-      setReadBy(reads.map((r) => ({ id: r.user_id, full_name: profileMap.get(r.user_id) ?? null, signed: r.signed ?? false })));
+      const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
+      setReadBy(reads.map((r: any) => ({ id: r.user_id, full_name: profileMap.get(r.user_id) ?? null, signed: r.signed ?? false })));
     }
 
     if (currentBusiness?.id) {

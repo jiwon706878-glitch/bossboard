@@ -192,7 +192,7 @@ export default function HomePage() {
       <section className="relative overflow-hidden">
         <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2" style={{ width: "900px", height: "600px", background: "radial-gradient(ellipse at center, rgba(74,108,247,0.08) 0%, transparent 70%)" }} />
         <div className="relative mx-auto max-w-[1080px] px-6 pt-16 pb-16 sm:pt-20 sm:pb-20 lg:pt-24 lg:pb-20">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:gap-12 overflow-hidden">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:gap-12 overflow-hidden lg:overflow-visible">
             {/* Left — text */}
             <div className="max-w-2xl lg:max-w-[480px] lg:flex-shrink-0">
               <p className="text-sm font-medium tracking-wide uppercase" style={{ color: "#4A6CF7", fontFamily: "'A2Z', sans-serif", letterSpacing: "0.08em" }}>The Operations Wiki for Small Business</p>
@@ -214,7 +214,7 @@ export default function HomePage() {
             {/* Right — 3D perspective mockup (desktop only) */}
             <div className="hidden lg:block flex-1 min-w-0 max-w-full overflow-hidden">
               <div style={{ animation: "hero-float 4s ease-in-out infinite", transformStyle: "preserve-3d", willChange: "transform" }}>
-                <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "#ffffff", boxShadow: "0 25px 60px -12px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.06)" }}>
+                <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-md" style={{ backgroundColor: "#ffffff" }}>
                   {/* Browser chrome */}
                   <div className="flex items-center gap-2 px-3.5 py-2.5" style={{ backgroundColor: "#f4f4f5", borderBottom: "1px solid #e4e4e7" }}>
                     <div className="flex gap-1.5">

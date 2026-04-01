@@ -13,7 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Search, ArrowUpDown, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { Search, ArrowUpDown, ChevronDown, ChevronUp, Trash2, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
@@ -103,6 +104,25 @@ export function FeedbackTable({ items: initialItems }: { items: FeedbackItem[] }
     });
   }
 
+  function handleExport() {
+    const exportData = filtered.map((f) => ({
+      "Date": new Date(f.created_at).toLocaleString("en-US", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }),
+      "User": f.user_name,
+      "Email": f.user_email,
+      "Business": f.business_name,
+      "Category": CATEGORY_LABELS[f.category] || f.category,
+      "Content": f.content,
+      "Read": f.read ? "Yes" : "No",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    ws["!cols"] = [{ wch: 18 }, { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 60 }, { wch: 6 }];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Feedback");
+    XLSX.writeFile(wb, `bossboard-feedback-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
   return (
     <Card>
       <CardContent className="pt-4 space-y-4">
@@ -128,6 +148,10 @@ export function FeedbackTable({ items: initialItems }: { items: FeedbackItem[] }
               <SelectItem value="feature">Feature Requests</SelectItem>
             </SelectContent>
           </Select>
+          <Button variant="outline" size="sm" className="h-9 gap-2" onClick={handleExport} disabled={filtered.length === 0}>
+            <Download className="h-3.5 w-3.5" />
+            Export
+          </Button>
         </div>
 
         {/* Table */}

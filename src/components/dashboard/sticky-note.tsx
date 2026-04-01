@@ -8,28 +8,40 @@ interface Note {
   text: string;
 }
 
+type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+
+const BUTTON_STYLES: Record<Corner, string> = {
+  "top-left": "fixed top-4 left-4 sm:top-6 sm:left-6 z-50",
+  "top-right": "fixed top-4 right-4 sm:top-6 sm:right-6 z-50",
+  "bottom-left": "fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-50",
+  "bottom-right": "fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50",
+};
+
+function getNotePosition(corner: Corner) {
+  switch (corner) {
+    case "top-left": return { top: 72, left: 16 };
+    case "top-right": return { top: 72, right: 16 };
+    case "bottom-left": return { bottom: 72, left: 16 };
+    case "bottom-right": return { bottom: 72, right: 16 };
+  }
+}
+
 export function StickyNote() {
   const [isOpen, setIsOpen] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
+  const [corner, setCorner] = useState<Corner>("bottom-right");
   const [notes, setNotes] = useState<Note[]>([]);
   const [input, setInput] = useState("");
-  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
-  const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const noteRef = useRef<HTMLDivElement>(null);
 
   // Load from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem("bossboard-sticky-notes");
       if (saved) setNotes(JSON.parse(saved));
-      const savedPos = localStorage.getItem("bossboard-sticky-pos");
-      if (savedPos) {
-        const parsed = JSON.parse(savedPos);
-        if (parsed && (parsed.x !== 0 || parsed.y !== 0)) setPosition(parsed);
-      }
+      const savedCorner = localStorage.getItem("bossboard-sticky-corner");
+      if (savedCorner) setCorner(savedCorner as Corner);
       if (localStorage.getItem("bossboard-sticky-hidden") === "true") setIsHidden(true);
     } catch {}
   }, []);
@@ -90,17 +102,9 @@ export function StickyNote() {
     setCtxMenu({ x: e.clientX, y: e.clientY });
   }
 
-  function setCornerPosition(corner: "top-left" | "top-right" | "bottom-left" | "bottom-right") {
-    const pad = 16;
-    let newPos: { x: number; y: number };
-    switch (corner) {
-      case "top-left": newPos = { x: pad, y: 80 }; break;
-      case "top-right": newPos = { x: window.innerWidth - 304, y: 80 }; break;
-      case "bottom-left": newPos = { x: pad, y: window.innerHeight - 400 }; break;
-      case "bottom-right": newPos = { x: window.innerWidth - 304, y: window.innerHeight - 400 }; break;
-    }
-    setPosition(newPos);
-    localStorage.setItem("bossboard-sticky-pos", JSON.stringify(newPos));
+  function setCornerPosition(c: Corner) {
+    setCorner(c);
+    localStorage.setItem("bossboard-sticky-corner", c);
     setCtxMenu(null);
   }
 
@@ -111,38 +115,6 @@ export function StickyNote() {
     window.dispatchEvent(new CustomEvent("bossboard-sticky-toggle", { detail: { hidden: true } }));
   }
 
-  // Drag title bar
-  function handleMouseDown(e: React.MouseEvent) {
-    const rect = noteRef.current?.getBoundingClientRect();
-    const currentX = rect?.left ?? 0;
-    const currentY = rect?.top ?? 0;
-    setIsDragging(true);
-    dragRef.current = { startX: e.clientX, startY: e.clientY, origX: currentX, origY: currentY };
-    if (!position) setPosition({ x: currentX, y: currentY });
-  }
-
-  useEffect(() => {
-    if (!isDragging) return;
-    function handleMouseMove(e: MouseEvent) {
-      if (!dragRef.current) return;
-      const dx = e.clientX - dragRef.current.startX;
-      const dy = e.clientY - dragRef.current.startY;
-      const newPos = {
-        x: Math.max(0, Math.min(window.innerWidth - 300, dragRef.current.origX + dx)),
-        y: Math.max(0, Math.min(window.innerHeight - 100, dragRef.current.origY + dy)),
-      };
-      setPosition(newPos);
-      localStorage.setItem("bossboard-sticky-pos", JSON.stringify(newPos));
-    }
-    function handleMouseUp() { setIsDragging(false); }
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isDragging]);
-
   if (isHidden) return null;
 
   if (!isOpen) {
@@ -152,7 +124,7 @@ export function StickyNote() {
           type="button"
           onClick={() => setIsOpen(true)}
           onContextMenu={handleContextMenu}
-          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-amber-500 text-white shadow-lg hover:bg-amber-600 transition-colors"
+          className={`${BUTTON_STYLES[corner]} flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-amber-500 text-white shadow-lg hover:bg-amber-600 transition-colors`}
           title="Quick Notes"
         >
           <StickyNoteIcon className="h-5 w-5" />
@@ -170,19 +142,17 @@ export function StickyNote() {
   return (
     <>
       <div
-        ref={noteRef}
         className="fixed z-50 rounded-lg border shadow-2xl w-[calc(100vw-2rem)] sm:w-72 max-w-sm"
         style={{
-          ...(position ? { left: position.x, top: position.y } : { bottom: 80, right: 16 }),
+          ...getNotePosition(corner),
           backgroundColor: "var(--card)",
           borderColor: "var(--border)",
         }}
       >
         {/* Title bar */}
         <div
-          onMouseDown={handleMouseDown}
           onContextMenu={handleContextMenu}
-          className="flex items-center justify-between rounded-t-lg border-b px-3 py-2 cursor-move select-none"
+          className="flex items-center justify-between rounded-t-lg border-b px-3 py-2 select-none"
           style={{ backgroundColor: "var(--muted)" }}
         >
           <div className="flex items-center gap-2 text-sm font-medium">
@@ -237,7 +207,7 @@ export function StickyNote() {
 
 const CtxMenuOverlay = React.forwardRef<HTMLDivElement, {
   ctxMenu: { x: number; y: number };
-  setCornerPosition: (corner: "top-left" | "top-right" | "bottom-left" | "bottom-right") => void;
+  setCornerPosition: (corner: Corner) => void;
   hideStickyNote: () => void;
 }>(function CtxMenuOverlay({ ctxMenu, setCornerPosition, hideStickyNote }, ref) {
   return (

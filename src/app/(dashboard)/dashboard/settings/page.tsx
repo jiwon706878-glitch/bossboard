@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
@@ -47,13 +47,8 @@ function getGroupedTimezones(): Record<string, TimezoneEntry[]> {
     const parts = tz.split("/");
     const region = parts[0];
     const city = parts.slice(1).join("/").replace(/_/g, " ");
-    return {
-      value: tz,
-      label: city || tz,
-      region,
-    };
+    return { value: tz, label: city || tz, region };
   });
-
   const grouped: Record<string, TimezoneEntry[]> = {};
   for (const z of zones) {
     if (!grouped[z.region]) grouped[z.region] = [];
@@ -68,10 +63,6 @@ interface NotificationSettings {
   board_posts?: boolean;
 }
 
-function FieldSkeleton() {
-  return <div className="h-10 animate-pulse rounded-md bg-muted" />;
-}
-
 export default function SettingsPage() {
   const supabase = createClient();
   const router = useRouter();
@@ -80,26 +71,27 @@ export default function SettingsPage() {
   const setCurrentBusiness = useBusinessStore((s) => s.setCurrentBusiness);
   const businessId = currentBusiness?.id;
 
-  // Queries — shared cache with sidebar/dashboard
+  // Queries with high staleTime — served from cache on revisit
   const { data: user } = useQuery({ queryKey: userKeys.current, queryFn: fetchCurrentUser, retry: false });
   const userId = user?.id;
 
-  const { data: profile, isLoading: profileLoading } = useQuery({
+  const { data: profile, isLoading: profileLoading, isFetching: profileFetching } = useQuery({
     queryKey: userKeys.profile(userId ?? ""),
     queryFn: () => fetchProfile(userId!),
     enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
   });
 
-  const { data: bizSettings, isLoading: bizLoading } = useQuery({
+  const { data: bizSettings, isLoading: bizLoading, isFetching: bizFetching } = useQuery({
     queryKey: settingsKeys.business(businessId ?? ""),
     queryFn: () => fetchBusinessSettings(businessId!),
     enabled: !!businessId,
+    staleTime: 5 * 60 * 1000,
   });
 
   const planId = (profile?.plan_id || "free") as PlanId;
   const plan = plans[planId];
   const isProOrAbove = planId === "pro" || planId === "business";
-  const dataLoaded = !profileLoading && (!businessId || !bizLoading);
   const detectedTz = typeof window !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "";
 
   // Form inputs: null = "show from cache", non-null = "user has edited"
@@ -138,20 +130,20 @@ export default function SettingsPage() {
     return result;
   }, [groupedTimezones, tzSearch]);
 
+  // ─── Save handlers with validation ──────────────
+
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
     if (!userId) return;
-    const nameToSave = fullNameInput ?? profile?.full_name ?? "";
+    const nameToSave = fullNameInput ?? profile?.full_name;
+    if (!nameToSave?.trim()) { toast.error("Name cannot be empty"); return; }
     setSavingProfile(true);
-
-    const { error } = await supabase.from("profiles").update({ full_name: nameToSave }).eq("id", userId);
-    if (error) {
-      toast.error(error.message);
-    } else {
+    const { error } = await supabase.from("profiles").update({ full_name: nameToSave.trim() }).eq("id", userId);
+    if (error) { toast.error(error.message); }
+    else {
       toast.success("Profile updated");
-      setFullNameInput(null); // reset to "show from cache"
-      queryClient.setQueryData(userKeys.profile(userId), (old: any) => ({ ...old, full_name: nameToSave }));
-      queryClient.invalidateQueries({ queryKey: userKeys.profile(userId) });
+      setFullNameInput(null);
+      queryClient.setQueryData(userKeys.profile(userId), (old: any) => ({ ...old, full_name: nameToSave.trim() }));
     }
     setSavingProfile(false);
   }
@@ -160,18 +152,16 @@ export default function SettingsPage() {
     e.preventDefault();
     if (!currentBusiness) return;
     const nameToSave = businessNameInput ?? currentBusiness.name;
+    if (!String(nameToSave).trim()) { toast.error("Business name cannot be empty"); return; }
     setSavingBusiness(true);
-
     const { data, error } = await supabase
       .from("businesses")
-      .update({ name: nameToSave })
+      .update({ name: String(nameToSave).trim() })
       .eq("id", currentBusiness.id)
       .select()
       .single();
-
-    if (error) {
-      toast.error(error.message);
-    } else {
+    if (error) { toast.error(error.message); }
+    else {
       toast.success("Business updated");
       setBusinessNameInput(null);
       if (data) setCurrentBusiness(data);
@@ -184,20 +174,16 @@ export default function SettingsPage() {
     e.preventDefault();
     if (!currentBusiness) return;
     setSavingLangRegion(true);
-
     const { error } = await supabase
       .from("businesses")
       .update({ language: displayLanguage, timezone: displayTimezone })
       .eq("id", currentBusiness.id);
-
-    if (error) {
-      toast.error(error.message);
-    } else {
+    if (error) { toast.error(error.message); }
+    else {
       toast.success("Language & region saved");
       setLanguageInput(null);
       setTimezoneInput(null);
       queryClient.setQueryData(settingsKeys.business(currentBusiness.id), (old: any) => ({ ...old, language: displayLanguage, timezone: displayTimezone }));
-      queryClient.invalidateQueries({ queryKey: settingsKeys.business(currentBusiness.id) });
     }
     setSavingLangRegion(false);
   }
@@ -207,13 +193,11 @@ export default function SettingsPage() {
     setSavingNotifications(true);
     const toSave = displayNotifications;
     const { error } = await supabase.from("profiles").update({ notification_settings: toSave }).eq("id", userId);
-    if (error) {
-      toast.error(error.message);
-    } else {
+    if (error) { toast.error(error.message); }
+    else {
       toast.success("Notification preferences saved");
       setNotificationsInput(null);
       queryClient.setQueryData(userKeys.profile(userId), (old: any) => ({ ...old, notification_settings: toSave }));
-      queryClient.invalidateQueries({ queryKey: userKeys.profile(userId) });
     }
     setSavingNotifications(false);
   }
@@ -223,13 +207,10 @@ export default function SettingsPage() {
     setDeveloperMode(enabled);
     setSavingDevMode(true);
     const { error } = await supabase.from("profiles").update({ developer_mode: enabled }).eq("id", userId);
-    if (error) {
-      toast.error(error.message);
-      setDeveloperMode(!enabled);
-    } else {
+    if (error) { toast.error(error.message); setDeveloperMode(!enabled); }
+    else {
       toast.success(enabled ? "Developer mode enabled" : "Developer mode disabled");
       queryClient.setQueryData(userKeys.profile(userId), (old: any) => ({ ...old, developer_mode: enabled }));
-      queryClient.invalidateQueries({ queryKey: userKeys.profile(userId) });
     }
     setSavingDevMode(false);
   }
@@ -238,32 +219,45 @@ export default function SettingsPage() {
     setNotificationsInput((prev) => ({ ...(prev ?? displayNotifications), [key]: value }));
   }
 
+  // ─── Full-page skeleton until data is loaded ────
+
+  if (!user || profileLoading || (businessId && bizLoading)) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Settings</h1>
+          <p className="text-muted-foreground">Manage your profile and business settings.</p>
+        </div>
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="rounded-lg border bg-card p-6 space-y-4">
+            <div className="h-5 w-32 animate-pulse rounded bg-muted" />
+            <div className="h-10 animate-pulse rounded bg-muted" />
+            <div className="h-9 w-24 animate-pulse rounded bg-muted" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // ─── Render ─────────────────────────────────────
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your profile and business settings.
-        </p>
+        <p className="text-muted-foreground">Manage your profile and business settings.</p>
       </div>
 
       {/* Card 1: Profile */}
       <Card>
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle>Profile</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={handleSaveProfile} className="space-y-4">
             <div className="space-y-2">
               <Label>Full Name</Label>
-              {!dataLoaded ? <FieldSkeleton /> : (
-                <Input
-                  value={displayFullName}
-                  onChange={(e) => setFullNameInput(e.target.value)}
-                />
-              )}
+              <Input value={displayFullName} onChange={(e) => setFullNameInput(e.target.value)} />
             </div>
-            <Button type="submit" disabled={savingProfile || !dataLoaded}>
+            <Button type="submit" disabled={savingProfile || profileFetching}>
               {savingProfile ? "Saving..." : "Save Profile"}
             </Button>
           </form>
@@ -272,21 +266,14 @@ export default function SettingsPage() {
 
       {/* Card 2: Business */}
       <Card>
-        <CardHeader>
-          <CardTitle>Business</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle>Business</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={handleSaveBusiness} className="space-y-4">
             <div className="space-y-2">
               <Label>Business Name</Label>
-              {!dataLoaded ? <FieldSkeleton /> : (
-                <Input
-                  value={displayBusinessName}
-                  onChange={(e) => setBusinessNameInput(e.target.value)}
-                />
-              )}
+              <Input value={displayBusinessName} onChange={(e) => setBusinessNameInput(e.target.value)} />
             </div>
-            <Button type="submit" disabled={savingBusiness || !currentBusiness || !dataLoaded}>
+            <Button type="submit" disabled={savingBusiness || !currentBusiness}>
               {savingBusiness ? "Saving..." : "Save Business"}
             </Button>
           </form>
@@ -297,68 +284,44 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Language & Region</CardTitle>
-          <CardDescription>
-            Set your default language and timezone for your workspace.
-          </CardDescription>
+          <CardDescription>Set your default language and timezone for your workspace.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSaveLangRegion} className="space-y-4">
             <div className="space-y-2">
               <Label>Default Language</Label>
-              {!dataLoaded ? <FieldSkeleton /> : (
-                <Select value={displayLanguage} onValueChange={setLanguageInput}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LANGUAGES.map((lang) => (
-                      <SelectItem key={lang.value} value={lang.value}>
-                        {lang.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+              <Select value={displayLanguage} onValueChange={setLanguageInput}>
+                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {LANGUAGES.map((lang) => (
+                    <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-
             <div className="space-y-2">
               <Label>Timezone</Label>
-              {!dataLoaded ? <FieldSkeleton /> : (
-                <Select value={displayTimezone} onValueChange={setTimezoneInput}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select timezone..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <div className="px-2 pb-2">
-                      <Input
-                        placeholder="Search timezones..."
-                        value={tzSearch}
-                        onChange={(e) => setTzSearch(e.target.value)}
-                        className="h-8 text-sm"
-                        onKeyDown={(e) => e.stopPropagation()}
-                      />
-                    </div>
-                    {Object.entries(filteredTimezones).map(([region, tzs]) => (
-                      <SelectGroup key={region}>
-                        <SelectLabel>{region}</SelectLabel>
-                        {tzs.map((tz) => (
-                          <SelectItem key={tz.value} value={tz.value}>
-                            {tz.label}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    ))}
-                    {Object.keys(filteredTimezones).length === 0 && (
-                      <p className="px-3 py-2 text-sm text-muted-foreground">
-                        No timezones found
-                      </p>
-                    )}
-                  </SelectContent>
-                </Select>
-              )}
+              <Select value={displayTimezone} onValueChange={setTimezoneInput}>
+                <SelectTrigger className="w-full"><SelectValue placeholder="Select timezone..." /></SelectTrigger>
+                <SelectContent>
+                  <div className="px-2 pb-2">
+                    <Input placeholder="Search timezones..." value={tzSearch} onChange={(e) => setTzSearch(e.target.value)} className="h-8 text-sm" onKeyDown={(e) => e.stopPropagation()} />
+                  </div>
+                  {Object.entries(filteredTimezones).map(([region, tzs]) => (
+                    <SelectGroup key={region}>
+                      <SelectLabel>{region}</SelectLabel>
+                      {tzs.map((tz) => (
+                        <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ))}
+                  {Object.keys(filteredTimezones).length === 0 && (
+                    <p className="px-3 py-2 text-sm text-muted-foreground">No timezones found</p>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
-
-            <Button type="submit" disabled={savingLangRegion || !currentBusiness || !dataLoaded}>
+            <Button type="submit" disabled={savingLangRegion || !currentBusiness || bizFetching}>
               {savingLangRegion ? "Saving..." : "Save"}
             </Button>
           </form>
@@ -369,67 +332,38 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Notifications</CardTitle>
-          <CardDescription>
-            Choose which email notifications you receive.
-          </CardDescription>
+          <CardDescription>Choose which email notifications you receive.</CardDescription>
         </CardHeader>
         <CardContent>
           {!isProOrAbove ? (
             <div className="flex items-center gap-3 rounded-md border border-dashed px-4 py-6 text-center">
               <Lock className="h-5 w-5 text-muted-foreground shrink-0" />
-              <p className="text-sm text-muted-foreground">
-                Upgrade to Pro to enable email notifications.
-              </p>
-            </div>
-          ) : !dataLoaded ? (
-            <div className="space-y-4">
-              <FieldSkeleton />
-              <FieldSkeleton />
-              <FieldSkeleton />
+              <p className="text-sm text-muted-foreground">Upgrade to Pro to enable email notifications.</p>
             </div>
           ) : (
             <div className="space-y-5">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label className="font-medium">Journal feedback</Label>
-                  <p className="text-xs text-muted-foreground">
-                    When a manager leaves feedback on your journal entry
-                  </p>
+                  <p className="text-xs text-muted-foreground">When a manager leaves feedback on your journal entry</p>
                 </div>
-                <Switch
-                  checked={displayNotifications.journal_feedback ?? false}
-                  onCheckedChange={(v) => updateNotification("journal_feedback", v)}
-                />
+                <Switch checked={displayNotifications.journal_feedback ?? false} onCheckedChange={(v) => updateNotification("journal_feedback", v)} />
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label className="font-medium">Checklist assignments</Label>
-                  <p className="text-xs text-muted-foreground">
-                    When a checklist is assigned to you
-                  </p>
+                  <p className="text-xs text-muted-foreground">When a checklist is assigned to you</p>
                 </div>
-                <Switch
-                  checked={displayNotifications.checklist_assignments ?? false}
-                  onCheckedChange={(v) => updateNotification("checklist_assignments", v)}
-                />
+                <Switch checked={displayNotifications.checklist_assignments ?? false} onCheckedChange={(v) => updateNotification("checklist_assignments", v)} />
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label className="font-medium">Board posts</Label>
-                  <p className="text-xs text-muted-foreground">
-                    When a new post is published to your team board
-                  </p>
+                  <p className="text-xs text-muted-foreground">When a new post is published to your team board</p>
                 </div>
-                <Switch
-                  checked={displayNotifications.board_posts ?? false}
-                  onCheckedChange={(v) => updateNotification("board_posts", v)}
-                />
+                <Switch checked={displayNotifications.board_posts ?? false} onCheckedChange={(v) => updateNotification("board_posts", v)} />
               </div>
-              <Button
-                type="button"
-                onClick={handleSaveNotifications}
-                disabled={savingNotifications}
-              >
+              <Button type="button" onClick={handleSaveNotifications} disabled={savingNotifications || profileFetching}>
                 {savingNotifications ? "Saving..." : "Save Notifications"}
               </Button>
             </div>
@@ -439,27 +373,15 @@ export default function SettingsPage() {
 
       {/* Card 5: Developer Mode */}
       <Card>
-        <CardHeader>
-          <CardTitle>Developer Mode</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle>Developer Mode</CardTitle></CardHeader>
         <CardContent>
-          {!dataLoaded ? (
-            <FieldSkeleton />
-          ) : (
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label className="font-medium">Enable Developer Mode</Label>
-                <p className="text-sm text-muted-foreground">
-                  Show API keys, MCP connection guide, and Agent Activity in your sidebar.
-                </p>
-              </div>
-              <Switch
-                checked={displayDevMode}
-                onCheckedChange={handleToggleDevMode}
-                disabled={savingDevMode}
-              />
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="font-medium">Enable Developer Mode</Label>
+              <p className="text-sm text-muted-foreground">Show API keys, MCP connection guide, and Agent Activity in your sidebar.</p>
             </div>
-          )}
+            <Switch checked={displayDevMode} onCheckedChange={handleToggleDevMode} disabled={savingDevMode} />
+          </div>
         </CardContent>
       </Card>
 

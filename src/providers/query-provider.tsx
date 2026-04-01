@@ -12,7 +12,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
             // Show cached data immediately, refresh in background
             staleTime: 2 * 60 * 1000, // Data is "fresh" for 2 minutes
             gcTime: 10 * 60 * 1000,   // Keep unused cache for 10 minutes
-            refetchOnWindowFocus: true, // Refresh when user returns to tab
+            refetchOnWindowFocus: false, // Prevents flicker/data loss on tab switch
             refetchOnMount: true,
             retry: 1,
           },

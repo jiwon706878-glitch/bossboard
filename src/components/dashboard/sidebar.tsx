@@ -91,6 +91,7 @@ export function DashboardSidebar({ className }: { className?: string }) {
     queryKey: userKeys.profile(userId ?? ""),
     queryFn: () => fetchProfile(userId!),
     enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: monthlyUsage = 0 } = useQuery({

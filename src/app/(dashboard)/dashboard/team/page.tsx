@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { useRoleStore } from "@/hooks/use-role";
 import { plans, type PlanId } from "@/config/plans";
-import { fetchCurrentUser, fetchTeamMembers, fetchPendingInvites, fetchSopStats, fetchMonthlyUsage, userKeys, teamKeys, sopKeys, usageKeys } from "@/lib/queries";
+import { fetchCurrentUser, fetchProfile, fetchTeamMembers, fetchPendingInvites, fetchSopStats, fetchMonthlyUsage, userKeys, teamKeys, sopKeys, usageKeys } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,13 +34,19 @@ export default function TeamPage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
 
-  const planId = (currentBusiness?.plan || "free") as PlanId;
-  const plan = plans[planId];
-  const maxMembers = plan?.limits?.teamMembers ?? 1;
-
   // Queries
   const { data: user } = useQuery({ queryKey: userKeys.current, queryFn: fetchCurrentUser, retry: false });
   const userId = user?.id;
+
+  const { data: profile } = useQuery({
+    queryKey: userKeys.profile(userId ?? ""),
+    queryFn: () => fetchProfile(userId!),
+    enabled: !!userId,
+  });
+
+  const planId = (profile?.plan_id || "free") as PlanId;
+  const plan = plans[planId];
+  const maxMembers = plan?.limits?.teamMembers ?? 1;
 
   // Load role on mount
   useQuery({ queryKey: ["role"], queryFn: () => { loadRole(); return null; }, staleTime: Infinity });

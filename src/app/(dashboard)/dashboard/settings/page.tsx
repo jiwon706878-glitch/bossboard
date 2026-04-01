@@ -80,10 +80,6 @@ export default function SettingsPage() {
   const setCurrentBusiness = useBusinessStore((s) => s.setCurrentBusiness);
   const businessId = currentBusiness?.id;
 
-  const planId = (currentBusiness?.plan || "free") as PlanId;
-  const plan = plans[planId];
-  const isProOrAbove = planId === "pro" || planId === "business";
-
   // Queries — shared cache with sidebar/dashboard
   const { data: user } = useQuery({ queryKey: userKeys.current, queryFn: fetchCurrentUser, retry: false });
   const userId = user?.id;
@@ -100,17 +96,28 @@ export default function SettingsPage() {
     enabled: !!businessId,
   });
 
+  const planId = (profile?.plan_id || "free") as PlanId;
+  const plan = plans[planId];
+  const isProOrAbove = planId === "pro" || planId === "business";
   const dataLoaded = !profileLoading && (!businessId || !bizLoading);
   const detectedTz = typeof window !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "";
 
-  // Initialize state from cache (instant on revisit), fall back to defaults
-  const [fullName, setFullName] = useState(() => profile?.full_name || "");
-  const [businessName, setBusinessName] = useState(() => currentBusiness?.name || "");
-  const [language, setLanguage] = useState(() => bizSettings?.language || (currentBusiness as any)?.language || "en");
-  const [timezone, setTimezone] = useState(() => bizSettings?.timezone || (currentBusiness as any)?.timezone || detectedTz);
+  // Form inputs: null = "show from cache", non-null = "user has edited"
+  const [fullNameInput, setFullNameInput] = useState<string | null>(null);
+  const [businessNameInput, setBusinessNameInput] = useState<string | null>(null);
+  const [languageInput, setLanguageInput] = useState<string | null>(null);
+  const [timezoneInput, setTimezoneInput] = useState<string | null>(null);
   const [tzSearch, setTzSearch] = useState("");
-  const [notifications, setNotifications] = useState<NotificationSettings>(() => profile?.notification_settings || {});
-  const [developerMode, setDeveloperMode] = useState(() => profile?.developer_mode || false);
+  const [notificationsInput, setNotificationsInput] = useState<NotificationSettings | null>(null);
+  const [developerMode, setDeveloperMode] = useState<boolean | null>(null);
+
+  // Derived display values: local edit > cache > default
+  const displayFullName = fullNameInput ?? profile?.full_name ?? "";
+  const displayBusinessName = businessNameInput ?? currentBusiness?.name ?? "";
+  const displayLanguage = languageInput ?? bizSettings?.language ?? "en";
+  const displayTimezone = timezoneInput ?? bizSettings?.timezone ?? detectedTz;
+  const displayNotifications = notificationsInput ?? profile?.notification_settings ?? {};
+  const displayDevMode = developerMode ?? profile?.developer_mode ?? false;
 
   // Loading states
   const [savingProfile, setSavingProfile] = useState(false);
@@ -131,34 +138,19 @@ export default function SettingsPage() {
     return result;
   }, [groupedTimezones, tzSearch]);
 
-  // Sync from query cache on first load (only fills empty state)
-  useEffect(() => {
-    if (profile?.full_name && !fullName) setFullName(profile.full_name);
-    if (profile?.notification_settings && Object.keys(notifications).length === 0) setNotifications(profile.notification_settings);
-    if (profile?.developer_mode !== undefined && profile.developer_mode !== developerMode) setDeveloperMode(profile.developer_mode);
-  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (currentBusiness?.name && !businessName) setBusinessName(currentBusiness.name);
-  }, [currentBusiness?.name]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (bizSettings?.language && language === "en" && bizSettings.language !== "en") setLanguage(bizSettings.language);
-    if (bizSettings?.timezone && !timezone) setTimezone(bizSettings.timezone);
-    if (!bizSettings && !businessId && !timezone) setTimezone(detectedTz);
-  }, [bizSettings, businessId]); // eslint-disable-line react-hooks/exhaustive-deps
-
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
     if (!userId) return;
+    const nameToSave = fullNameInput ?? profile?.full_name ?? "";
     setSavingProfile(true);
 
-    const { error } = await supabase.from("profiles").update({ full_name: fullName }).eq("id", userId);
+    const { error } = await supabase.from("profiles").update({ full_name: nameToSave }).eq("id", userId);
     if (error) {
       toast.error(error.message);
     } else {
       toast.success("Profile updated");
-      queryClient.setQueryData(userKeys.profile(userId), (old: any) => ({ ...old, full_name: fullName }));
+      setFullNameInput(null); // reset to "show from cache"
+      queryClient.setQueryData(userKeys.profile(userId), (old: any) => ({ ...old, full_name: nameToSave }));
       queryClient.invalidateQueries({ queryKey: userKeys.profile(userId) });
     }
     setSavingProfile(false);
@@ -167,11 +159,12 @@ export default function SettingsPage() {
   async function handleSaveBusiness(e: React.FormEvent) {
     e.preventDefault();
     if (!currentBusiness) return;
+    const nameToSave = businessNameInput ?? currentBusiness.name;
     setSavingBusiness(true);
 
     const { data, error } = await supabase
       .from("businesses")
-      .update({ name: businessName })
+      .update({ name: nameToSave })
       .eq("id", currentBusiness.id)
       .select()
       .single();
@@ -180,6 +173,7 @@ export default function SettingsPage() {
       toast.error(error.message);
     } else {
       toast.success("Business updated");
+      setBusinessNameInput(null);
       if (data) setCurrentBusiness(data);
       router.refresh();
     }
@@ -193,14 +187,16 @@ export default function SettingsPage() {
 
     const { error } = await supabase
       .from("businesses")
-      .update({ language, timezone })
+      .update({ language: displayLanguage, timezone: displayTimezone })
       .eq("id", currentBusiness.id);
 
     if (error) {
       toast.error(error.message);
     } else {
       toast.success("Language & region saved");
-      queryClient.setQueryData(settingsKeys.business(currentBusiness.id), (old: any) => ({ ...old, language, timezone }));
+      setLanguageInput(null);
+      setTimezoneInput(null);
+      queryClient.setQueryData(settingsKeys.business(currentBusiness.id), (old: any) => ({ ...old, language: displayLanguage, timezone: displayTimezone }));
       queryClient.invalidateQueries({ queryKey: settingsKeys.business(currentBusiness.id) });
     }
     setSavingLangRegion(false);
@@ -209,12 +205,14 @@ export default function SettingsPage() {
   async function handleSaveNotifications() {
     if (!userId) return;
     setSavingNotifications(true);
-    const { error } = await supabase.from("profiles").update({ notification_settings: notifications }).eq("id", userId);
+    const toSave = displayNotifications;
+    const { error } = await supabase.from("profiles").update({ notification_settings: toSave }).eq("id", userId);
     if (error) {
       toast.error(error.message);
     } else {
       toast.success("Notification preferences saved");
-      queryClient.setQueryData(userKeys.profile(userId), (old: any) => ({ ...old, notification_settings: notifications }));
+      setNotificationsInput(null);
+      queryClient.setQueryData(userKeys.profile(userId), (old: any) => ({ ...old, notification_settings: toSave }));
       queryClient.invalidateQueries({ queryKey: userKeys.profile(userId) });
     }
     setSavingNotifications(false);
@@ -237,7 +235,7 @@ export default function SettingsPage() {
   }
 
   function updateNotification(key: keyof NotificationSettings, value: boolean) {
-    setNotifications((prev) => ({ ...prev, [key]: value }));
+    setNotificationsInput((prev) => ({ ...(prev ?? displayNotifications), [key]: value }));
   }
 
   return (
@@ -260,8 +258,8 @@ export default function SettingsPage() {
               <Label>Full Name</Label>
               {!dataLoaded ? <FieldSkeleton /> : (
                 <Input
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  value={displayFullName}
+                  onChange={(e) => setFullNameInput(e.target.value)}
                 />
               )}
             </div>
@@ -283,8 +281,8 @@ export default function SettingsPage() {
               <Label>Business Name</Label>
               {!dataLoaded ? <FieldSkeleton /> : (
                 <Input
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
+                  value={displayBusinessName}
+                  onChange={(e) => setBusinessNameInput(e.target.value)}
                 />
               )}
             </div>
@@ -308,7 +306,7 @@ export default function SettingsPage() {
             <div className="space-y-2">
               <Label>Default Language</Label>
               {!dataLoaded ? <FieldSkeleton /> : (
-                <Select value={language} onValueChange={setLanguage}>
+                <Select value={displayLanguage} onValueChange={setLanguageInput}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
@@ -326,7 +324,7 @@ export default function SettingsPage() {
             <div className="space-y-2">
               <Label>Timezone</Label>
               {!dataLoaded ? <FieldSkeleton /> : (
-                <Select value={timezone} onValueChange={setTimezone}>
+                <Select value={displayTimezone} onValueChange={setTimezoneInput}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select timezone..." />
                   </SelectTrigger>
@@ -399,7 +397,7 @@ export default function SettingsPage() {
                   </p>
                 </div>
                 <Switch
-                  checked={notifications.journal_feedback ?? false}
+                  checked={displayNotifications.journal_feedback ?? false}
                   onCheckedChange={(v) => updateNotification("journal_feedback", v)}
                 />
               </div>
@@ -411,7 +409,7 @@ export default function SettingsPage() {
                   </p>
                 </div>
                 <Switch
-                  checked={notifications.checklist_assignments ?? false}
+                  checked={displayNotifications.checklist_assignments ?? false}
                   onCheckedChange={(v) => updateNotification("checklist_assignments", v)}
                 />
               </div>
@@ -423,7 +421,7 @@ export default function SettingsPage() {
                   </p>
                 </div>
                 <Switch
-                  checked={notifications.board_posts ?? false}
+                  checked={displayNotifications.board_posts ?? false}
                   onCheckedChange={(v) => updateNotification("board_posts", v)}
                 />
               </div>
@@ -456,7 +454,7 @@ export default function SettingsPage() {
                 </p>
               </div>
               <Switch
-                checked={developerMode}
+                checked={displayDevMode}
                 onCheckedChange={handleToggleDevMode}
                 disabled={savingDevMode}
               />
@@ -466,7 +464,7 @@ export default function SettingsPage() {
       </Card>
 
       {/* Card 6: API Keys (conditional) */}
-      {developerMode && <ApiKeysSection />}
+      {displayDevMode && <ApiKeysSection />}
     </div>
   );
 }

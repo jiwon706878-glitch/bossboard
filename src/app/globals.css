@@ -147,13 +147,13 @@
   }
   html {
     height: 100%;
-    overflow-x: hidden;
+    overflow: hidden;
   }
   body {
     @apply bg-background text-foreground;
-    overflow-x: hidden;
+    overflow: hidden;
     font-family: "A2Z", sans-serif;
-    min-height: 100%;
+    height: 100%;
   }
   h1 {
     font-weight: 700;

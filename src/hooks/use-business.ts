@@ -9,7 +9,6 @@ export interface Business {
   type: string;
   address: string | null;
   google_place_id: string | null;
-  plan: string | null;
   language: string | null;
   timezone: string | null;
   menu_or_services: string | null;

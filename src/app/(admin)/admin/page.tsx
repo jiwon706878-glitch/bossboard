@@ -1,22 +1,26 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, DollarSign, Sparkles, Building2 } from "lucide-react";
+import { Users, DollarSign, Sparkles, Building2, MessageSquare } from "lucide-react";
 import { plans } from "@/config/plans";
 
 export default async function AdminOverviewPage() {
   const supabase = createAdminClient();
 
-  const [profilesRes, businessesRes, usageRes, subsRes] = await Promise.all([
+  const [profilesRes, businessesRes, usageRes, subsRes, feedbackRes, unreadFeedbackRes] = await Promise.all([
     supabase.from("profiles").select("id, plan_id, created_at", { count: "exact" }),
     supabase.from("businesses").select("id", { count: "exact", head: true }),
     supabase.from("ai_usage").select("credits_used"),
     supabase.from("subscriptions").select("plan_id, status").eq("status", "active"),
+    supabase.from("feedback").select("id", { count: "exact", head: true }),
+    supabase.from("feedback").select("id", { count: "exact", head: true }).eq("read", false),
   ]);
 
   const totalUsers = profilesRes.count ?? 0;
   const totalBusinesses = businessesRes.count ?? 0;
   const totalAiCalls = usageRes.data?.reduce((s, r) => s + r.credits_used, 0) ?? 0;
+  const totalFeedback = feedbackRes.count ?? 0;
+  const unreadFeedback = unreadFeedbackRes.count ?? 0;
 
   // MRR calculation
   const activeSubs = subsRes.data ?? [];
@@ -42,13 +46,14 @@ export default async function AdminOverviewPage() {
     { title: "MRR", value: `$${mrr}`, sub: `${activeSubs.length} active subscriptions`, icon: DollarSign, color: "text-green-500" },
     { title: "Total AI Calls", value: totalAiCalls.toLocaleString(), sub: "All time", icon: Sparkles, color: "text-purple-500" },
     { title: "Businesses", value: totalBusinesses, sub: "Registered", icon: Building2, color: "text-amber-500" },
+    { title: "Feedback", value: totalFeedback, sub: `${unreadFeedback} unread`, icon: MessageSquare, color: "text-pink-500" },
   ];
 
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Admin Overview</h1>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {stats.map((stat) => (
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">

@@ -10,6 +10,7 @@ import {
   Users,
   DollarSign,
   BarChart3,
+  MessageSquare,
   ArrowLeft,
   LogOut,
 } from "lucide-react";
@@ -21,6 +22,7 @@ const links = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/revenue", label: "Revenue", icon: DollarSign },
   { href: "/admin/usage", label: "AI Usage", icon: BarChart3 },
+  { href: "/admin/feedback", label: "Feedback", icon: MessageSquare },
 ];
 
 export function AdminSidebar({ className }: { className?: string }) {

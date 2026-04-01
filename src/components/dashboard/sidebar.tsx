@@ -100,7 +100,9 @@ export function DashboardSidebar({ className }: { className?: string }) {
     enabled: !!userId,
   });
 
-  // Derived values
+  const profileLoaded = !!profile;
+
+  // Derived values (only used after profile loads)
   const userName = profile?.full_name || user?.email?.split("@")[0] || "";
   const planId = (profile?.plan_id as PlanId) ?? "free";
   const plan = plans[planId];
@@ -137,34 +139,46 @@ export function DashboardSidebar({ className }: { className?: string }) {
 
       {/* User profile + credits */}
       <div className="border-b px-4 py-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
-            {initial}
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{userName}</p>
-            <p className="text-xs text-muted-foreground">
-              {unlimited
-                ? "Unlimited generations"
-                : `${remaining.toLocaleString()}/${creditsLimit.toLocaleString()} generations`}
-            </p>
-          </div>
-        </div>
-        {!unlimited && (
-          <div className="mt-3">
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className={cn(
-                  "h-full rounded-full transition-all",
-                  progressPct > 90 ? "bg-destructive" : "bg-primary"
-                )}
-                style={{ width: `${progressPct}%` }}
-              />
+        {!profileLoaded ? (
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-muted" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+              <div className="h-3 w-32 animate-pulse rounded bg-muted" />
             </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              {creditsUsed.toLocaleString()} used this month
-            </p>
           </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
+                {initial}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{userName}</p>
+                <p className="text-xs text-muted-foreground">
+                  {unlimited
+                    ? "Unlimited generations"
+                    : `${remaining.toLocaleString()}/${creditsLimit.toLocaleString()} generations`}
+                </p>
+              </div>
+            </div>
+            {!unlimited && (
+              <div className="mt-3">
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-all",
+                      progressPct > 90 ? "bg-destructive" : "bg-primary"
+                    )}
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {creditsUsed.toLocaleString()} used this month
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
 

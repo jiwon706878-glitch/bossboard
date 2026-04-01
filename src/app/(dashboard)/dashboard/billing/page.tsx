@@ -76,7 +76,6 @@ export default function BillingPage() {
           },
         });
       } catch (err) {
-        console.error("Paddle checkout error:", err);
         toast.error("Failed to open checkout");
       }
 

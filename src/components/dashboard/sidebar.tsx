@@ -26,6 +26,8 @@ import {
   Users,
   Settings,
   Activity,
+  Code2,
+  Plug,
   LogOut,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -198,7 +200,14 @@ export function DashboardSidebar({ className }: { className?: string }) {
             <NavLink key={key} {...link} pathname={pathname} />
           ))}
           {developerMode && (
-            <NavLink href="/dashboard/agent-activity" label="Agent Activity" icon={Activity} pathname={pathname} />
+            <>
+              <div className="mt-2 mb-1 px-3">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Developer</p>
+              </div>
+              <NavLink href="/dashboard/agent-activity" label="Agent Activity" icon={Activity} pathname={pathname} />
+              <NavLink href="/dashboard/api-docs" label="API Docs" icon={Code2} pathname={pathname} />
+              <NavLink href="/dashboard/mcp-guide" label="MCP Guide" icon={Plug} pathname={pathname} />
+            </>
           )}
         </div>
       </nav>

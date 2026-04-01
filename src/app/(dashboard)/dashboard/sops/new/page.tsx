@@ -198,7 +198,6 @@ export default function NewSOPPage() {
       .single();
 
     if (error) {
-      console.error("Auto-save failed:", error.message);
       return;
     }
 
@@ -286,7 +285,6 @@ export default function NewSOPPage() {
 
       handleResult(text);
     } catch (error) {
-      console.error("SOP generation error:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to generate SOP"
       );
@@ -330,7 +328,6 @@ export default function NewSOPPage() {
       handleResult(data.text);
       toast.success("SOP reformatted! Review and save below.");
     } catch (error) {
-      console.error("SOP reformat error:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to reformat SOP"
       );
@@ -381,7 +378,6 @@ export default function NewSOPPage() {
         toast.success(`Loaded ${file.name}`);
       }
     } catch (error) {
-      console.error("File upload error:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to read file"
       );
@@ -427,7 +423,6 @@ export default function NewSOPPage() {
       handleResult(data.text);
       toast.success(`"${file.name}" uploaded and converted!`);
     } catch (error) {
-      console.error("File convert error:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to convert file"
       );
@@ -523,7 +518,6 @@ export default function NewSOPPage() {
         .single();
 
       if (error) {
-        console.error("SOP publish failed:", error.message);
         toast.error(error.message);
         setPublishing(false);
         return;

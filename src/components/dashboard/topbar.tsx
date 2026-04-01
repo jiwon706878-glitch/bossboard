@@ -14,7 +14,7 @@ import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { DashboardSidebar } from "./sidebar";
 import { BusinessSwitcher } from "./business-switcher";
 import { NotificationBell } from "./notification-bell";
-import { SearchModal } from "./search-modal";
+import { SearchDropdown } from "./search-dropdown";
 import { FeedbackCard } from "./feedback-card";
 
 export function DashboardTopbar() {
@@ -82,7 +82,7 @@ export function DashboardTopbar() {
               <SheetHeader>
                 <SheetTitle>Send Feedback</SheetTitle>
               </SheetHeader>
-              <div className="pt-4">
+              <div className="px-4 pt-2">
                 <FeedbackCard />
               </div>
             </SheetContent>
@@ -90,7 +90,7 @@ export function DashboardTopbar() {
           <ThemeToggle />
         </div>
       </header>
-      <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
+      <SearchDropdown open={searchOpen} onOpenChange={setSearchOpen} />
     </>
   );
 }

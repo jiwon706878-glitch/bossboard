@@ -16,13 +16,6 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import {
   LayoutDashboard,
   FileText,
   CheckSquare,
@@ -30,7 +23,6 @@ import {
   CalendarDays,
   NotebookPen,
   MessageSquare,
-  MessageSquarePlus,
   Users,
   Settings,
   Activity,
@@ -38,7 +30,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useBusinessStore } from "@/hooks/use-business";
-import { FeedbackCard } from "@/components/dashboard/feedback-card";
 
 const navLinks = [
   { key: "wiki", href: "/dashboard/sops", label: "Wiki", icon: FileText },
@@ -197,27 +188,8 @@ export function DashboardSidebar({ className }: { className?: string }) {
         </div>
       </nav>
 
-      {/* Bottom: Feedback + Log out */}
-      <div className="border-t p-3 space-y-1">
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 h-9 flex-nowrap overflow-hidden text-muted-foreground"
-            >
-              <MessageSquarePlus className="h-4 w-4 shrink-0 min-w-[16px]" />
-              <span className="truncate">Feedback</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right">
-            <SheetHeader>
-              <SheetTitle>Send Feedback</SheetTitle>
-            </SheetHeader>
-            <div className="pt-4">
-              <FeedbackCard />
-            </div>
-          </SheetContent>
-        </Sheet>
+      {/* Bottom: Log out */}
+      <div className="border-t p-3">
         <Button
           variant="ghost"
           className="w-full justify-start gap-3 h-9 flex-nowrap overflow-hidden text-muted-foreground"

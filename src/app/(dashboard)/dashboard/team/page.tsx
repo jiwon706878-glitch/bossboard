@@ -33,6 +33,8 @@ export default function TeamPage() {
   const [linkLoading, setLinkLoading] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [newBizName, setNewBizName] = useState("");
+  const [newBizType, setNewBizType] = useState("other");
 
   // Queries
   const { data: user } = useQuery({ queryKey: userKeys.current, queryFn: fetchCurrentUser, retry: false });
@@ -72,6 +74,19 @@ export default function TeamPage() {
   const { data: aiUsed = 0 } = useQuery({
     queryKey: usageKeys.monthly(userId ?? ""),
     queryFn: () => fetchMonthlyUsage(userId!),
+    enabled: !!userId,
+  });
+
+  const { data: allBusinesses = [] } = useQuery({
+    queryKey: ["businesses", userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("businesses")
+        .select("id, name, type, created_at")
+        .eq("user_id", userId!)
+        .order("created_at");
+      return data ?? [];
+    },
     enabled: !!userId,
   });
 
@@ -141,6 +156,37 @@ export default function TeamPage() {
       setTimeout(() => setLinkCopied(false), 3000);
     } catch { toast.error("Failed to generate invite link"); }
     setLinkLoading(false);
+  }
+
+  async function handleAddBusiness(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newBizName.trim() || !userId) return;
+    const { error } = await supabase
+      .from("businesses")
+      .insert({ name: newBizName.trim(), type: newBizType, user_id: userId })
+      .select()
+      .single();
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Workspace added");
+      setNewBizName("");
+      queryClient.invalidateQueries({ queryKey: ["businesses", userId] });
+    }
+  }
+
+  async function handleDeleteBusiness(bizId: string, bizName: string) {
+    if (!confirm(`Delete "${bizName}"? This will remove all data associated with this workspace. This cannot be undone.`)) return;
+    const { error } = await supabase.from("businesses").delete().eq("id", bizId);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Workspace deleted");
+      queryClient.invalidateQueries({ queryKey: ["businesses", userId] });
+      if (currentBusiness?.id === bizId) {
+        const remaining = allBusinesses.filter((b: any) => b.id !== bizId);
+        if (remaining.length > 0) useBusinessStore.getState().setCurrentBusiness(remaining[0]);
+        else useBusinessStore.getState().setCurrentBusiness(null);
+      }
+    }
   }
 
   function pctBar(used: number, limit: number) { if (limit === -1) return 0; return Math.min(100, Math.round((used / limit) * 100)); }
@@ -219,6 +265,58 @@ export default function TeamPage() {
         </CardContent>
       </Card>
 
+      {/* Workspace Management */}
+      {isAdmin() && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Workspaces</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              {allBusinesses.map((biz: any) => (
+                <div key={biz.id} className="flex items-center justify-between rounded-md border px-4 py-3">
+                  <div>
+                    <p className="font-medium text-sm">{biz.name}</p>
+                    <p className="text-xs text-muted-foreground">{biz.type} {"\u00b7"} Created {new Date(biz.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {currentBusiness?.id === biz.id && (
+                      <Badge variant="secondary" className="text-[10px]">Current</Badge>
+                    )}
+                    {allBusinesses.length > 1 && (
+                      <Button variant="ghost" size="sm" className="text-xs text-destructive hover:text-destructive" onClick={() => handleDeleteBusiness(biz.id, biz.name)}>
+                        Delete
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <Separator />
+
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-muted-foreground">Add Workspace</h3>
+              <form onSubmit={handleAddBusiness} className="flex gap-3">
+                <Input placeholder="Business name" value={newBizName} onChange={(e) => setNewBizName(e.target.value)} className="flex-1" />
+                <Select value={newBizType} onValueChange={setNewBizType}>
+                  <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cafe">Cafe</SelectItem>
+                    <SelectItem value="restaurant">Restaurant</SelectItem>
+                    <SelectItem value="retail">Retail</SelectItem>
+                    <SelectItem value="office">Office</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button type="submit" disabled={!newBizName.trim()}>Add</Button>
+              </form>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Admin Dashboard */}
       {isAdmin() && (
         <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
           <Card>

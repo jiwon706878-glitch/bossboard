@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
+import { sopKeys, recentDocKeys } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -110,6 +112,7 @@ export default function NewSOPPage() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const supabase = createClient();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
 
@@ -478,7 +481,11 @@ export default function NewSOPPage() {
 
       toast.success("SOP published!");
       router.push(`/dashboard/sops/${savedSopId}`);
-      router.refresh();
+      if (currentBusiness?.id) {
+        queryClient.invalidateQueries({ queryKey: sopKeys.all(currentBusiness.id) });
+        queryClient.invalidateQueries({ queryKey: sopKeys.stats(currentBusiness.id) });
+        queryClient.invalidateQueries({ queryKey: recentDocKeys.latest(currentBusiness.id) });
+      }
     } else {
       // Manual tab — no auto-save happened, insert as published
       const bizId = await getBusinessId();
@@ -524,7 +531,11 @@ export default function NewSOPPage() {
 
       toast.success("SOP published!");
       router.push(`/dashboard/sops/${data.id}`);
-      router.refresh();
+      if (currentBusiness?.id) {
+        queryClient.invalidateQueries({ queryKey: sopKeys.all(currentBusiness.id) });
+        queryClient.invalidateQueries({ queryKey: sopKeys.stats(currentBusiness.id) });
+        queryClient.invalidateQueries({ queryKey: recentDocKeys.latest(currentBusiness.id) });
+      }
     }
   }
 

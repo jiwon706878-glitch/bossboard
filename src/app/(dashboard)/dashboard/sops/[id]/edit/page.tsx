@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useBusinessStore } from "@/hooks/use-business";
+import { sopKeys, recentDocKeys } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,7 +64,9 @@ export default function EditSOPPage() {
 
   const router = useRouter();
   const params = useParams();
+  const queryClient = useQueryClient();
   const supabase = createClient();
+  const currentBusiness = useBusinessStore((s) => s.currentBusiness);
   const sopId = params.id as string;
 
   useEffect(() => {
@@ -169,7 +174,11 @@ export default function EditSOPPage() {
 
     toast.success("SOP updated!");
     router.push(`/dashboard/sops/${sopId}`);
-    router.refresh();
+    if (currentBusiness?.id) {
+      queryClient.invalidateQueries({ queryKey: sopKeys.all(currentBusiness.id) });
+      queryClient.invalidateQueries({ queryKey: sopKeys.stats(currentBusiness.id) });
+      queryClient.invalidateQueries({ queryKey: recentDocKeys.latest(currentBusiness.id) });
+    }
   }
 
   if (loading) {

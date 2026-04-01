@@ -181,6 +181,7 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       type="button"
+      aria-label="Copy to clipboard"
       className="absolute top-2 right-2 rounded-md border bg-card p-1.5 text-muted-foreground hover:text-foreground transition-colors"
       onClick={() => {
         navigator.clipboard.writeText(text);

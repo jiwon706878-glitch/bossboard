@@ -344,14 +344,14 @@ function NotifSection({ title, rows, notifications, onToggle }: {
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-medium">{title}</h3>
-      <div className="rounded-md border">
-        <div className="flex items-center border-b px-4 py-2 text-xs text-muted-foreground">
+      <div className="rounded-md border overflow-x-auto">
+        <div className="flex items-center border-b px-4 py-2 text-xs text-muted-foreground min-w-[360px]">
           <span className="flex-1">Event</span>
           <span className="w-16 text-center">In-app</span>
           <span className="w-16 text-center">Email</span>
         </div>
         {rows.map((row) => (
-          <div key={row.app} className="flex items-center px-4 py-2.5 border-b last:border-0 hover:bg-muted/30">
+          <div key={row.app} className="flex items-center px-4 py-2.5 border-b last:border-0 hover:bg-muted/30 min-w-[360px]">
             <span className="flex-1 text-sm">{row.label}</span>
             <div className="w-16 flex justify-center">
               <Switch checked={notifications[row.app] ?? false} onCheckedChange={(v) => onToggle(row.app, v)} />

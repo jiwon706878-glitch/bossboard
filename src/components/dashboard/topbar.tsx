@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
   SheetTrigger,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { DashboardSidebar } from "./sidebar";
 import { BusinessSwitcher } from "./business-switcher";
@@ -71,22 +71,18 @@ export function DashboardTopbar() {
             <Search className="h-4 w-4" />
           </Button>
           <NotificationBell />
-          <Sheet>
-            <SheetTrigger asChild>
+          <Popover>
+            <PopoverTrigger asChild>
               <Button variant="ghost" size="icon">
                 <MessageSquarePlus className="h-4 w-4" />
                 <span className="sr-only">Send feedback</span>
               </Button>
-            </SheetTrigger>
-            <SheetContent side="right">
-              <SheetHeader>
-                <SheetTitle>Send Feedback</SheetTitle>
-              </SheetHeader>
-              <div className="px-4 pt-2">
-                <FeedbackCard />
-              </div>
-            </SheetContent>
-          </Sheet>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80 p-4">
+              <h3 className="text-sm font-semibold mb-3">Send Feedback</h3>
+              <FeedbackCard />
+            </PopoverContent>
+          </Popover>
           <ThemeToggle />
         </div>
       </header>

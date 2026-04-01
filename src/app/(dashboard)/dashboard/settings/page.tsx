@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
@@ -50,9 +50,7 @@ function getGroupedTimezones(): Record<string, TimezoneEntry[]> {
 }
 
 interface NotificationSettings {
-  journal_feedback?: boolean;
-  checklist_assignments?: boolean;
-  board_posts?: boolean;
+  [key: string]: boolean | undefined;
 }
 
 export default function SettingsPage() {
@@ -96,6 +94,12 @@ export default function SettingsPage() {
   // Developer mode local state
   const [developerMode, setDeveloperMode] = useState<boolean | null>(null);
   const [savingDevMode, setSavingDevMode] = useState(false);
+
+  // Sticky note (localStorage only)
+  const [stickyHidden, setStickyHidden] = useState(false);
+  useEffect(() => {
+    setStickyHidden(localStorage.getItem("bossboard-sticky-hidden") === "true");
+  }, []);
 
   const displayLanguage = languageInput ?? bizSettings?.language ?? "en";
   const displayTimezone = timezoneInput ?? bizSettings?.timezone ?? detectedTz;
@@ -159,7 +163,7 @@ export default function SettingsPage() {
     setSavingDevMode(false);
   }
 
-  function updateNotification(key: keyof NotificationSettings, value: boolean) {
+  function updateNotification(key: string, value: boolean) {
     setNotificationsInput((prev) => ({ ...(prev ?? displayNotifications), [key]: value }));
   }
 
@@ -247,37 +251,36 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Notifications</CardTitle>
-          <CardDescription>Choose which email notifications you receive.</CardDescription>
+          <CardDescription>Choose which notifications you receive.</CardDescription>
         </CardHeader>
         <CardContent>
           {!isProOrAbove ? (
             <div className="flex items-center gap-3 rounded-md border border-dashed px-4 py-6 text-center">
               <Lock className="h-5 w-5 text-muted-foreground shrink-0" />
-              <p className="text-sm text-muted-foreground">Upgrade to Pro to enable email notifications.</p>
+              <p className="text-sm text-muted-foreground">Upgrade to Pro to enable notifications.</p>
             </div>
           ) : (
-            <div className="space-y-5">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="font-medium">Journal feedback</Label>
-                  <p className="text-xs text-muted-foreground">When a manager leaves feedback on your journal entry</p>
-                </div>
-                <Switch checked={displayNotifications.journal_feedback ?? false} onCheckedChange={(v) => updateNotification("journal_feedback", v)} />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="font-medium">Checklist assignments</Label>
-                  <p className="text-xs text-muted-foreground">When a checklist is assigned to you</p>
-                </div>
-                <Switch checked={displayNotifications.checklist_assignments ?? false} onCheckedChange={(v) => updateNotification("checklist_assignments", v)} />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="font-medium">Board posts</Label>
-                  <p className="text-xs text-muted-foreground">When a new post is published to your team board</p>
-                </div>
-                <Switch checked={displayNotifications.board_posts ?? false} onCheckedChange={(v) => updateNotification("board_posts", v)} />
-              </div>
+            <div className="space-y-6">
+              <NotifSection title="Operations" rows={[
+                { label: "Checklist assigned to me", app: "checklist_assigned_app", email: "checklist_assigned_email" },
+                { label: "Checklist due tomorrow", app: "checklist_due_soon_app", email: "checklist_due_soon_email" },
+                { label: "Checklist overdue", app: "checklist_overdue_app", email: "checklist_overdue_email" },
+                { label: "Checklist completed (admin)", app: "checklist_completed_app", email: "checklist_completed_email" },
+                { label: "Todo due tomorrow", app: "todo_due_soon_app", email: "todo_due_soon_email" },
+              ]} notifications={displayNotifications} onToggle={updateNotification} />
+
+              <NotifSection title="Documents" rows={[
+                { label: "New document published", app: "new_document_app", email: "new_document_email" },
+                { label: "Document assigned to me", app: "document_assigned_app", email: "document_assigned_email" },
+              ]} notifications={displayNotifications} onToggle={updateNotification} />
+
+              <NotifSection title="Team & Communication" rows={[
+                { label: "New board post", app: "board_post_app", email: "board_post_email" },
+                { label: "Journal feedback received", app: "journal_feedback_app", email: "journal_feedback_email" },
+                { label: "Journal not submitted (admin)", app: "journal_missing_app", email: "journal_missing_email" },
+                { label: "New team member joined", app: "new_team_member_app", email: "new_team_member_email" },
+              ]} notifications={displayNotifications} onToggle={updateNotification} />
+
               <Button type="button" onClick={handleSaveNotifications} disabled={savingNotifications || profileFetching}>
                 {savingNotifications ? "Saving..." : "Save Notifications"}
               </Button>
@@ -300,8 +303,60 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Card 6: API Keys (conditional) */}
+      {/* Card 6: Sticky Note */}
+      <Card>
+        <CardHeader><CardTitle>Sticky Note</CardTitle></CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="font-medium">Show sticky note</Label>
+              <p className="text-sm text-muted-foreground">Display the quick notes widget on the dashboard.</p>
+            </div>
+            <Switch
+              checked={!stickyHidden}
+              onCheckedChange={(v) => {
+                const hidden = !v;
+                localStorage.setItem("bossboard-sticky-hidden", hidden ? "true" : "false");
+                setStickyHidden(hidden);
+              }}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Card 7: API Keys (conditional) */}
       {displayDevMode && <ApiKeysSection />}
+    </div>
+  );
+}
+
+function NotifSection({ title, rows, notifications, onToggle }: {
+  title: string;
+  rows: Array<{ label: string; app: string; email: string }>;
+  notifications: NotificationSettings;
+  onToggle: (key: string, value: boolean) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <h3 className="text-sm font-medium">{title}</h3>
+      <div className="rounded-md border">
+        <div className="flex items-center border-b px-4 py-2 text-xs text-muted-foreground">
+          <span className="flex-1">Event</span>
+          <span className="w-16 text-center">In-app</span>
+          <span className="w-16 text-center">Email</span>
+        </div>
+        {rows.map((row) => (
+          <div key={row.app} className="flex items-center px-4 py-2.5 border-b last:border-0 hover:bg-muted/30">
+            <span className="flex-1 text-sm">{row.label}</span>
+            <div className="w-16 flex justify-center">
+              <Switch checked={notifications[row.app] ?? false} onCheckedChange={(v) => onToggle(row.app, v)} />
+            </div>
+            <div className="w-16 flex justify-center">
+              <Switch checked={notifications[row.email] ?? false} onCheckedChange={(v) => onToggle(row.email, v)} />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

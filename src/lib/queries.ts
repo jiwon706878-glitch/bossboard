@@ -9,8 +9,8 @@ export const userKeys = {
 };
 
 export async function fetchCurrentUser() {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) throw new Error("Not authenticated");
   return user;
 }
 

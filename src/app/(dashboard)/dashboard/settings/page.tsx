@@ -2,11 +2,10 @@
 
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { plans, type PlanId } from "@/config/plans";
-import { fetchCurrentUser, fetchProfile, fetchBusinessSettings, userKeys, settingsKeys } from "@/lib/queries";
+import { fetchCurrentUser, fetchProfile, fetchBusinessSettings, userKeys, settingsKeys, businessKeys } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -65,7 +64,6 @@ interface NotificationSettings {
 
 export default function SettingsPage() {
   const supabase = createClient();
-  const router = useRouter();
   const queryClient = useQueryClient();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
   const setCurrentBusiness = useBusinessStore((s) => s.setCurrentBusiness);
@@ -165,7 +163,7 @@ export default function SettingsPage() {
       toast.success("Business updated");
       setBusinessNameInput(null);
       if (data) setCurrentBusiness(data);
-      router.refresh();
+      if (userId) queryClient.invalidateQueries({ queryKey: businessKeys.all(userId) });
     }
     setSavingBusiness(false);
   }

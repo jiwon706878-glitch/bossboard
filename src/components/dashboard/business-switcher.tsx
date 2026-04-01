@@ -17,13 +17,13 @@ export function BusinessSwitcher() {
   const { currentBusiness, userId, setCurrentBusiness, setUserId, clear } =
     useBusinessStore();
 
-  const { data: user } = useQuery({
+  const { data: user, isLoading: userLoading } = useQuery({
     queryKey: userKeys.current,
     queryFn: fetchCurrentUser,
     retry: false,
   });
 
-  const { data: businesses = [] } = useQuery({
+  const { data: businesses = [], isLoading: bizLoading } = useQuery({
     queryKey: businessKeys.all(user?.id ?? ""),
     queryFn: () => fetchUserBusinesses(user!.id),
     enabled: !!user?.id,
@@ -31,29 +31,26 @@ export function BusinessSwitcher() {
 
   // Sync zustand with query data
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || businesses.length === 0) return;
 
     if (userId && userId !== user.id) {
       clear();
     }
     setUserId(user.id);
 
-    if (businesses.length > 0) {
-      if (!currentBusiness || userId !== user.id) {
-        setCurrentBusiness(businesses[0]);
-      } else {
-        const fresh = businesses.find((b: any) => b.id === currentBusiness.id);
-        if (fresh && JSON.stringify(fresh) !== JSON.stringify(currentBusiness)) {
-          setCurrentBusiness(fresh);
-        } else if (!fresh) {
-          setCurrentBusiness(businesses[0]);
-        }
-      }
+    if (!currentBusiness || userId !== user.id) {
+      setCurrentBusiness(businesses[0]);
     } else {
-      setCurrentBusiness(null);
+      const fresh = businesses.find((b: any) => b.id === currentBusiness.id);
+      if (fresh && JSON.stringify(fresh) !== JSON.stringify(currentBusiness)) {
+        setCurrentBusiness(fresh);
+      } else if (!fresh) {
+        setCurrentBusiness(businesses[0]);
+      }
     }
   }, [businesses, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  if (userLoading || bizLoading) return null;
   if (businesses.length === 0) return null;
 
   return (

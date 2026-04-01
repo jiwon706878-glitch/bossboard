@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, memo } from "react";
+import { useCallback, memo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/sheet";
 import {
   LayoutDashboard,
+  FileText,
   CheckSquare,
   ListTodo,
   CalendarDays,
@@ -37,10 +38,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useBusinessStore } from "@/hooks/use-business";
-import { FolderTree } from "@/components/sops/folder-tree";
 import { FeedbackCard } from "@/components/dashboard/feedback-card";
 
 const navLinks = [
+  { key: "wiki", href: "/dashboard/sops", label: "Wiki", icon: FileText },
   { key: "checklists", href: "/dashboard/checklists", label: "Checklists", icon: CheckSquare },
   { key: "todos", href: "/dashboard/todos", label: "Todos", icon: ListTodo },
   { key: "calendar", href: "/dashboard/calendar", label: "Calendar", icon: CalendarDays },
@@ -186,14 +187,7 @@ export function DashboardSidebar({ className }: { className?: string }) {
             pathname={pathname}
           />
 
-          {/* SOP Wiki folder tree */}
-          <div className="py-1">
-            <Suspense fallback={null}>
-              <FolderTree />
-            </Suspense>
-          </div>
-
-          {/* Other nav links */}
+          {/* Nav links */}
           {navLinks.map(({ key, ...link }) => (
             <NavLink key={key} {...link} pathname={pathname} />
           ))}

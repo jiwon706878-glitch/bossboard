@@ -1,18 +1,23 @@
 "use client";
 
+import { useEffect } from "react";
 import { format } from "date-fns";
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { useDashboard } from "@/hooks/use-dashboard";
+import { useRoleStore } from "@/hooks/use-role";
 import { OverdueSection } from "@/components/dashboard/overdue-section";
 import { TodayChecklists } from "@/components/dashboard/today-checklists";
 import { TodayTodos } from "@/components/dashboard/today-todos";
 import { StatsSection } from "@/components/dashboard/stats-section";
-import { FeedbackCard } from "@/components/dashboard/feedback-card";
-import { Card, CardContent } from "@/components/ui/card";
+import { RecentBoardPosts } from "@/components/dashboard/recent-board-posts";
+import { RecentDocuments } from "@/components/dashboard/recent-documents";
 import { Button } from "@/components/ui/button";
 
 export default function DashboardPage() {
+  const { isAdmin, loadRole } = useRoleStore();
+  useEffect(() => { loadRole(); }, [loadRole]);
+
   const {
     userName, loading,
     overdueChecklists, todayChecklists, overdueTodos, todayTodos,
@@ -49,6 +54,7 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-[1080px] space-y-6">
+      {/* 1. Greeting */}
       <div className="space-y-1">
         <h2 className="text-2xl font-semibold tracking-tight text-foreground">
           {greeting}, {userName}
@@ -59,6 +65,12 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {/* 2. Stats — Admin only */}
+      {isAdmin() && (
+        <StatsSection totalSops={totalSops} publishedSops={publishedSops} draftSops={draftSops} teamCount={teamCount} creditsUsed={creditsUsed} creditsLimit={creditsLimit} unlimitedCredits={unlimitedCredits} />
+      )}
+
+      {/* 3. Welcome empty state */}
       {overdueChecklists.length === 0 && todayChecklists.length === 0 && overdueTodos.length === 0 && todayTodos.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-md border bg-card py-16 text-center">
           <Sparkles className="mb-3 h-10 w-10 text-muted-foreground/50" />
@@ -69,16 +81,21 @@ export default function DashboardPage() {
           </Button>
         </div>
       )}
+
+      {/* 4. Overdue */}
       <OverdueSection overdueChecklists={overdueChecklists} overdueTodos={overdueTodos} onToggleTodo={handleToggleTodo} onDeleteTodo={handleDeleteTodo} />
+
+      {/* 5. Today's Checklists */}
       <TodayChecklists checklists={todayChecklists} />
+
+      {/* 6. Today's Todos */}
       <TodayTodos todos={todayTodos} todoText={todoText} setTodoText={setTodoText} addingTodo={addingTodo} onAddTodo={handleAddTodo} onToggleTodo={handleToggleTodo} onDeleteTodo={handleDeleteTodo} />
-      <StatsSection totalSops={totalSops} publishedSops={publishedSops} draftSops={draftSops} teamCount={teamCount} creditsUsed={creditsUsed} creditsLimit={creditsLimit} unlimitedCredits={unlimitedCredits} />
-      <Card className="border bg-card">
-        <CardContent className="py-4">
-          <p className="text-xs font-medium text-muted-foreground mb-2">Have feedback or suggestions?</p>
-          <FeedbackCard />
-        </CardContent>
-      </Card>
+
+      {/* 7. Recent Board Posts */}
+      <RecentBoardPosts />
+
+      {/* 8. Recently Updated Documents */}
+      <RecentDocuments />
     </div>
   );
 }

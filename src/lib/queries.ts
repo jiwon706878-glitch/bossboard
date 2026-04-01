@@ -235,3 +235,48 @@ export async function fetchBusinessSettings(businessId: string) {
   if (error) throw error;
   return data;
 }
+
+// ─── Board Posts ──────────────────────────────────
+export const boardKeys = {
+  recent: (businessId: string) => ["board", "recent", businessId] as const,
+};
+
+export async function fetchRecentBoardPosts(businessId: string) {
+  const { data, error } = await supabase
+    .from("board_posts")
+    .select("id, title, content, user_id, created_at")
+    .eq("business_id", businessId)
+    .order("created_at", { ascending: false })
+    .limit(3);
+  if (error) throw error;
+  if (!data || data.length === 0) return [];
+
+  const userIds = [...new Set(data.map((p: any) => p.user_id))];
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name")
+    .in("id", userIds);
+  const nameMap = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
+
+  return data.map((p: any) => ({
+    ...p,
+    author_name: nameMap.get(p.user_id) ?? "Unknown",
+  }));
+}
+
+// ─── Recent Documents ─────────────────────────────
+export const recentDocKeys = {
+  latest: (businessId: string) => ["sops", "recent", businessId] as const,
+};
+
+export async function fetchRecentDocuments(businessId: string) {
+  const { data, error } = await supabase
+    .from("sops")
+    .select("id, title, status, updated_at, doc_type")
+    .eq("business_id", businessId)
+    .is("deleted_at", null)
+    .order("updated_at", { ascending: false })
+    .limit(3);
+  if (error) throw error;
+  return data ?? [];
+}

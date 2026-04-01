@@ -11,17 +11,17 @@ interface Note {
 type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
 const BUTTON_STYLES: Record<Corner, string> = {
-  "top-left": "fixed top-4 left-4 sm:top-6 sm:left-6 z-50",
-  "top-right": "fixed top-4 right-4 sm:top-6 sm:right-6 z-50",
-  "bottom-left": "fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-50",
+  "top-left": "fixed top-[76px] left-[272px] lg:left-[272px] z-50",
+  "top-right": "fixed top-[76px] right-4 sm:right-6 z-50",
+  "bottom-left": "fixed bottom-4 left-[272px] lg:left-[272px] sm:bottom-6 z-50",
   "bottom-right": "fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50",
 };
 
-function getNotePosition(corner: Corner) {
+function getNotePosition(corner: Corner): React.CSSProperties {
   switch (corner) {
-    case "top-left": return { top: 72, left: 16 };
-    case "top-right": return { top: 72, right: 16 };
-    case "bottom-left": return { bottom: 72, left: 16 };
+    case "top-left": return { top: 128, left: 272 };
+    case "top-right": return { top: 128, right: 16 };
+    case "bottom-left": return { bottom: 72, left: 272 };
     case "bottom-right": return { bottom: 72, right: 16 };
   }
 }
@@ -141,6 +141,17 @@ export function StickyNote() {
 
   return (
     <>
+      {/* Keep the yellow button visible when note is open */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(false)}
+        onContextMenu={handleContextMenu}
+        className={`${BUTTON_STYLES[corner]} flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-amber-600 text-white shadow-lg hover:bg-amber-700 transition-colors ring-2 ring-amber-400/50`}
+        title="Close Quick Notes"
+      >
+        <X className="h-5 w-5" />
+      </button>
+
       <div
         className="fixed z-50 rounded-lg border shadow-2xl w-[calc(100vw-2rem)] sm:w-72 max-w-sm"
         style={{

@@ -23,6 +23,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
 import { ApiKeysSection } from "@/components/settings/api-keys-section";
+import { ExternalApiKeysSection } from "@/components/settings/external-api-keys-section";
 import { ProfileCard } from "@/components/settings/profile-card";
 import { BusinessCard } from "@/components/settings/business-card";
 
@@ -325,7 +326,10 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Card 7: API Keys (conditional) */}
+      {/* Card 7: External API Keys (developer mode only) */}
+      {displayDevMode && <ExternalApiKeysSection />}
+
+      {/* Card 8: BossBoard API Keys (developer mode only) */}
       {displayDevMode && <ApiKeysSection />}
     </div>
   );

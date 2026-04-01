@@ -289,21 +289,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Card 5: Developer Mode */}
-      <Card>
-        <CardHeader><CardTitle>Developer Mode</CardTitle></CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label className="font-medium">Enable Developer Mode</Label>
-              <p className="text-sm text-muted-foreground">Show API keys, MCP connection guide, and Agent Activity in your sidebar.</p>
-            </div>
-            <Switch checked={displayDevMode} onCheckedChange={handleToggleDevMode} disabled={savingDevMode} />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Card 6: Sticky Note */}
+      {/* Card 5: Sticky Note */}
       <Card>
         <CardHeader><CardTitle>Sticky Note</CardTitle></CardHeader>
         <CardContent>
@@ -318,8 +304,23 @@ export default function SettingsPage() {
                 const hidden = !v;
                 localStorage.setItem("bossboard-sticky-hidden", hidden ? "true" : "false");
                 setStickyHidden(hidden);
+                window.dispatchEvent(new CustomEvent("bossboard-sticky-toggle", { detail: { hidden } }));
               }}
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Card 6: Developer Mode */}
+      <Card>
+        <CardHeader><CardTitle>Developer Mode</CardTitle></CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="font-medium">Enable Developer Mode</Label>
+              <p className="text-sm text-muted-foreground">Show API keys, MCP connection guide, and Agent Activity in your sidebar.</p>
+            </div>
+            <Switch checked={displayDevMode} onCheckedChange={handleToggleDevMode} disabled={savingDevMode} />
           </div>
         </CardContent>
       </Card>

@@ -39,15 +39,20 @@ export function StickyNote() {
     localStorage.setItem("bossboard-sticky-notes", JSON.stringify(notes));
   }, [notes]);
 
-  // Listen for settings toggle via storage event
+  // Listen for toggle — both cross-tab (StorageEvent) and same-tab (CustomEvent)
   useEffect(() => {
     function handleStorage(e: StorageEvent) {
-      if (e.key === "bossboard-sticky-hidden") {
-        setIsHidden(e.newValue === "true");
-      }
+      if (e.key === "bossboard-sticky-hidden") setIsHidden(e.newValue === "true");
+    }
+    function handleCustomToggle(e: Event) {
+      setIsHidden((e as CustomEvent).detail.hidden);
     }
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    window.addEventListener("bossboard-sticky-toggle", handleCustomToggle);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("bossboard-sticky-toggle", handleCustomToggle);
+    };
   }, []);
 
   // Close context menu on click outside
@@ -75,8 +80,8 @@ export function StickyNote() {
   }
 
   function setCornerPosition(corner: "top-left" | "top-right" | "bottom-left" | "bottom-right") {
-    let newPos: { x: number; y: number };
     const pad = 16;
+    let newPos: { x: number; y: number };
     switch (corner) {
       case "top-left": newPos = { x: pad, y: 80 }; break;
       case "top-right": newPos = { x: window.innerWidth - 304, y: 80 }; break;
@@ -92,6 +97,7 @@ export function StickyNote() {
     localStorage.setItem("bossboard-sticky-hidden", "true");
     setIsHidden(true);
     setCtxMenu(null);
+    window.dispatchEvent(new CustomEvent("bossboard-sticky-toggle", { detail: { hidden: true } }));
   }
 
   // Drag title bar
@@ -130,21 +136,23 @@ export function StickyNote() {
 
   if (!isOpen) {
     return (
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        onContextMenu={handleContextMenu}
-        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-amber-500 text-white shadow-lg hover:bg-amber-600 transition-colors"
-        title="Quick Notes"
-      >
-        <StickyNoteIcon className="h-5 w-5" />
-        {notes.length > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground font-bold">
-            {notes.length}
-          </span>
-        )}
+      <>
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          onContextMenu={handleContextMenu}
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-amber-500 text-white shadow-lg hover:bg-amber-600 transition-colors"
+          title="Quick Notes"
+        >
+          <StickyNoteIcon className="h-5 w-5" />
+          {notes.length > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground font-bold">
+              {notes.length}
+            </span>
+          )}
+        </button>
         {ctxMenu && <CtxMenuOverlay ctxMenu={ctxMenu} setCornerPosition={setCornerPosition} hideStickyNote={hideStickyNote} />}
-      </button>
+      </>
     );
   }
 
@@ -198,18 +206,16 @@ export function StickyNote() {
 
         {/* Input */}
         <div className="border-t p-2">
-          <div className="flex items-center gap-2">
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") addNote(); }}
-              placeholder="Type a note and press Enter..."
-              className="flex-1 rounded-md border bg-transparent px-2.5 py-1.5 text-sm outline-none placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary"
-              autoFocus
-            />
-          </div>
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") addNote(); }}
+            placeholder="Type a note and press Enter..."
+            className="w-full rounded-md border bg-transparent px-2.5 py-1.5 text-sm outline-none placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary"
+            autoFocus
+          />
         </div>
       </div>
 
@@ -225,17 +231,30 @@ function CtxMenuOverlay({ ctxMenu, setCornerPosition, hideStickyNote }: {
 }) {
   return (
     <div
-      className="fixed z-[60] w-44 rounded-md border bg-popover p-1 shadow-md"
-      style={{ left: Math.min(ctxMenu.x, window.innerWidth - 190), top: Math.min(ctxMenu.y, window.innerHeight - 200) }}
+      className="fixed z-[60] w-48 rounded-md border bg-popover p-2 shadow-md text-popover-foreground"
+      style={{ left: Math.min(ctxMenu.x, window.innerWidth - 210), top: Math.min(ctxMenu.y, window.innerHeight - 200) }}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <p className="px-3 py-1 text-[10px] text-muted-foreground uppercase tracking-wide">Position</p>
-      <button type="button" className="flex w-full items-center rounded-sm px-3 py-1.5 text-xs hover:bg-muted" onClick={() => setCornerPosition("top-left")}>Top left</button>
-      <button type="button" className="flex w-full items-center rounded-sm px-3 py-1.5 text-xs hover:bg-muted" onClick={() => setCornerPosition("top-right")}>Top right</button>
-      <button type="button" className="flex w-full items-center rounded-sm px-3 py-1.5 text-xs hover:bg-muted" onClick={() => setCornerPosition("bottom-left")}>Bottom left</button>
-      <button type="button" className="flex w-full items-center rounded-sm px-3 py-1.5 text-xs hover:bg-muted" onClick={() => setCornerPosition("bottom-right")}>Bottom right</button>
-      <div className="my-1 border-t" />
-      <button type="button" className="flex w-full items-center rounded-sm px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10" onClick={hideStickyNote}>Hide sticky note</button>
+      <p className="px-1 pb-2 text-[10px] text-muted-foreground uppercase tracking-wide">Position</p>
+      <div className="grid grid-cols-2 gap-2 mb-2">
+        <button type="button" className="flex items-start justify-start rounded-md border border-border hover:border-primary hover:bg-primary/5 p-1.5 h-10 transition-colors" onClick={(e) => { e.stopPropagation(); setCornerPosition("top-left"); }} title="Top left">
+          <div className="h-2.5 w-2.5 rounded-sm bg-amber-500" />
+        </button>
+        <button type="button" className="flex items-start justify-end rounded-md border border-border hover:border-primary hover:bg-primary/5 p-1.5 h-10 transition-colors" onClick={(e) => { e.stopPropagation(); setCornerPosition("top-right"); }} title="Top right">
+          <div className="h-2.5 w-2.5 rounded-sm bg-amber-500" />
+        </button>
+        <button type="button" className="flex items-end justify-start rounded-md border border-border hover:border-primary hover:bg-primary/5 p-1.5 h-10 transition-colors" onClick={(e) => { e.stopPropagation(); setCornerPosition("bottom-left"); }} title="Bottom left">
+          <div className="h-2.5 w-2.5 rounded-sm bg-amber-500" />
+        </button>
+        <button type="button" className="flex items-end justify-end rounded-md border border-border hover:border-primary hover:bg-primary/5 p-1.5 h-10 transition-colors" onClick={(e) => { e.stopPropagation(); setCornerPosition("bottom-right"); }} title="Bottom right">
+          <div className="h-2.5 w-2.5 rounded-sm bg-amber-500" />
+        </button>
+      </div>
+      <div className="border-t pt-1">
+        <button type="button" className="flex w-full items-center rounded-sm px-2 py-1.5 text-xs text-destructive hover:bg-destructive/10" onClick={(e) => { e.stopPropagation(); hideStickyNote(); }}>
+          Hide sticky note
+        </button>
+      </div>
     </div>
   );
 }

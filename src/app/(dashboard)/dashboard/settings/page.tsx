@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { plans, type PlanId } from "@/config/plans";
-import { fetchCurrentUser, fetchProfile, fetchBusinessSettings, userKeys, settingsKeys, businessKeys } from "@/lib/queries";
+import { fetchCurrentUser, fetchProfile, fetchBusinessSettings, userKeys, settingsKeys } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +23,8 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
 import { ApiKeysSection } from "@/components/settings/api-keys-section";
+import { ProfileCard } from "@/components/settings/profile-card";
+import { BusinessCard } from "@/components/settings/business-card";
 
 const LANGUAGES = [
   { value: "en", label: "English" },
@@ -35,24 +37,15 @@ const LANGUAGES = [
   { value: "pt", label: "Português" },
 ] as const;
 
-interface TimezoneEntry {
-  value: string;
-  label: string;
-  region: string;
-}
+interface TimezoneEntry { value: string; label: string; region: string; }
 
 function getGroupedTimezones(): Record<string, TimezoneEntry[]> {
   const zones: TimezoneEntry[] = Intl.supportedValuesOf("timeZone").map((tz) => {
     const parts = tz.split("/");
-    const region = parts[0];
-    const city = parts.slice(1).join("/").replace(/_/g, " ");
-    return { value: tz, label: city || tz, region };
+    return { value: tz, label: parts.slice(1).join("/").replace(/_/g, " ") || tz, region: parts[0] };
   });
   const grouped: Record<string, TimezoneEntry[]> = {};
-  for (const z of zones) {
-    if (!grouped[z.region]) grouped[z.region] = [];
-    grouped[z.region].push(z);
-  }
+  for (const z of zones) { if (!grouped[z.region]) grouped[z.region] = []; grouped[z.region].push(z); }
   return grouped;
 }
 
@@ -66,10 +59,8 @@ export default function SettingsPage() {
   const supabase = createClient();
   const queryClient = useQueryClient();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
-  const setCurrentBusiness = useBusinessStore((s) => s.setCurrentBusiness);
   const businessId = currentBusiness?.id;
 
-  // Queries with high staleTime — served from cache on revisit
   const { data: user } = useQuery({ queryKey: userKeys.current, queryFn: fetchCurrentUser, retry: false });
   const userId = user?.id;
 
@@ -92,29 +83,24 @@ export default function SettingsPage() {
   const isProOrAbove = planId === "pro" || planId === "business";
   const detectedTz = typeof window !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "";
 
-  // Form inputs: null = "show from cache", non-null = "user has edited"
-  const [fullNameInput, setFullNameInput] = useState<string | null>(null);
-  const [businessNameInput, setBusinessNameInput] = useState<string | null>(null);
+  // Language/Region local state
   const [languageInput, setLanguageInput] = useState<string | null>(null);
   const [timezoneInput, setTimezoneInput] = useState<string | null>(null);
   const [tzSearch, setTzSearch] = useState("");
-  const [notificationsInput, setNotificationsInput] = useState<NotificationSettings | null>(null);
-  const [developerMode, setDeveloperMode] = useState<boolean | null>(null);
+  const [savingLangRegion, setSavingLangRegion] = useState(false);
 
-  // Derived display values: local edit > cache > default
-  const displayFullName = fullNameInput ?? profile?.full_name ?? "";
-  const displayBusinessName = businessNameInput ?? currentBusiness?.name ?? "";
+  // Notifications local state
+  const [notificationsInput, setNotificationsInput] = useState<NotificationSettings | null>(null);
+  const [savingNotifications, setSavingNotifications] = useState(false);
+
+  // Developer mode local state
+  const [developerMode, setDeveloperMode] = useState<boolean | null>(null);
+  const [savingDevMode, setSavingDevMode] = useState(false);
+
   const displayLanguage = languageInput ?? bizSettings?.language ?? "en";
   const displayTimezone = timezoneInput ?? bizSettings?.timezone ?? detectedTz;
   const displayNotifications = notificationsInput ?? profile?.notification_settings ?? {};
   const displayDevMode = developerMode ?? profile?.developer_mode ?? false;
-
-  // Loading states
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [savingBusiness, setSavingBusiness] = useState(false);
-  const [savingLangRegion, setSavingLangRegion] = useState(false);
-  const [savingNotifications, setSavingNotifications] = useState(false);
-  const [savingDevMode, setSavingDevMode] = useState(false);
 
   const groupedTimezones = useMemo(() => getGroupedTimezones(), []);
   const filteredTimezones = useMemo(() => {
@@ -127,46 +113,6 @@ export default function SettingsPage() {
     }
     return result;
   }, [groupedTimezones, tzSearch]);
-
-  // ─── Save handlers with validation ──────────────
-
-  async function handleSaveProfile(e: React.FormEvent) {
-    e.preventDefault();
-    if (!userId) return;
-    const nameToSave = fullNameInput ?? profile?.full_name;
-    if (!nameToSave?.trim()) { toast.error("Name cannot be empty"); return; }
-    setSavingProfile(true);
-    const { error } = await supabase.from("profiles").update({ full_name: nameToSave.trim() }).eq("id", userId);
-    if (error) { toast.error(error.message); }
-    else {
-      toast.success("Profile updated");
-      setFullNameInput(null);
-      queryClient.setQueryData(userKeys.profile(userId), (old: any) => ({ ...old, full_name: nameToSave.trim() }));
-    }
-    setSavingProfile(false);
-  }
-
-  async function handleSaveBusiness(e: React.FormEvent) {
-    e.preventDefault();
-    if (!currentBusiness) return;
-    const nameToSave = businessNameInput ?? currentBusiness.name;
-    if (!String(nameToSave).trim()) { toast.error("Business name cannot be empty"); return; }
-    setSavingBusiness(true);
-    const { data, error } = await supabase
-      .from("businesses")
-      .update({ name: String(nameToSave).trim() })
-      .eq("id", currentBusiness.id)
-      .select()
-      .single();
-    if (error) { toast.error(error.message); }
-    else {
-      toast.success("Business updated");
-      setBusinessNameInput(null);
-      if (data) setCurrentBusiness(data);
-      if (userId) queryClient.invalidateQueries({ queryKey: businessKeys.all(userId) });
-    }
-    setSavingBusiness(false);
-  }
 
   async function handleSaveLangRegion(e: React.FormEvent) {
     e.preventDefault();
@@ -217,8 +163,7 @@ export default function SettingsPage() {
     setNotificationsInput((prev) => ({ ...(prev ?? displayNotifications), [key]: value }));
   }
 
-  // ─── Full-page skeleton until data is loaded ────
-
+  // Full-page skeleton until data is loaded
   if (!user || profileLoading || (businessId && bizLoading)) {
     return (
       <div className="mx-auto max-w-2xl space-y-6">
@@ -237,8 +182,6 @@ export default function SettingsPage() {
     );
   }
 
-  // ─── Render ─────────────────────────────────────
-
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
@@ -246,37 +189,11 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">Manage your profile and business settings.</p>
       </div>
 
-      {/* Card 1: Profile */}
-      <Card>
-        <CardHeader><CardTitle>Profile</CardTitle></CardHeader>
-        <CardContent>
-          <form onSubmit={handleSaveProfile} className="space-y-4">
-            <div className="space-y-2">
-              <Label>Full Name</Label>
-              <Input value={displayFullName} onChange={(e) => setFullNameInput(e.target.value)} />
-            </div>
-            <Button type="submit" disabled={savingProfile || profileFetching}>
-              {savingProfile ? "Saving..." : "Save Profile"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      {/* Card 1: Profile — isolated component */}
+      <ProfileCard userId={userId!} initialName={profile?.full_name ?? ""} isFetching={profileFetching} />
 
-      {/* Card 2: Business */}
-      <Card>
-        <CardHeader><CardTitle>Business</CardTitle></CardHeader>
-        <CardContent>
-          <form onSubmit={handleSaveBusiness} className="space-y-4">
-            <div className="space-y-2">
-              <Label>Business Name</Label>
-              <Input value={displayBusinessName} onChange={(e) => setBusinessNameInput(e.target.value)} />
-            </div>
-            <Button type="submit" disabled={savingBusiness || !currentBusiness}>
-              {savingBusiness ? "Saving..." : "Save Business"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      {/* Card 2: Business — isolated component */}
+      <BusinessCard userId={userId!} initialName={String(currentBusiness?.name ?? "")} />
 
       {/* Card 3: Language & Region */}
       <Card>

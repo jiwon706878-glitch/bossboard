@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { StickyNote as StickyNoteIcon, X, Trash2 } from "lucide-react";
 
 interface Note {
@@ -56,11 +56,22 @@ export function StickyNote() {
   }, []);
 
   // Close context menu on click outside
+  const ctxMenuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!ctxMenu) return;
-    const handler = () => setCtxMenu(null);
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    const handler = (e: MouseEvent) => {
+      // Don't close if clicking inside the context menu
+      if (ctxMenuRef.current?.contains(e.target as Node)) return;
+      setCtxMenu(null);
+    };
+    // Use setTimeout to avoid the same right-click event immediately closing the menu
+    const timer = setTimeout(() => {
+      document.addEventListener("mousedown", handler);
+    }, 10);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("mousedown", handler);
+    };
   }, [ctxMenu]);
 
   function addNote() {
@@ -151,7 +162,7 @@ export function StickyNote() {
             </span>
           )}
         </button>
-        {ctxMenu && <CtxMenuOverlay ctxMenu={ctxMenu} setCornerPosition={setCornerPosition} hideStickyNote={hideStickyNote} />}
+        {ctxMenu && <CtxMenuOverlay ref={ctxMenuRef} ctxMenu={ctxMenu} setCornerPosition={setCornerPosition} hideStickyNote={hideStickyNote} />}
       </>
     );
   }
@@ -219,42 +230,42 @@ export function StickyNote() {
         </div>
       </div>
 
-      {ctxMenu && <CtxMenuOverlay ctxMenu={ctxMenu} setCornerPosition={setCornerPosition} hideStickyNote={hideStickyNote} />}
+      {ctxMenu && <CtxMenuOverlay ref={ctxMenuRef} ctxMenu={ctxMenu} setCornerPosition={setCornerPosition} hideStickyNote={hideStickyNote} />}
     </>
   );
 }
 
-function CtxMenuOverlay({ ctxMenu, setCornerPosition, hideStickyNote }: {
+const CtxMenuOverlay = React.forwardRef<HTMLDivElement, {
   ctxMenu: { x: number; y: number };
   setCornerPosition: (corner: "top-left" | "top-right" | "bottom-left" | "bottom-right") => void;
   hideStickyNote: () => void;
-}) {
+}>(function CtxMenuOverlay({ ctxMenu, setCornerPosition, hideStickyNote }, ref) {
   return (
     <div
+      ref={ref}
       className="fixed z-[60] w-48 rounded-md border bg-popover p-2 shadow-md text-popover-foreground"
       style={{ left: Math.min(ctxMenu.x, window.innerWidth - 210), top: Math.min(ctxMenu.y, window.innerHeight - 200) }}
-      onMouseDown={(e) => e.stopPropagation()}
     >
       <p className="px-1 pb-2 text-[10px] text-muted-foreground uppercase tracking-wide">Position</p>
       <div className="grid grid-cols-2 gap-2 mb-2">
-        <button type="button" className="flex items-start justify-start rounded-md border border-border hover:border-primary hover:bg-primary/5 p-1.5 h-10 transition-colors" onClick={(e) => { e.stopPropagation(); setCornerPosition("top-left"); }} title="Top left">
+        <button type="button" className="flex items-start justify-start rounded-md border border-border hover:border-primary hover:bg-primary/5 p-1.5 h-10 transition-colors" onClick={() => setCornerPosition("top-left")} title="Top left">
           <div className="h-2.5 w-2.5 rounded-sm bg-amber-500" />
         </button>
-        <button type="button" className="flex items-start justify-end rounded-md border border-border hover:border-primary hover:bg-primary/5 p-1.5 h-10 transition-colors" onClick={(e) => { e.stopPropagation(); setCornerPosition("top-right"); }} title="Top right">
+        <button type="button" className="flex items-start justify-end rounded-md border border-border hover:border-primary hover:bg-primary/5 p-1.5 h-10 transition-colors" onClick={() => setCornerPosition("top-right")} title="Top right">
           <div className="h-2.5 w-2.5 rounded-sm bg-amber-500" />
         </button>
-        <button type="button" className="flex items-end justify-start rounded-md border border-border hover:border-primary hover:bg-primary/5 p-1.5 h-10 transition-colors" onClick={(e) => { e.stopPropagation(); setCornerPosition("bottom-left"); }} title="Bottom left">
+        <button type="button" className="flex items-end justify-start rounded-md border border-border hover:border-primary hover:bg-primary/5 p-1.5 h-10 transition-colors" onClick={() => setCornerPosition("bottom-left")} title="Bottom left">
           <div className="h-2.5 w-2.5 rounded-sm bg-amber-500" />
         </button>
-        <button type="button" className="flex items-end justify-end rounded-md border border-border hover:border-primary hover:bg-primary/5 p-1.5 h-10 transition-colors" onClick={(e) => { e.stopPropagation(); setCornerPosition("bottom-right"); }} title="Bottom right">
+        <button type="button" className="flex items-end justify-end rounded-md border border-border hover:border-primary hover:bg-primary/5 p-1.5 h-10 transition-colors" onClick={() => setCornerPosition("bottom-right")} title="Bottom right">
           <div className="h-2.5 w-2.5 rounded-sm bg-amber-500" />
         </button>
       </div>
       <div className="border-t pt-1">
-        <button type="button" className="flex w-full items-center rounded-sm px-2 py-1.5 text-xs text-destructive hover:bg-destructive/10" onClick={(e) => { e.stopPropagation(); hideStickyNote(); }}>
+        <button type="button" className="flex w-full items-center rounded-sm px-2 py-1.5 text-xs text-destructive hover:bg-destructive/10" onClick={() => hideStickyNote()}>
           Hide sticky note
         </button>
       </div>
     </div>
   );
-}
+});

@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { useRoleStore } from "@/hooks/use-role";
 import { plans, type PlanId } from "@/config/plans";
-import { fetchCurrentUser, fetchProfile, fetchTeamMembers, fetchPendingInvites, fetchSopStats, fetchMonthlyUsage, userKeys, teamKeys, sopKeys, usageKeys } from "@/lib/queries";
+import { fetchCurrentUser, fetchProfile, fetchTeamMembers, fetchPendingInvites, fetchSopStats, fetchMonthlyUsage, fetchUserBusinesses, userKeys, teamKeys, sopKeys, usageKeys, businessKeys } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,7 +34,7 @@ export default function TeamPage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [newBizName, setNewBizName] = useState("");
-  const [newBizType, setNewBizType] = useState("other");
+  const [newBizType, setNewBizType] = useState("");
 
   // Queries
   const { data: user } = useQuery({ queryKey: userKeys.current, queryFn: fetchCurrentUser, retry: false });
@@ -78,15 +78,8 @@ export default function TeamPage() {
   });
 
   const { data: allBusinesses = [] } = useQuery({
-    queryKey: ["businesses", userId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("businesses")
-        .select("id, name, type, created_at")
-        .eq("user_id", userId!)
-        .order("created_at");
-      return data ?? [];
-    },
+    queryKey: businessKeys.all(userId ?? ""),
+    queryFn: () => fetchUserBusinesses(userId!),
     enabled: !!userId,
   });
 
@@ -163,14 +156,15 @@ export default function TeamPage() {
     if (!newBizName.trim() || !userId) return;
     const { error } = await supabase
       .from("businesses")
-      .insert({ name: newBizName.trim(), type: newBizType, user_id: userId })
+      .insert({ name: newBizName.trim(), type: newBizType.trim() || "other", user_id: userId })
       .select()
       .single();
     if (error) toast.error(error.message);
     else {
       toast.success("Workspace added");
       setNewBizName("");
-      queryClient.invalidateQueries({ queryKey: ["businesses", userId] });
+      setNewBizType("");
+      queryClient.invalidateQueries({ queryKey: businessKeys.all(userId) });
     }
   }
 
@@ -180,7 +174,7 @@ export default function TeamPage() {
     if (error) toast.error(error.message);
     else {
       toast.success("Workspace deleted");
-      queryClient.invalidateQueries({ queryKey: ["businesses", userId] });
+      queryClient.invalidateQueries({ queryKey: businessKeys.all(userId!) });
       if (currentBusiness?.id === bizId) {
         const remaining = allBusinesses.filter((b: any) => b.id !== bizId);
         if (remaining.length > 0) useBusinessStore.getState().setCurrentBusiness(remaining[0]);
@@ -299,16 +293,7 @@ export default function TeamPage() {
               <h3 className="text-sm font-medium text-muted-foreground">Add Workspace</h3>
               <form onSubmit={handleAddBusiness} className="flex gap-3">
                 <Input placeholder="Business name" value={newBizName} onChange={(e) => setNewBizName(e.target.value)} className="flex-1" />
-                <Select value={newBizType} onValueChange={setNewBizType}>
-                  <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cafe">Cafe</SelectItem>
-                    <SelectItem value="restaurant">Restaurant</SelectItem>
-                    <SelectItem value="retail">Retail</SelectItem>
-                    <SelectItem value="office">Office</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input placeholder="e.g., Cafe, Brewery, Office" value={newBizType} onChange={(e) => setNewBizType(e.target.value)} className="w-[180px]" />
                 <Button type="submit" disabled={!newBizName.trim()}>Add</Button>
               </form>
             </div>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useBusinessStore } from "@/hooks/use-business";
+import { fetchCurrentUser, fetchUserBusinesses, userKeys, businessKeys } from "@/lib/queries";
 import {
   Select,
   SelectContent,
@@ -12,53 +13,46 @@ import {
 } from "@/components/ui/select";
 import { Building2 } from "lucide-react";
 
-import type { Business } from "@/hooks/use-business";
-
 export function BusinessSwitcher() {
-  const [businesses, setBusinesses] = useState<Business[]>([]);
   const { currentBusiness, userId, setCurrentBusiness, setUserId, clear } =
     useBusinessStore();
-  const supabase = createClient();
 
+  const { data: user } = useQuery({
+    queryKey: userKeys.current,
+    queryFn: fetchCurrentUser,
+    retry: false,
+  });
+
+  const { data: businesses = [] } = useQuery({
+    queryKey: businessKeys.all(user?.id ?? ""),
+    queryFn: () => fetchUserBusinesses(user!.id),
+    enabled: !!user?.id,
+  });
+
+  // Sync zustand with query data
   useEffect(() => {
-    async function loadBusinesses() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+    if (!user?.id) return;
 
-      // Different user logged in — clear stale store
-      if (userId && userId !== user.id) {
-        clear();
-      }
-      setUserId(user.id);
-
-      const { data } = await supabase
-        .from("businesses")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at");
-
-      if (data && data.length > 0) {
-        setBusinesses(data);
-        if (!currentBusiness || userId !== user.id) {
-          setCurrentBusiness(data[0]);
-        } else {
-          // Verify cached business still belongs to this user
-          const fresh = data.find((b: any) => b.id === currentBusiness.id);
-          if (fresh && JSON.stringify(fresh) !== JSON.stringify(currentBusiness)) {
-            setCurrentBusiness(fresh);
-          } else if (!fresh) {
-            setCurrentBusiness(data[0]);
-          }
-        }
-      } else {
-        // User has no businesses — clear any stale cached business
-        setCurrentBusiness(null);
-      }
+    if (userId && userId !== user.id) {
+      clear();
     }
-    loadBusinesses();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    setUserId(user.id);
+
+    if (businesses.length > 0) {
+      if (!currentBusiness || userId !== user.id) {
+        setCurrentBusiness(businesses[0]);
+      } else {
+        const fresh = businesses.find((b: any) => b.id === currentBusiness.id);
+        if (fresh && JSON.stringify(fresh) !== JSON.stringify(currentBusiness)) {
+          setCurrentBusiness(fresh);
+        } else if (!fresh) {
+          setCurrentBusiness(businesses[0]);
+        }
+      }
+    } else {
+      setCurrentBusiness(null);
+    }
+  }, [businesses, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (businesses.length === 0) return null;
 
@@ -66,7 +60,7 @@ export function BusinessSwitcher() {
     <Select
       value={currentBusiness?.id || ""}
       onValueChange={(id) => {
-        const biz = businesses.find((b) => b.id === id);
+        const biz = businesses.find((b: any) => b.id === id);
         if (biz) setCurrentBusiness(biz);
       }}
     >
@@ -77,7 +71,7 @@ export function BusinessSwitcher() {
         </div>
       </SelectTrigger>
       <SelectContent>
-        {businesses.map((b) => (
+        {businesses.map((b: any) => (
           <SelectItem key={b.id} value={b.id}>
             {b.name}
           </SelectItem>

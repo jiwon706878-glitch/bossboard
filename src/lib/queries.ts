@@ -236,6 +236,21 @@ export async function fetchBusinessSettings(businessId: string) {
   return data;
 }
 
+// ─── Businesses ───────────────────────────────────
+export const businessKeys = {
+  all: (userId: string) => ["businesses", userId] as const,
+};
+
+export async function fetchUserBusinesses(userId: string) {
+  const { data, error } = await supabase
+    .from("businesses")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at");
+  if (error) throw error;
+  return data ?? [];
+}
+
 // ─── Board Posts ──────────────────────────────────
 export const boardKeys = {
   recent: (businessId: string) => ["board", "recent", businessId] as const,

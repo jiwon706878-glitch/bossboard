@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useState, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { useRoleStore } from "@/hooks/use-role";
+import { boardKeys } from "@/lib/queries";
 import { FilePreview } from "@/components/dashboard/file-preview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,11 +82,11 @@ const TYPE_CONFIG: Record<string, { label: string; color: string }> = {
 
 export default function BoardPage() {
   const supabase = createClient();
+  const queryClient = useQueryClient();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
+  const businessId = currentBusiness?.id;
   const { isAdmin } = useRoleStore();
 
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Create form
@@ -109,116 +111,95 @@ export default function BoardPage() {
   const [commentAnon, setCommentAnon] = useState(false);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
 
-  // ─── Load posts ──────────────────────────────────────────────────────────
+  // ─── Load posts via React Query ──────────────────────────────────────────
 
-  const loadPosts = useCallback(async () => {
-    if (!currentBusiness?.id) return;
+  const { data: posts = [], isLoading: loading } = useQuery({
+    queryKey: boardKeys.all(businessId ?? ""),
+    queryFn: async (): Promise<Post[]> => {
+      if (!businessId) return [];
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) setCurrentUserId(user.id);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setCurrentUserId(user.id);
 
-    const { data: postsData } = await supabase
-      .from("board_posts")
-      .select("id, user_id, type, title, content, is_pinned, created_at, attachments")
-      .eq("business_id", currentBusiness.id)
-      .order("created_at", { ascending: false });
+      const { data: postsData } = await supabase
+        .from("board_posts")
+        .select("id, user_id, type, title, content, is_pinned, created_at, attachments")
+        .eq("business_id", businessId)
+        .order("created_at", { ascending: false });
 
-    if (!postsData || postsData.length === 0) {
-      setPosts([]);
-      setLoading(false);
-      return;
-    }
+      if (!postsData || postsData.length === 0) return [];
 
-    const postIds = postsData.map((p: any) => p.id);
+      const postIds = postsData.map((p: any) => p.id);
 
-    // Parallel fetches
-    const [
-      { data: commentCounts },
-      { data: readCounts },
-      { data: profiles },
-      { data: pollOptions },
-      { data: pollVotes },
-    ] = await Promise.all([
-      supabase.from("board_comments").select("post_id").in("post_id", postIds),
-      supabase.from("board_post_reads").select("post_id").in("post_id", postIds),
-      supabase.from("profiles").select("id, full_name").in("id", [...new Set(postsData.map((p: any) => p.user_id))]),
-      supabase.from("poll_options").select("id, post_id, option_text, sort_order").in("post_id", postIds).order("sort_order"),
-      user ? supabase.from("poll_votes").select("option_id, user_id").eq("user_id", user.id) : Promise.resolve({ data: [] }),
-    ]);
+      const [
+        { data: commentCounts },
+        { data: readCounts },
+        { data: profiles },
+        { data: pollOptions },
+        { data: pollVotes },
+      ] = await Promise.all([
+        supabase.from("board_comments").select("post_id").in("post_id", postIds),
+        supabase.from("board_post_reads").select("post_id").in("post_id", postIds),
+        supabase.from("profiles").select("id, full_name").in("id", [...new Set(postsData.map((p: any) => p.user_id))]),
+        supabase.from("poll_options").select("id, post_id, option_text, sort_order").in("post_id", postIds).order("sort_order"),
+        user ? supabase.from("poll_votes").select("option_id, user_id").eq("user_id", user.id) : Promise.resolve({ data: [] }),
+      ]);
 
-    // Count votes per option
-    const optionIds = (pollOptions ?? []).map((o: any) => o.id);
-    const { data: allVotes } = optionIds.length > 0
-      ? await supabase.from("poll_votes").select("option_id").in("option_id", optionIds)
-      : { data: [] };
+      const optionIds = (pollOptions ?? []).map((o: any) => o.id);
+      const { data: allVotes } = optionIds.length > 0
+        ? await supabase.from("poll_votes").select("option_id").in("option_id", optionIds)
+        : { data: [] };
 
-    const voteCounts = new Map<string, number>();
-    for (const v of allVotes ?? []) {
-      voteCounts.set(v.option_id, (voteCounts.get(v.option_id) ?? 0) + 1);
-    }
+      const voteCounts = new Map<string, number>();
+      for (const v of allVotes ?? []) voteCounts.set(v.option_id, (voteCounts.get(v.option_id) ?? 0) + 1);
 
-    const nameMap = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
-    const commentCountMap = new Map<string, number>();
-    for (const c of commentCounts ?? []) {
-      commentCountMap.set(c.post_id, (commentCountMap.get(c.post_id) ?? 0) + 1);
-    }
-    const readCountMap = new Map<string, number>();
-    for (const r of readCounts ?? []) {
-      readCountMap.set(r.post_id, (readCountMap.get(r.post_id) ?? 0) + 1);
-    }
+      const nameMap = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
+      const commentCountMap = new Map<string, number>();
+      for (const c of commentCounts ?? []) commentCountMap.set(c.post_id, (commentCountMap.get(c.post_id) ?? 0) + 1);
+      const readCountMap = new Map<string, number>();
+      for (const r of readCounts ?? []) readCountMap.set(r.post_id, (readCountMap.get(r.post_id) ?? 0) + 1);
 
-    const userVotedOptions = new Set((pollVotes ?? []).map((v: any) => v.option_id));
+      const userVotedOptions = new Set((pollVotes ?? []).map((v: any) => v.option_id));
 
-    const enriched: Post[] = postsData.map((p: any) => {
-      const opts = (pollOptions ?? [])
-        .filter((o: any) => o.post_id === p.id)
-        .map((o: any) => ({
-          id: o.id,
-          option_text: o.option_text,
-          vote_count: voteCounts.get(o.id) ?? 0,
-        }));
+      const enriched: Post[] = postsData.map((p: any) => {
+        const opts = (pollOptions ?? [])
+          .filter((o: any) => o.post_id === p.id)
+          .map((o: any) => ({ id: o.id, option_text: o.option_text, vote_count: voteCounts.get(o.id) ?? 0 }));
+        const votedOpt = opts.find((o: any) => userVotedOptions.has(o.id));
+        return {
+          id: p.id, user_id: p.user_id, type: p.type, title: p.title, content: p.content,
+          is_pinned: p.is_pinned, created_at: p.created_at,
+          author_name: nameMap.get(p.user_id) ?? null,
+          comment_count: commentCountMap.get(p.id) ?? 0, read_count: readCountMap.get(p.id) ?? 0,
+          poll_options: opts.length > 0 ? opts : undefined, user_voted_option_id: votedOpt?.id ?? null,
+          attachments: p.attachments ?? null,
+        };
+      });
 
-      const votedOpt = opts.find((o: any) => userVotedOptions.has(o.id));
+      enriched.sort((a, b) => {
+        if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
 
-      return {
-        id: p.id,
-        user_id: p.user_id,
-        type: p.type,
-        title: p.title,
-        content: p.content,
-        is_pinned: p.is_pinned,
-        created_at: p.created_at,
-        author_name: nameMap.get(p.user_id) ?? null,
-        comment_count: commentCountMap.get(p.id) ?? 0,
-        read_count: readCountMap.get(p.id) ?? 0,
-        poll_options: opts.length > 0 ? opts : undefined,
-        user_voted_option_id: votedOpt?.id ?? null,
-        attachments: p.attachments ?? null,
-      };
-    });
-
-    // Sort: pinned first, then by date
-    enriched.sort((a, b) => {
-      if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
-
-    setPosts(enriched);
-    setLoading(false);
-
-    // Mark notices as read
-    if (user) {
-      const notices = enriched.filter((p) => p.type === "notice");
-      for (const n of notices) {
-        supabase.from("board_post_reads").upsert(
-          { post_id: n.id, user_id: user.id },
-          { onConflict: "post_id,user_id" }
-        ).then(() => {});
+      // Mark notices as read (fire-and-forget)
+      if (user) {
+        const notices = enriched.filter((p) => p.type === "notice");
+        for (const n of notices) {
+          supabase.from("board_post_reads").upsert(
+            { post_id: n.id, user_id: user.id },
+            { onConflict: "post_id,user_id" }
+          ).then(() => {});
+        }
       }
-    }
-  }, [currentBusiness?.id, supabase]);
 
-  useEffect(() => { loadPosts(); }, [loadPosts]);
+      return enriched;
+    },
+    enabled: !!businessId,
+  });
+
+  function invalidateBoard() {
+    queryClient.invalidateQueries({ queryKey: boardKeys.all(businessId!) });
+  }
 
   // ─── Create post ─────────────────────────────────────────────────────────
 
@@ -287,7 +268,7 @@ export default function BoardPage() {
     setPollInputs(["", ""]);
     setFormAttachments([]);
     setSubmitting(false);
-    loadPosts();
+    invalidateBoard();
   }
 
   // ─── Delete post ─────────────────────────────────────────────────────────
@@ -295,7 +276,7 @@ export default function BoardPage() {
   async function handleDeletePost(postId: string) {
     const { error } = await supabase.from("board_posts").delete().eq("id", postId);
     if (error) toast.error(error.message);
-    else { toast.success("Post deleted"); loadPosts(); }
+    else { toast.success("Post deleted"); invalidateBoard(); }
   }
 
   // ─── Poll vote ───────────────────────────────────────────────────────────
@@ -310,7 +291,7 @@ export default function BoardPage() {
       else toast.error(error.message);
       return;
     }
-    loadPosts();
+    invalidateBoard();
   }
 
   // ─── Comments ────────────────────────────────────────────────────────────
@@ -369,9 +350,9 @@ export default function BoardPage() {
       setCommentAnon(false);
       loadComments(postId);
       // Update comment count locally
-      setPosts((prev) => prev.map((p) =>
-        p.id === postId ? { ...p, comment_count: p.comment_count + 1 } : p
-      ));
+      queryClient.setQueryData(boardKeys.all(businessId!), (prev: Post[] | undefined) =>
+        (prev ?? []).map((p) => p.id === postId ? { ...p, comment_count: p.comment_count + 1 } : p)
+      );
     }
     setCommentSubmitting(false);
   }
@@ -379,9 +360,9 @@ export default function BoardPage() {
   async function handleDeleteComment(commentId: string, postId: string) {
     await supabase.from("board_comments").delete().eq("id", commentId);
     loadComments(postId);
-    setPosts((prev) => prev.map((p) =>
-      p.id === postId ? { ...p, comment_count: Math.max(0, p.comment_count - 1) } : p
-    ));
+    queryClient.setQueryData(boardKeys.all(businessId!), (prev: Post[] | undefined) =>
+      (prev ?? []).map((p) => p.id === postId ? { ...p, comment_count: Math.max(0, p.comment_count - 1) } : p)
+    );
   }
 
   // ─── Render ──────────────────────────────────────────────────────────────

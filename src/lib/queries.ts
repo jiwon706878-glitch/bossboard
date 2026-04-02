@@ -71,6 +71,16 @@ export async function fetchActiveChecklists(businessId: string) {
   return data ?? [];
 }
 
+export async function fetchAllChecklists(businessId: string) {
+  const { data, error } = await supabase
+    .from("checklists")
+    .select("id, title, status, due_date, items, assigned_to, recurrence_type, sop_id, created_at")
+    .eq("business_id", businessId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
 // ─── Journal ──────────────────────────────────────
 export const journalKeys = {
   all: (businessId: string) => ["journal", businessId] as const,
@@ -311,6 +321,7 @@ export async function fetchUserBusinesses(userId: string) {
 // ─── Board Posts ──────────────────────────────────
 export const boardKeys = {
   recent: (businessId: string) => ["board", "recent", businessId] as const,
+  all: (businessId: string) => ["board", "all", businessId] as const,
 };
 
 export async function fetchRecentBoardPosts(businessId: string) {

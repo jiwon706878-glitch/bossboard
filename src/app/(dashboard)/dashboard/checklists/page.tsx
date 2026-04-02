@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow, format, isToday, isPast } from "date-fns";
 import {
   CheckSquare,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
+import { fetchAllChecklists, checklistKeys } from "@/lib/queries";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -69,33 +71,18 @@ function ChecklistContextMenu({ menu, onClose, onOpen, onDelete }: { menu: { x: 
 export default function ChecklistsPage() {
   const supabase = createClient();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { currentBusiness } = useBusinessStore();
-  const [checklists, setChecklists] = useState<Checklist[]>([]);
-  const [loading, setLoading] = useState(true);
+  const businessId = currentBusiness?.id;
+
+  const { data: checklists = [], isLoading: loading } = useQuery<Checklist[]>({
+    queryKey: checklistKeys.all(businessId ?? ""),
+    queryFn: () => fetchAllChecklists(businessId!) as Promise<Checklist[]>,
+    enabled: !!businessId,
+  });
+
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [clCtxMenu, setClCtxMenu] = useState<{ x: number; y: number; id: string } | null>(null);
-
-  const loadChecklists = useCallback(async () => {
-    if (!currentBusiness?.id) return;
-
-    const { data, error } = await supabase
-      .from("checklists")
-      .select("id, title, status, due_date, items, assigned_to, recurrence_type, sop_id, created_at")
-      .eq("business_id", currentBusiness.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      toast.error("Failed to load checklists");
-      return;
-    }
-
-    setChecklists(data ?? []);
-    setLoading(false);
-  }, [currentBusiness?.id, supabase]);
-
-  useEffect(() => {
-    loadChecklists();
-  }, [loadChecklists]);
 
   async function handleDelete(id: string) {
     setDeletingId(id);
@@ -105,9 +92,9 @@ export default function ChecklistsPage() {
       setDeletingId(null);
       return;
     }
-    setChecklists((prev) => prev.filter((c) => c.id !== id));
     setDeletingId(null);
     toast.success("Checklist deleted");
+    queryClient.invalidateQueries({ queryKey: checklistKeys.all(businessId!) });
   }
 
   const dueToday = checklists.filter(

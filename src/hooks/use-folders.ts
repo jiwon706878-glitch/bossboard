@@ -5,8 +5,12 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import type { FolderRow, SOP } from "@/types/sops";
 
+let folderCache: { businessId: string; folders: FolderRow[]; ts: number } | null = null;
+const FOLDER_CACHE_TTL = 2 * 60 * 1000;
+
 export function useFolders(businessId: string | undefined) {
-  const [folders, setFolders] = useState<FolderRow[]>([]);
+  const cached = folderCache && folderCache.businessId === businessId && Date.now() - folderCache.ts < FOLDER_CACHE_TTL ? folderCache : null;
+  const [folders, setFolders] = useState<FolderRow[]>(cached?.folders ?? []);
   const supabase = createClient();
 
   const fetchFolders = useCallback(async () => {
@@ -16,6 +20,7 @@ export function useFolders(businessId: string | undefined) {
       .select("id, name, parent_id, permissions")
       .eq("business_id", businessId);
     setFolders(allFolders ?? []);
+    folderCache = { businessId, folders: allFolders ?? [], ts: Date.now() };
     return allFolders ?? [];
   }, [businessId, supabase]);
 

@@ -10,10 +10,13 @@ import {
   fetchCurrentUser,
   fetchProfile,
   fetchMonthlyUsage,
+  fetchAllChecklists,
   userKeys,
   usageKeys,
+  checklistKeys,
 } from "@/lib/queries";
 import { cn } from "@/lib/utils";
+import { useBusinessStore } from "@/hooks/use-business";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -31,7 +34,6 @@ import {
   LogOut,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useBusinessStore } from "@/hooks/use-business";
 
 const navLinks = [
   { key: "wiki", href: "/dashboard/sops", label: "Wiki", icon: FileText },
@@ -49,17 +51,19 @@ const NavLink = memo(function NavLink({
   label,
   icon: Icon,
   pathname,
+  onHover,
 }: {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   pathname: string;
+  onHover?: () => void;
 }) {
   const isActive =
     pathname === href ||
     (href !== "/dashboard" && pathname.startsWith(href));
   return (
-    <Link href={href}>
+    <Link href={href} onMouseEnter={onHover}>
       <Button
         variant={isActive ? "secondary" : "ghost"}
         className={cn(
@@ -101,6 +105,13 @@ export function DashboardSidebar({ className }: { className?: string }) {
     queryFn: () => fetchMonthlyUsage(userId!),
     enabled: !!userId,
   });
+
+  const currentBusiness = useBusinessStore((s) => s.currentBusiness);
+  const bizId = currentBusiness?.id;
+
+  const prefetchMap: Record<string, () => void> = bizId ? {
+    "/dashboard/checklists": () => queryClient.prefetchQuery({ queryKey: checklistKeys.all(bizId), queryFn: () => fetchAllChecklists(bizId), staleTime: 2 * 60 * 1000 }),
+  } : {};
 
   const profileLoaded = !!profile;
 
@@ -196,7 +207,7 @@ export function DashboardSidebar({ className }: { className?: string }) {
 
           {/* Nav links */}
           {navLinks.map(({ key, ...link }) => (
-            <NavLink key={key} {...link} pathname={pathname} />
+            <NavLink key={key} {...link} pathname={pathname} onHover={prefetchMap[link.href]} />
           ))}
           {developerMode && (
             <>

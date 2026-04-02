@@ -5,10 +5,15 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import type { SOP } from "@/types/sops";
 
+// Module-level cache for instant revisits
+let sopCache: { businessId: string; sops: SOP[]; trashed: SOP[]; ts: number } | null = null;
+const CACHE_TTL = 2 * 60 * 1000;
+
 export function useSops(businessId: string | undefined) {
-  const [allSops, setAllSops] = useState<SOP[]>([]);
-  const [trashedSops, setTrashedSops] = useState<SOP[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = sopCache && sopCache.businessId === businessId && Date.now() - sopCache.ts < CACHE_TTL ? sopCache : null;
+  const [allSops, setAllSops] = useState<SOP[]>(cached?.sops ?? []);
+  const [trashedSops, setTrashedSops] = useState<SOP[]>(cached?.trashed ?? []);
+  const [loading, setLoading] = useState(!cached);
   const lastDeletedSopIdRef = useRef<string | null>(null);
   const supabase = createClient();
 
@@ -42,9 +47,12 @@ export function useSops(businessId: string | undefined) {
         .eq("user_id", user.id)
         .in("sop_id", sopsData.map((s: any) => s.id));
       const readIds = new Set((reads ?? []).map((r: any) => r.sop_id));
-      setAllSops(sopsData.map((s: any) => ({ ...s, isUnread: !readIds.has(s.id) })));
+      const enriched = sopsData.map((s: any) => ({ ...s, isUnread: !readIds.has(s.id) }));
+      setAllSops(enriched);
+      sopCache = { businessId: businessId!, sops: enriched, trashed: trashed ?? [], ts: Date.now() };
     } else {
       setAllSops(sopsData ?? []);
+      sopCache = { businessId: businessId!, sops: sopsData ?? [], trashed: trashed ?? [], ts: Date.now() };
     }
 
     setLoading(false);

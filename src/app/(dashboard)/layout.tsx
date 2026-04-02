@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { DashboardTopbar } from "@/components/dashboard/topbar";
 import { LazyOverlays } from "@/components/dashboard/lazy-overlays";
+import { DashboardPrefetcher } from "@/components/dashboard/prefetcher";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -23,6 +24,7 @@ export default function DashboardLayout({
           {children}
         </main>
         <LazyOverlays />
+        <DashboardPrefetcher />
       </div>
     </div>
   );

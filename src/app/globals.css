@@ -167,80 +167,155 @@
 }
 
 
+/* ═══ Apple-style center-origin animations ═══ */
+
+/* Fade in — generic entrance */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in {
-  animation: fade-in 200ms ease-out;
+  animation: fade-in 300ms ease-out;
 }
 
-/* Apple-style tab transition — smooth slide up + fade */
+/* Open: scale from center of element */
+@keyframes center-scale-in {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-center-scale-in {
+  animation: center-scale-in 380ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center center;
+}
+
+/* Close: scale back to center of element */
+@keyframes center-scale-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.85); }
+}
+.animate-center-scale-out {
+  animation: center-scale-out 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: center center;
+}
+
+/* Tab switch — gentle fade + tiny slide */
 @keyframes tab-enter {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-tab-enter {
-  animation: tab-enter 180ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation: tab-enter 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 /* Scale in — for modals, dialogs, popovers */
 @keyframes scale-in {
-  from { opacity: 0; transform: scale(0.96); }
+  from { opacity: 0; transform: scale(0.9); }
   to { opacity: 1; transform: scale(1); }
 }
 .animate-scale-in {
-  animation: scale-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: scale-in 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center center;
 }
 
-/* Slide up — for sheets, bottom panels */
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate-slide-up {
-  animation: slide-up 250ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Micro-interaction: gentle pop */
-@keyframes micro-pop {
-  0% { transform: scale(1); }
-  50% { transform: scale(0.95); }
-  100% { transform: scale(1); }
-}
-
-/* Board animations */
+/* Board form — opens from center of "New Post" button area */
 @keyframes board-form-enter {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: scale(0.9) translateY(-8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 .animate-board-form-enter {
-  animation: board-form-enter 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: board-form-enter 380ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top center;
 }
+@keyframes board-form-exit {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to { opacity: 0; transform: scale(0.9) translateY(-8px); }
+}
+.animate-board-form-exit {
+  animation: board-form-exit 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: top center;
+}
+
+/* Post cards — staggered entrance */
 @keyframes post-enter {
-  from { opacity: 0; transform: translateY(-12px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
 }
 .animate-post-enter {
   animation: post-enter 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-@keyframes post-exit {
-  from { opacity: 1; transform: scale(1); max-height: 500px; }
-  to { opacity: 0; transform: scale(0.96); max-height: 0; }
-}
-.animate-post-exit {
-  animation: post-exit 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  overflow: hidden;
-}
-@keyframes comments-expand {
-  from { opacity: 0; max-height: 0; }
-  to { opacity: 1; max-height: 1000px; }
-}
-.animate-comments-expand {
-  animation: comments-expand 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center center;
 }
 
-/* Reduced motion support */
+/* Post delete — shrink to center + fade */
+@keyframes post-exit {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.92); margin-top: -8px; margin-bottom: -8px; }
+}
+.animate-post-exit {
+  animation: post-exit 350ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: center center;
+  overflow: hidden;
+}
+
+/* Comments expand — from center */
+@keyframes comments-expand {
+  from { opacity: 0; transform: scaleY(0.9); max-height: 0; }
+  to { opacity: 1; transform: scaleY(1); max-height: 2000px; }
+}
+.animate-comments-expand {
+  animation: comments-expand 380ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top center;
+}
+
+/* Popover/dropdown — scale from center */
+@keyframes popover-enter {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-popover-enter {
+  animation: popover-enter 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center center;
+}
+
+/* Slide up — for sheets, sticky note */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-slide-up {
+  animation: slide-up 380ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes slide-down-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(16px) scale(0.97); }
+}
+.animate-slide-down-out {
+  animation: slide-down-out 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Settings/team cards stagger */
+@keyframes stagger-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-stagger-in {
+  animation: stagger-in 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Button press — subtle bounce */
+.press-effect {
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.press-effect:active {
+  transform: scale(0.96);
+}
+
+/* Toast close button on the right */
+[data-sonner-toast] [data-close-button] {
+  left: unset !important;
+  right: 0 !important;
+}
+
+/* ═══ Reduced motion ═══ */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

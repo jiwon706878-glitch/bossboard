@@ -265,7 +265,7 @@ export default function TeamPage() {
         <p className="text-muted-foreground">Manage team members and invitations.</p>
       </div>
 
-      <Card>
+      <div className="animate-stagger-in" style={{ animationDelay: "0ms" }}><Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Members</CardTitle>
@@ -331,11 +331,11 @@ export default function TeamPage() {
             </form>
           )}
         </CardContent>
-      </Card>
+      </Card></div>
 
       {/* Workspace Management */}
       {isAdmin() && (
-        <Card>
+        <div className="animate-stagger-in" style={{ animationDelay: "60ms" }}><Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">Workspaces</CardTitle>
           </CardHeader>
@@ -372,12 +372,12 @@ export default function TeamPage() {
               </form>
             </div>
           </CardContent>
-        </Card>
+        </Card></div>
       )}
 
       {/* Admin Dashboard */}
       {isAdmin() && (
-        <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
+        <div className="animate-stagger-in" style={{ animationDelay: "120ms" }}><Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
           <Card>
             <CollapsibleTrigger asChild>
               <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors duration-100">
@@ -471,7 +471,7 @@ export default function TeamPage() {
               </CardContent>
             </CollapsibleContent>
           </Card>
-        </Collapsible>
+        </Collapsible></div>
       )}
     </div>
   );

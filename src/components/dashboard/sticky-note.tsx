@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { StickyNote as StickyNoteIcon, X, Trash2, ImagePlus } from "lucide-react";
 
 interface Note {
@@ -109,6 +109,16 @@ export function StickyNote() {
     };
   }, [ctxMenu]);
 
+  const closePanel = useCallback(async () => {
+    const el = document.querySelector('[data-sticky-panel]');
+    if (el) {
+      (el as HTMLElement).classList.remove('animate-slide-up');
+      (el as HTMLElement).classList.add('animate-slide-down-out');
+      await new Promise(r => setTimeout(r, 300));
+    }
+    setIsOpen(false);
+  }, []);
+
   function addNote() {
     if (!input.trim()) return;
     setNotes((prev) => [...prev, { id: crypto.randomUUID(), text: input.trim() }]);
@@ -167,16 +177,17 @@ export function StickyNote() {
       {/* Keep the yellow button visible when note is open */}
       <button
         type="button"
-        onClick={() => setIsOpen(false)}
+        onClick={closePanel}
         onContextMenu={handleContextMenu}
-        className={`${BUTTON_STYLES[corner]} flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-amber-600 text-white shadow-lg hover:bg-amber-700 transition-colors ring-2 ring-amber-400/50`}
+        className={`${BUTTON_STYLES[corner]} flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-amber-600 text-white shadow-lg hover:bg-amber-700 transition-colors ring-2 ring-amber-400/50 press-effect`}
         title="Close Quick Notes"
       >
         <X className="h-5 w-5" />
       </button>
 
       <div
-        className="fixed z-50 rounded-lg border shadow-2xl w-[calc(100vw-2rem)] sm:w-72 max-w-sm"
+        data-sticky-panel
+        className="fixed z-50 rounded-lg border shadow-2xl w-[calc(100vw-2rem)] sm:w-72 max-w-sm animate-slide-up"
         style={{
           ...getNotePosition(corner),
           backgroundColor: "var(--card)",
@@ -194,7 +205,7 @@ export function StickyNote() {
             Quick Notes
             {notes.length > 0 && <span className="text-xs text-muted-foreground">({notes.length})</span>}
           </div>
-          <button type="button" onClick={() => setIsOpen(false)} className="rounded p-0.5 text-muted-foreground hover:text-foreground" aria-label="Close notes">
+          <button type="button" onClick={closePanel} className="rounded p-0.5 text-muted-foreground hover:text-foreground" aria-label="Close notes">
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -218,7 +229,7 @@ export function StickyNote() {
               <img
                 src={photo}
                 alt="Personal photo"
-                className="w-full h-24 object-cover rounded-md"
+                className="w-full max-h-32 object-contain rounded-md bg-muted/30"
               />
               {photoHover && (
                 <button

@@ -166,7 +166,7 @@ export function SearchDropdown({
       />
 
       {/* Dropdown panel */}
-      <div className="fixed top-[64px] left-4 right-4 sm:left-auto z-50 sm:w-full max-w-lg rounded-lg border bg-card shadow-lg animate-fade-in">
+      <div className="fixed top-[64px] left-4 right-4 sm:left-auto z-50 sm:w-full max-w-lg rounded-lg border bg-card shadow-lg animate-popover-enter">
         {/* Search input */}
         <div className="flex items-center gap-2 border-b px-3">
           <Search className="h-4 w-4 shrink-0 text-muted-foreground" />

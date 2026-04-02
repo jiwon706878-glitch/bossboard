@@ -132,7 +132,12 @@ export default function SettingsPage() {
   function applyThemeColor(color: string) {
     setThemeColor(color);
     localStorage.setItem("bossboard-theme-color", color);
-    document.documentElement.style.setProperty("--primary", color);
+    const root = document.documentElement;
+    root.style.setProperty("--primary", color);
+    root.style.setProperty("--ring", color);
+    root.style.setProperty("--sidebar-primary", color);
+    root.style.setProperty("--sidebar-ring", color);
+    root.style.setProperty("--primary-foreground", "#ffffff");
   }
 
   const displayLanguage = languageInput ?? bizSettings?.language ?? "en";
@@ -228,16 +233,20 @@ export default function SettingsPage() {
       </div>
 
       {/* Card 1: Profile */}
-      <ProfileCard userId={userId!} initialName={profile?.full_name ?? ""} initialAvatarUrl={profile?.avatar_url} isFetching={profileFetching} />
+      <div className="animate-stagger-in" style={{ animationDelay: "0ms" }}>
+        <ProfileCard userId={userId!} initialName={profile?.full_name ?? ""} initialAvatarUrl={profile?.avatar_url} isFetching={profileFetching} />
+      </div>
 
       {/* Card 2: Email Change */}
-      <EmailChangeCard />
+      <div className="animate-stagger-in" style={{ animationDelay: "60ms" }}>
+        <EmailChangeCard />
+      </div>
 
       {/* Card 3: Business — admin only (show while role loading) */}
-      {(!roleLoaded || isAdmin()) && <BusinessCard userId={userId!} initialName={String(currentBusiness?.name ?? "")} />}
+      {(!roleLoaded || isAdmin()) && <div className="animate-stagger-in" style={{ animationDelay: "120ms" }}><BusinessCard userId={userId!} initialName={String(currentBusiness?.name ?? "")} /></div>}
 
       {/* Card 4: Language & Region — admin only */}
-      {(!roleLoaded || isAdmin()) && <Card>
+      {(!roleLoaded || isAdmin()) && <div className="animate-stagger-in" style={{ animationDelay: "180ms" }}><Card>
         <CardHeader>
           <CardTitle>Language & Region</CardTitle>
           <CardDescription>Set your default language and timezone for your workspace.</CardDescription>
@@ -282,10 +291,10 @@ export default function SettingsPage() {
             </Button>
           </form>
         </CardContent>
-      </Card>}
+      </Card></div>}
 
       {/* Card 5: Notifications — admin only */}
-      {(!roleLoaded || isAdmin()) && <Card>
+      {(!roleLoaded || isAdmin()) && <div className="animate-stagger-in" style={{ animationDelay: "240ms" }}><Card>
         <CardHeader>
           <CardTitle>Notifications</CardTitle>
           <CardDescription>Choose which notifications you receive.</CardDescription>
@@ -324,10 +333,10 @@ export default function SettingsPage() {
             </div>
           )}
         </CardContent>
-      </Card>}
+      </Card></div>}
 
       {/* Card 5: Sticky Note */}
-      <Card>
+      <div className="animate-stagger-in" style={{ animationDelay: "300ms" }}><Card>
         <CardHeader><CardTitle>Sticky Note</CardTitle></CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
@@ -346,10 +355,10 @@ export default function SettingsPage() {
             />
           </div>
         </CardContent>
-      </Card>
+      </Card></div>
 
       {/* Card 6: Theme Color */}
-      <Card>
+      <div className="animate-stagger-in" style={{ animationDelay: "360ms" }}><Card>
         <CardHeader><CardTitle>Theme</CardTitle></CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -393,11 +402,11 @@ export default function SettingsPage() {
             </div>
           </div>
         </CardContent>
-      </Card>
+      </Card></div>
 
       {/* Card 7: Developer Mode — admin only */}
       {(!roleLoaded || isAdmin()) && (
-        <Card>
+        <div className="animate-stagger-in" style={{ animationDelay: "420ms" }}><Card>
           <CardHeader><CardTitle>Developer Mode</CardTitle></CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
@@ -408,14 +417,14 @@ export default function SettingsPage() {
               <Switch checked={displayDevMode} onCheckedChange={handleToggleDevMode} disabled={savingDevMode} />
             </div>
           </CardContent>
-        </Card>
+        </Card></div>
       )}
 
       {/* Card 8: External API Keys (developer mode + admin only) */}
-      {(!roleLoaded || isAdmin()) && displayDevMode && <ExternalApiKeysSection />}
+      {(!roleLoaded || isAdmin()) && displayDevMode && <div className="animate-stagger-in" style={{ animationDelay: "480ms" }}><ExternalApiKeysSection /></div>}
 
       {/* Card 9: BossBoard API Keys (developer mode + admin only) */}
-      {(!roleLoaded || isAdmin()) && displayDevMode && <ApiKeysSection />}
+      {(!roleLoaded || isAdmin()) && displayDevMode && <div className="animate-stagger-in" style={{ animationDelay: "540ms" }}><ApiKeysSection /></div>}
     </div>
   );
 }

@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   Loader2, Plus, Send, Megaphone, MessageCircle, BarChart3,
-  Eye, Trash2, X, ChevronDown, ChevronUp, Paperclip, FileIcon, Share2, Pencil,
+  Eye, Trash2, X, ChevronDown, ChevronUp, Paperclip, FileIcon, Pencil,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -226,7 +226,12 @@ export default function BoardPage() {
       const { data, error: uploadErr } = await supabase.storage
         .from("attachments")
         .upload(fileName, file);
-      if (!uploadErr && data) {
+      if (uploadErr) {
+        console.error("File upload error:", uploadErr.message, file.name);
+        toast.error(`Failed to upload ${file.name}`);
+        continue;
+      }
+      if (data) {
         const { data: urlData } = supabase.storage.from("attachments").getPublicUrl(data.path);
         uploadedFiles.push({ name: file.name, url: urlData.publicUrl, type: file.type, size: file.size });
       }
@@ -304,8 +309,8 @@ export default function BoardPage() {
   async function handleDeletePostAnimated(postId: string) {
     const card = document.querySelector(`[data-post-id="${postId}"]`);
     if (card) {
-      card.classList.add("animate-post-exit");
-      await new Promise((r) => setTimeout(r, 250));
+      (card as HTMLElement).classList.add("animate-post-exit");
+      await new Promise((r) => setTimeout(r, 350));
     }
     const { error } = await supabase.from("board_posts").delete().eq("id", postId);
     if (error) { toast.error("Failed to delete post"); return; }
@@ -313,27 +318,57 @@ export default function BoardPage() {
     invalidateBoard();
   }
 
+  async function closeForm() {
+    const formEl = document.querySelector('[data-board-form]');
+    if (formEl) {
+      formEl.classList.remove('animate-board-form-enter');
+      formEl.classList.add('animate-board-form-exit');
+      await new Promise(r => setTimeout(r, 300));
+    }
+    setShowForm(false);
+  }
+
   // ─── Poll vote ───────────────────────────────────────────────────────────
 
   async function handleVote(optionId: string, postId: string) {
     if (!currentUserId) return;
+
     const post = posts.find((p) => p.id === postId);
     if (!post?.poll_options) return;
-
-    // Delete existing vote on this poll, then insert new one
     const optionIds = post.poll_options.map((o) => o.id);
-    await supabase.from("poll_votes").delete().eq("user_id", currentUserId).in("option_id", optionIds);
 
-    const { error } = await supabase.from("poll_votes").insert({
-      option_id: optionId,
-      user_id: currentUserId,
+    // Optimistic update — update UI immediately before server responds
+    queryClient.setQueryData(boardKeys.all(businessId!), (old: Post[] | undefined) => {
+      if (!old) return old;
+      return old.map((p) => {
+        if (p.id !== postId) return p;
+        return {
+          ...p,
+          poll_options: p.poll_options?.map((o) => ({
+            ...o,
+            vote_count: o.id === optionId
+              ? o.vote_count + (p.user_voted_option_id === optionId ? 0 : 1)
+              : o.id === p.user_voted_option_id
+                ? Math.max(0, o.vote_count - 1)
+                : o.vote_count,
+          })),
+          user_voted_option_id: optionId,
+        };
+      });
     });
+
+    // Server update
+    await supabase.from("poll_votes").delete().eq("user_id", currentUserId).in("option_id", optionIds);
+    const { error } = await supabase.from("poll_votes").insert({ option_id: optionId, user_id: currentUserId });
+
     if (error) {
-      console.error("Vote error:", error.message);
-      toast.error("Failed to submit vote");
+      toast.error("Failed to vote");
+      invalidateBoard(); // Revert on error
       return;
     }
-    invalidateBoard();
+
+    // Confirm with fresh data after a short delay
+    setTimeout(() => invalidateBoard(), 500);
   }
 
   // ─── Comments ────────────────────────────────────────────────────────────
@@ -410,56 +445,6 @@ export default function BoardPage() {
     );
   }
 
-  // ─── Share post ──────────────────────────────────────────────────────────
-
-  async function handleSharePost(postId: string) {
-    try {
-      // Check if a share link already exists
-      const { data: existing, error: fetchError } = await supabase
-        .from("shared_links")
-        .select("token")
-        .eq("resource_id", postId)
-        .eq("resource_type", "board_post")
-        .maybeSingle();
-
-      let token: string;
-
-      if (fetchError) {
-        // Table may not have resource_id/resource_type columns
-        toast.error("Share links for board posts are not yet supported. A database migration may be needed.");
-        return;
-      }
-
-      if (existing) {
-        token = existing.token;
-      } else {
-        token = crypto.randomUUID();
-        const { error: insertError } = await supabase
-          .from("shared_links")
-          .insert({
-            resource_id: postId,
-            resource_type: "board_post",
-            business_id: businessId,
-            token,
-            created_by: currentUserId,
-          });
-
-        if (insertError) {
-          console.error("Share link insert error:", insertError.message);
-          toast.error("Failed to create share link. Please try again.");
-          return;
-        }
-      }
-
-      const url = `${window.location.origin}/share/${token}`;
-      await navigator.clipboard.writeText(url);
-      toast.success("Share link copied!");
-    } catch (err) {
-      console.error("Share error:", err);
-      toast.error("Failed to create share link. Please try again.");
-    }
-  }
-
   // ─── Render ──────────────────────────────────────────────────────────────
 
   return (
@@ -469,7 +454,7 @@ export default function BoardPage() {
           <h1 className="text-3xl font-bold">Board</h1>
           <p className="text-muted-foreground">Team bulletin board</p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}>
+        <Button className="press-effect" onClick={() => showForm ? closeForm() : setShowForm(true)}>
           {showForm ? <X className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
           {showForm ? "Cancel" : "New Post"}
         </Button>
@@ -477,7 +462,7 @@ export default function BoardPage() {
 
       {/* Create form */}
       {showForm && (
-        <Card className="animate-board-form-enter">
+        <Card data-board-form className="animate-board-form-enter">
           <CardHeader>
             <CardTitle className="text-base">New Post</CardTitle>
           </CardHeader>
@@ -518,6 +503,7 @@ export default function BoardPage() {
                   {pollInputs.map((opt, i) => (
                     <div key={i} className="flex gap-2">
                       <Input
+                        data-poll-input
                         value={opt}
                         onChange={(e) => {
                           const next = [...pollInputs];
@@ -530,6 +516,10 @@ export default function BoardPage() {
                             if (i === pollInputs.length - 1 && opt.trim() && pollInputs.length < 5) {
                               setPollInputs((prev) => [...prev, ""]);
                             }
+                            setTimeout(() => {
+                              const inputs = document.querySelectorAll<HTMLInputElement>('[data-poll-input]');
+                              if (inputs[i + 1]) inputs[i + 1].focus();
+                            }, 100);
                           }
                         }}
                         placeholder={`Option ${i + 1}`}
@@ -587,7 +577,7 @@ export default function BoardPage() {
                   <Paperclip className="h-4 w-4 mr-1" />
                   Attach
                 </Button>
-                <Button type="submit" disabled={submitting || !formTitle.trim()} className="active:scale-95 transition-transform">
+                <Button type="submit" disabled={submitting || !formTitle.trim()} className="press-effect">
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                   {submitting ? "Posting..." : "Post"}
                 </Button>
@@ -617,16 +607,16 @@ export default function BoardPage() {
             const totalVotes = post.poll_options?.reduce((s, o) => s + o.vote_count, 0) ?? 0;
 
             return (
-              <Card key={post.id} data-post-id={post.id} className="border bg-card animate-post-enter" style={{ animationDelay: `${Math.min(index * 30, 150)}ms` }}>
+              <Card key={post.id} data-post-id={post.id} className="border bg-card animate-post-enter" style={{ animationDelay: `${Math.min(index * 40, 200)}ms`, animationFillMode: "both" }}>
                 <CardContent className="py-4 space-y-3">
                   {/* Edit mode */}
                   {editingId === post.id ? (
-                    <div className="space-y-3 animate-scale-in">
+                    <div className="space-y-3 animate-center-scale-in">
                       <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }} placeholder="Post title" />
                       <Textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} rows={3} placeholder="Post content" />
                       <div className="flex gap-2 justify-end">
-                        <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>Cancel</Button>
-                        <Button size="sm" onClick={() => handleUpdatePost(post.id)} disabled={!editTitle.trim()} className="active:scale-95 transition-transform">Save</Button>
+                        <Button variant="ghost" size="sm" className="press-effect" onClick={() => setEditingId(null)}>Cancel</Button>
+                        <Button size="sm" onClick={() => handleUpdatePost(post.id)} disabled={!editTitle.trim()} className="press-effect">Save</Button>
                       </div>
                     </div>
                   ) : (
@@ -650,15 +640,12 @@ export default function BoardPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => handleSharePost(post.id)} aria-label="Share post">
-                        <Share2 className="h-3.5 w-3.5" />
-                      </Button>
                       {canDelete && (
                         <>
-                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => startEditing(post)} aria-label="Edit post">
+                          <Button variant="ghost" size="sm" className="press-effect text-muted-foreground hover:text-foreground" onClick={() => startEditing(post)} aria-label="Edit post">
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive" onClick={() => handleDeletePostAnimated(post.id)} aria-label="Delete post">
+                          <Button variant="ghost" size="sm" className="press-effect text-muted-foreground hover:text-destructive" onClick={() => handleDeletePostAnimated(post.id)} aria-label="Delete post">
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </>
@@ -712,7 +699,7 @@ export default function BoardPage() {
                             key={opt.id}
                             type="button"
                             className={cn(
-                              "w-full rounded-md border px-3 py-2 text-left text-sm transition-colors",
+                              "w-full rounded-md border px-3 py-2 text-left text-sm transition-colors press-effect",
                               isMyVote ? "border-primary bg-primary/10" : "hover:bg-muted/50"
                             )}
                             onClick={() => handleVote(opt.id, post.id)}

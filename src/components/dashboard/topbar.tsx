@@ -79,7 +79,7 @@ export function DashboardTopbar() {
                 <span className="sr-only">Help & Shortcuts</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-72 p-4 animate-scale-in">
+            <PopoverContent align="end" className="w-72 p-4 animate-popover-enter">
               <h3 className="text-sm font-semibold mb-3">Keyboard Shortcuts</h3>
               <div className="space-y-2 text-sm">
                 {[
@@ -113,7 +113,7 @@ export function DashboardTopbar() {
                 <span className="sr-only">Send feedback</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-80 p-4 animate-scale-in">
+            <PopoverContent align="end" className="w-80 p-4 animate-popover-enter">
               <h3 className="text-sm font-semibold mb-3">Send Feedback</h3>
               <FeedbackCard />
             </PopoverContent>

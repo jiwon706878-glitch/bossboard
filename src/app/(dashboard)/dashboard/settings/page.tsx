@@ -107,6 +107,34 @@ export default function SettingsPage() {
     setStickyHidden(localStorage.getItem("bossboard-sticky-hidden") === "true");
   }, []);
 
+  // Theme color
+  const THEME_COLORS = [
+    { label: "Blue", value: "#3366FF" },
+    { label: "Purple", value: "#7C3AED" },
+    { label: "Green", value: "#059669" },
+    { label: "Rose", value: "#E11D48" },
+    { label: "Orange", value: "#EA580C" },
+    { label: "Teal", value: "#0D9488" },
+    { label: "Indigo", value: "#4F46E5" },
+    { label: "Pink", value: "#DB2777" },
+  ];
+  const [themeColor, setThemeColor] = useState<string>("#3366FF");
+  const [customColor, setCustomColor] = useState<string>("");
+  useEffect(() => {
+    const saved = localStorage.getItem("bossboard-theme-color");
+    if (saved) {
+      setThemeColor(saved);
+      if (!THEME_COLORS.some((c) => c.value === saved)) setCustomColor(saved);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function applyThemeColor(color: string) {
+    setThemeColor(color);
+    localStorage.setItem("bossboard-theme-color", color);
+    document.documentElement.style.setProperty("--primary", color);
+  }
+
   const displayLanguage = languageInput ?? bizSettings?.language ?? "en";
   const displayTimezone = timezoneInput ?? bizSettings?.timezone ?? detectedTz;
   const displayNotifications = notificationsInput ?? profile?.notification_settings ?? {};
@@ -200,7 +228,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Card 1: Profile */}
-      <ProfileCard userId={userId!} initialName={profile?.full_name ?? ""} isFetching={profileFetching} />
+      <ProfileCard userId={userId!} initialName={profile?.full_name ?? ""} initialAvatarUrl={profile?.avatar_url} isFetching={profileFetching} />
 
       {/* Card 2: Email Change */}
       <EmailChangeCard />
@@ -316,6 +344,53 @@ export default function SettingsPage() {
                 window.dispatchEvent(new CustomEvent("bossboard-sticky-toggle", { detail: { hidden } }));
               }}
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Card 6: Theme Color */}
+      <Card>
+        <CardHeader><CardTitle>Theme</CardTitle></CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <Label className="font-medium">Accent Color</Label>
+            <div className="flex flex-wrap gap-2">
+              {THEME_COLORS.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  title={c.label}
+                  aria-label={`Select ${c.label} theme`}
+                  className="h-8 w-8 rounded-full border-2 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                  style={{
+                    backgroundColor: c.value,
+                    borderColor: themeColor === c.value ? c.value : "transparent",
+                    boxShadow: themeColor === c.value ? `0 0 0 2px ${c.value}40` : "none",
+                  }}
+                  onClick={() => { setCustomColor(""); applyThemeColor(c.value); }}
+                />
+              ))}
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <Label className="text-sm text-muted-foreground shrink-0">Custom:</Label>
+              <Input
+                type="text"
+                placeholder="#hex"
+                value={customColor}
+                onChange={(e) => setCustomColor(e.target.value)}
+                className="h-8 w-28 text-sm font-mono"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-8"
+                disabled={!/^#[0-9a-fA-F]{6}$/.test(customColor)}
+                onClick={() => applyThemeColor(customColor)}
+              >
+                Apply
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

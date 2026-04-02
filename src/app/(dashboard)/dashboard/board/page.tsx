@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   Loader2, Plus, Send, Megaphone, MessageCircle, BarChart3,
-  Eye, Trash2, X, ChevronDown, ChevronUp, Paperclip, FileIcon,
+  Eye, Trash2, X, ChevronDown, ChevronUp, Paperclip, FileIcon, Share2,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -68,6 +68,7 @@ interface Comment {
   is_anonymous: boolean;
   created_at: string;
   author_name: string | null;
+  parent_id: string | null;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -110,6 +111,7 @@ export default function BoardPage() {
   const [commentText, setCommentText] = useState("");
   const [commentAnon, setCommentAnon] = useState(false);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
 
   // ─── Load posts via React Query ──────────────────────────────────────────
 
@@ -282,14 +284,22 @@ export default function BoardPage() {
 
   // ─── Poll vote ───────────────────────────────────────────────────────────
 
-  async function handleVote(optionId: string) {
+  async function handleVote(optionId: string, postId: string) {
+    if (!currentUserId) return;
+    const post = posts.find((p) => p.id === postId);
+    if (!post?.poll_options) return;
+
+    // Delete existing vote on this poll, then insert new one
+    const optionIds = post.poll_options.map((o) => o.id);
+    await supabase.from("poll_votes").delete().eq("user_id", currentUserId).in("option_id", optionIds);
+
     const { error } = await supabase.from("poll_votes").insert({
       option_id: optionId,
       user_id: currentUserId,
     });
     if (error) {
-      if (error.code === "23505") toast.error("You already voted on this poll");
-      else { console.error("Vote error:", error.message); toast.error("Failed to submit vote. Please try again."); }
+      console.error("Vote error:", error.message);
+      toast.error("Failed to submit vote");
       return;
     }
     invalidateBoard();
@@ -301,7 +311,7 @@ export default function BoardPage() {
     setCommentsLoading(true);
     const { data } = await supabase
       .from("board_comments")
-      .select("id, user_id, content, is_anonymous, created_at")
+      .select("id, user_id, content, is_anonymous, created_at, parent_id")
       .eq("post_id", postId)
       .order("created_at");
 
@@ -332,6 +342,7 @@ export default function BoardPage() {
     }
     setCommentText("");
     setCommentAnon(false);
+    setReplyingTo(null);
   }
 
   async function handleAddComment(postId: string) {
@@ -343,12 +354,14 @@ export default function BoardPage() {
       user_id: currentUserId,
       content: commentText.trim(),
       is_anonymous: commentAnon,
+      parent_id: replyingTo ?? null,
     });
 
     if (error) { console.error("Comment error:", error.message); toast.error("Failed to post comment. Please try again."); }
     else {
       setCommentText("");
       setCommentAnon(false);
+      setReplyingTo(null);
       loadComments(postId);
       // Update comment count locally
       queryClient.setQueryData(boardKeys.all(businessId!), (prev: Post[] | undefined) =>
@@ -364,6 +377,56 @@ export default function BoardPage() {
     queryClient.setQueryData(boardKeys.all(businessId!), (prev: Post[] | undefined) =>
       (prev ?? []).map((p) => p.id === postId ? { ...p, comment_count: Math.max(0, p.comment_count - 1) } : p)
     );
+  }
+
+  // ─── Share post ──────────────────────────────────────────────────────────
+
+  async function handleSharePost(postId: string) {
+    try {
+      // Check if a share link already exists
+      const { data: existing, error: fetchError } = await supabase
+        .from("shared_links")
+        .select("token")
+        .eq("resource_id", postId)
+        .eq("resource_type", "board_post")
+        .maybeSingle();
+
+      let token: string;
+
+      if (fetchError) {
+        // Table may not have resource_id/resource_type columns
+        toast.error("Share links for board posts are not yet supported. A database migration may be needed.");
+        return;
+      }
+
+      if (existing) {
+        token = existing.token;
+      } else {
+        token = crypto.randomUUID();
+        const { error: insertError } = await supabase
+          .from("shared_links")
+          .insert({
+            resource_id: postId,
+            resource_type: "board_post",
+            business_id: businessId,
+            token,
+            created_by: currentUserId,
+          });
+
+        if (insertError) {
+          console.error("Share link insert error:", insertError.message);
+          toast.error("Failed to create share link. Please try again.");
+          return;
+        }
+      }
+
+      const url = `${window.location.origin}/share/${token}`;
+      await navigator.clipboard.writeText(url);
+      toast.success("Share link copied!");
+    } catch (err) {
+      console.error("Share error:", err);
+      toast.error("Failed to create share link. Please try again.");
+    }
   }
 
   // ─── Render ──────────────────────────────────────────────────────────────
@@ -430,7 +493,16 @@ export default function BoardPage() {
                           next[i] = e.target.value;
                           setPollInputs(next);
                         }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            if (i === pollInputs.length - 1 && opt.trim() && pollInputs.length < 5) {
+                              setPollInputs((prev) => [...prev, ""]);
+                            }
+                          }
+                        }}
                         placeholder={`Option ${i + 1}`}
+                        className="text-sm"
                       />
                       {pollInputs.length > 2 && (
                         <Button type="button" variant="ghost" size="sm" onClick={() => setPollInputs(pollInputs.filter((_, j) => j !== i))} aria-label="Remove option">
@@ -534,11 +606,16 @@ export default function BoardPage() {
                         )}
                       </div>
                     </div>
-                    {canDelete && (
-                      <Button variant="ghost" size="sm" className="shrink-0 text-muted-foreground hover:text-destructive" onClick={() => handleDeletePost(post.id)} aria-label="Delete post">
-                        <Trash2 className="h-3.5 w-3.5" />
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => handleSharePost(post.id)} aria-label="Share post">
+                        <Share2 className="h-3.5 w-3.5" />
                       </Button>
-                    )}
+                      {canDelete && (
+                        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive" onClick={() => handleDeletePost(post.id)} aria-label="Delete post">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Content */}
@@ -582,27 +659,28 @@ export default function BoardPage() {
                         const pct = totalVotes > 0 ? Math.round((opt.vote_count / totalVotes) * 100) : 0;
                         const isMyVote = post.user_voted_option_id === opt.id;
 
-                        return hasVoted ? (
-                          <div key={opt.id} className="space-y-1">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className={cn(isMyVote && "font-medium")}>{opt.option_text}</span>
-                              <span className="text-xs text-muted-foreground font-mono">{pct}%</span>
-                            </div>
-                            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                              <div
-                                className={cn("h-full rounded-full transition-all", isMyVote ? "bg-primary" : "bg-muted-foreground/30")}
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                          </div>
-                        ) : (
+                        return (
                           <button
                             key={opt.id}
                             type="button"
-                            className="w-full rounded-md border px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50"
-                            onClick={() => handleVote(opt.id)}
+                            className={cn(
+                              "w-full rounded-md border px-3 py-2 text-left text-sm transition-colors",
+                              isMyVote ? "border-primary bg-primary/10" : "hover:bg-muted/50"
+                            )}
+                            onClick={() => handleVote(opt.id, post.id)}
                           >
-                            {opt.option_text}
+                            <div className="flex items-center justify-between mb-1">
+                              <span className={cn("text-sm", isMyVote && "font-medium text-primary")}>{opt.option_text}</span>
+                              {totalVotes > 0 && <span className="text-xs text-muted-foreground font-mono">{pct}%</span>}
+                            </div>
+                            {totalVotes > 0 && (
+                              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                                <div
+                                  className={cn("h-full rounded-full transition-all", isMyVote ? "bg-primary" : "bg-muted-foreground/30")}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            )}
                           </button>
                         );
                       })}
@@ -631,29 +709,76 @@ export default function BoardPage() {
                         <div className="h-8 animate-pulse rounded bg-muted/40" />
                       ) : (
                         <>
-                          {comments.map((c) => (
-                            <div key={c.id} className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                  <span className="font-medium text-foreground">
-                                    {c.is_anonymous ? "Anonymous" : c.author_name || "User"}
-                                  </span>
-                                  <span>{format(new Date(c.created_at), "MMM d, h:mm a")}</span>
+                          {comments.filter((c) => !c.parent_id).map((c) => {
+                            const replies = comments.filter((r) => r.parent_id === c.id);
+                            return (
+                              <div key={c.id}>
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      <span className="font-medium text-foreground">
+                                        {c.is_anonymous ? "Anonymous" : c.author_name || "User"}
+                                      </span>
+                                      <span>{format(new Date(c.created_at), "MMM d, h:mm a")}</span>
+                                    </div>
+                                    <p className="text-sm mt-0.5">{c.content}</p>
+                                    <button
+                                      type="button"
+                                      className="text-xs text-muted-foreground hover:text-foreground mt-1 transition-colors"
+                                      onClick={() => setReplyingTo(replyingTo === c.id ? null : c.id)}
+                                    >
+                                      Reply
+                                    </button>
+                                  </div>
+                                  {c.user_id === currentUserId && (
+                                    <Button variant="ghost" size="sm" className="shrink-0 h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteComment(c.id, post.id)} aria-label="Delete comment">
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  )}
                                 </div>
-                                <p className="text-sm mt-0.5">{c.content}</p>
+                                {/* Replies */}
+                                {replies.length > 0 && (
+                                  <div className="ml-8 border-l pl-3 space-y-2 mt-2">
+                                    {replies.map((r) => (
+                                      <div key={r.id} className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0">
+                                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            <span className="font-medium text-foreground">
+                                              {r.is_anonymous ? "Anonymous" : r.author_name || "User"}
+                                            </span>
+                                            <span>{format(new Date(r.created_at), "MMM d, h:mm a")}</span>
+                                          </div>
+                                          <p className="text-sm mt-0.5">{r.content}</p>
+                                        </div>
+                                        {r.user_id === currentUserId && (
+                                          <Button variant="ghost" size="sm" className="shrink-0 h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteComment(r.id, post.id)} aria-label="Delete comment">
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                              {c.user_id === currentUserId && (
-                                <Button variant="ghost" size="sm" className="shrink-0 h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteComment(c.id, post.id)} aria-label="Delete comment">
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              )}
-                            </div>
-                          ))}
+                            );
+                          })}
                         </>
                       )}
 
                       {/* Add comment */}
                       <div className="space-y-2">
+                        {replyingTo && (
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>Replying to {comments.find((c) => c.id === replyingTo)?.is_anonymous ? "Anonymous" : comments.find((c) => c.id === replyingTo)?.author_name || "User"}</span>
+                            <button
+                              type="button"
+                              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                              onClick={() => setReplyingTo(null)}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
                         <div className="flex gap-2">
                           <Input
                             value={commentText}

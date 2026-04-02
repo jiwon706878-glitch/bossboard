@@ -188,9 +188,17 @@ export function DashboardSidebar({ className }: { className?: string }) {
         ) : (
           <>
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
-                {initial}
-              </div>
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt="Avatar"
+                  className="h-9 w-9 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
+                  {initial}
+                </div>
+              )}
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{userName}</p>
                 <p className="text-xs text-muted-foreground">

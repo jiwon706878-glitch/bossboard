@@ -10,7 +10,6 @@ import {
   fetchAllChecklists,
   userKeys,
   checklistKeys,
-  boardKeys,
   todoKeys,
   sopKeys,
   fetchSopStats,
@@ -61,25 +60,10 @@ export function DashboardPrefetcher() {
 
     const prefetch = async () => {
       // Batch 1: Heavy pages that feel slow
+      // NOTE: Board prefetch removed — its queryFn returns a different shape than
+      // the board page expects (missing poll_options, comment_count, etc.)
+      // The board page runs its own rich queryFn on first visit.
       await Promise.allSettled([
-        // Board - use boardKeys.all (same key the board page uses)
-        queryClient.prefetchQuery({
-          queryKey: boardKeys.all(businessId),
-          queryFn: async () => {
-            const { data } = await supabase
-              .from("board_posts")
-              .select("id, title, content, post_type, anonymous, pinned, user_id, attachments, created_at")
-              .eq("business_id", businessId)
-              .order("pinned", { ascending: false })
-              .order("created_at", { ascending: false });
-            if (!data) return [];
-            const userIds = [...new Set(data.map((p: any) => p.user_id))];
-            const { data: profiles } = await supabase.from("profiles").select("id, full_name").in("id", userIds);
-            const nameMap = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
-            return data.map((p: any) => ({ ...p, author_name: nameMap.get(p.user_id) ?? "Unknown" }));
-          },
-          staleTime: 2 * 60 * 1000,
-        }),
         // Checklists
         queryClient.prefetchQuery({
           queryKey: checklistKeys.all(businessId),

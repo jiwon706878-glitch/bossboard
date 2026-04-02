@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { StickyNote as StickyNoteIcon, X, Trash2 } from "lucide-react";
+import { StickyNote as StickyNoteIcon, X, Trash2, ImagePlus } from "lucide-react";
 
 interface Note {
   id: string;
@@ -33,7 +33,10 @@ export function StickyNote() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [input, setInput] = useState("");
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [photoHover, setPhotoHover] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load from localStorage
   useEffect(() => {
@@ -43,8 +46,28 @@ export function StickyNote() {
       const savedCorner = localStorage.getItem("bossboard-sticky-corner");
       if (savedCorner) setCorner(savedCorner as Corner);
       if (localStorage.getItem("bossboard-sticky-hidden") === "true") setIsHidden(true);
+      const savedPhoto = localStorage.getItem("bossboard-sticky-photo");
+      if (savedPhoto) setPhoto(savedPhoto);
     } catch {}
   }, []);
+
+  function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setPhoto(dataUrl);
+      localStorage.setItem("bossboard-sticky-photo", dataUrl);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
+  function removePhoto() {
+    setPhoto(null);
+    localStorage.removeItem("bossboard-sticky-photo");
+  }
 
   // Save notes
   useEffect(() => {
@@ -174,6 +197,50 @@ export function StickyNote() {
           <button type="button" onClick={() => setIsOpen(false)} className="rounded p-0.5 text-muted-foreground hover:text-foreground" aria-label="Close notes">
             <X className="h-3.5 w-3.5" />
           </button>
+        </div>
+
+        {/* Photo area */}
+        <div className="px-3 pt-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handlePhotoUpload}
+          />
+          {photo ? (
+            <div
+              className="relative rounded-md overflow-hidden"
+              onMouseEnter={() => setPhotoHover(true)}
+              onMouseLeave={() => setPhotoHover(false)}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={photo}
+                alt="Personal photo"
+                className="w-full h-24 object-cover rounded-md"
+              />
+              {photoHover && (
+                <button
+                  type="button"
+                  onClick={removePhoto}
+                  className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+                  aria-label="Remove photo"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-muted-foreground/30 py-3 text-xs text-muted-foreground hover:border-muted-foreground/50 hover:text-muted-foreground/80 transition-colors"
+            >
+              <ImagePlus className="h-3.5 w-3.5" />
+              Add a photo
+            </button>
+          )}
         </div>
 
         {/* Notes list */}

@@ -17,7 +17,7 @@ export async function fetchCurrentUser() {
 export async function fetchProfile(userId: string) {
   const { data, error } = await supabase
     .from("profiles")
-    .select("full_name, plan_id, developer_mode, notification_settings, external_api_keys")
+    .select("full_name, plan_id, developer_mode, notification_settings, external_api_keys, avatar_url")
     .eq("id", userId)
     .single();
   if (error) throw error;

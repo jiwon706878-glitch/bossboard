@@ -309,10 +309,26 @@
   transform: scale(0.96);
 }
 
-/* Toast close button on the right */
+/* Universal post card layout transitions */
+[data-post-id] {
+  transition: transform 350ms cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 350ms cubic-bezier(0.16, 1, 0.3, 1),
+              max-height 350ms cubic-bezier(0.16, 1, 0.3, 1),
+              margin 350ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Toast close button — inside box on right */
+[data-sonner-toast] {
+  position: relative;
+}
 [data-sonner-toast] [data-close-button] {
+  position: absolute !important;
+  top: 50% !important;
+  right: 8px !important;
   left: unset !important;
-  right: 0 !important;
+  transform: translateY(-50%) !important;
+  background: transparent !important;
+  border: none !important;
 }
 
 /* ═══ Reduced motion ═══ */

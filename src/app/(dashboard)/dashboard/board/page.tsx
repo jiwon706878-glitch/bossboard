@@ -117,6 +117,10 @@ export default function BoardPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
+  const [editPinned, setEditPinned] = useState(false);
+
+  // Vote lock
+  const [votingLock, setVotingLock] = useState(false);
 
   // ─── Load posts via React Query ──────────────────────────────────────────
 
@@ -218,16 +222,16 @@ export default function BoardPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { toast.error("Not logged in"); setSubmitting(false); return; }
 
-    // Upload attachments
+    // Upload attachments — use UUID path to avoid special character issues
     const uploadedFiles: Attachment[] = [];
     for (const file of formAttachments) {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${currentBusiness.id}/${crypto.randomUUID()}.${fileExt}`;
+      const fileExt = file.name.split(".").pop() || "bin";
+      const storagePath = `${currentBusiness.id}/board/${crypto.randomUUID()}.${fileExt}`;
       const { data, error: uploadErr } = await supabase.storage
         .from("attachments")
-        .upload(fileName, file);
+        .upload(storagePath, file, { contentType: file.type });
       if (uploadErr) {
-        console.error("File upload error:", uploadErr.message, file.name);
+        console.error("Upload error:", uploadErr.message, "for file:", file.name);
         toast.error(`Failed to upload ${file.name}`);
         continue;
       }
@@ -273,13 +277,7 @@ export default function BoardPage() {
     }
 
     toast.success("Post created");
-    setShowForm(false);
-    setFormTitle("");
-    setFormContent("");
-    setFormType("discussion");
-    setFormPinned(false);
-    setPollInputs(["", ""]);
-    setFormAttachments([]);
+    closeForm();
     setSubmitting(false);
     invalidateBoard();
   }
@@ -290,51 +288,76 @@ export default function BoardPage() {
     setEditingId(post.id);
     setEditTitle(post.title);
     setEditContent(post.content || "");
+    setEditPinned(post.is_pinned);
   }
 
   async function handleUpdatePost(postId: string) {
     if (!editTitle.trim()) return;
+
+    // Optimistic update — show new content immediately
+    queryClient.setQueryData(boardKeys.all(businessId!), (old: Post[] | undefined) => {
+      if (!old) return old;
+      return old.map((p) => p.id === postId ? { ...p, title: editTitle.trim(), content: editContent.trim() || null, is_pinned: editPinned } : p);
+    });
+    setEditingId(null);
+
     const { error } = await supabase
       .from("board_posts")
-      .update({ title: editTitle.trim(), content: editContent.trim() || null })
+      .update({ title: editTitle.trim(), content: editContent.trim() || null, is_pinned: editPinned })
       .eq("id", postId);
-    if (error) { toast.error("Failed to update post"); return; }
-    toast.success("Post updated");
-    setEditingId(null);
-    invalidateBoard();
+    if (error) {
+      toast.error("Failed to update post");
+      invalidateBoard(); // Revert
+      return;
+    }
+    toast.success("Updated");
+    setTimeout(() => invalidateBoard(), 500);
   }
 
   // ─── Delete with animation ─────────────────────────────────────────────
 
   async function handleDeletePostAnimated(postId: string) {
-    const card = document.querySelector(`[data-post-id="${postId}"]`);
+    const card = document.querySelector(`[data-post-id="${postId}"]`) as HTMLElement | null;
     if (card) {
-      (card as HTMLElement).classList.add("animate-post-exit");
-      await new Promise((r) => setTimeout(r, 350));
+      // Step 1: Fade + shrink
+      card.style.transition = "all 350ms cubic-bezier(0.16, 1, 0.3, 1)";
+      card.style.transform = "scale(0.95)";
+      card.style.opacity = "0";
+      await new Promise((r) => setTimeout(r, 200));
+      // Step 2: Collapse height — posts below slide up
+      card.style.maxHeight = card.offsetHeight + "px";
+      card.offsetHeight; // force reflow
+      card.style.maxHeight = "0px";
+      card.style.marginBottom = "0px";
+      card.style.paddingTop = "0px";
+      card.style.paddingBottom = "0px";
+      card.style.overflow = "hidden";
+      await new Promise((r) => setTimeout(r, 300));
     }
     const { error } = await supabase.from("board_posts").delete().eq("id", postId);
-    if (error) { toast.error("Failed to delete post"); return; }
+    if (error) { toast.error("Failed to delete post"); invalidateBoard(); return; }
     toast.success("Post deleted");
     invalidateBoard();
   }
 
-  async function closeForm() {
-    const formEl = document.querySelector('[data-board-form]');
-    if (formEl) {
-      formEl.classList.remove('animate-board-form-enter');
-      formEl.classList.add('animate-board-form-exit');
-      await new Promise(r => setTimeout(r, 300));
-    }
+  function closeForm() {
     setShowForm(false);
+    setFormTitle("");
+    setFormContent("");
+    setFormType("discussion");
+    setFormPinned(false);
+    setPollInputs(["", ""]);
+    setFormAttachments([]);
   }
 
   // ─── Poll vote ───────────────────────────────────────────────────────────
 
   async function handleVote(optionId: string, postId: string) {
-    if (!currentUserId) return;
+    if (!currentUserId || votingLock) return;
+    setVotingLock(true);
 
     const post = posts.find((p) => p.id === postId);
-    if (!post?.poll_options) return;
+    if (!post?.poll_options) { setVotingLock(false); return; }
     const optionIds = post.poll_options.map((o) => o.id);
 
     // Optimistic update — update UI immediately before server responds
@@ -363,12 +386,14 @@ export default function BoardPage() {
 
     if (error) {
       toast.error("Failed to vote");
-      invalidateBoard(); // Revert on error
-      return;
+      invalidateBoard();
     }
 
-    // Confirm with fresh data after a short delay
-    setTimeout(() => invalidateBoard(), 500);
+    // Release lock after server confirms + slight delay
+    setTimeout(() => {
+      setVotingLock(false);
+      invalidateBoard();
+    }, 600);
   }
 
   // ─── Comments ────────────────────────────────────────────────────────────
@@ -460,9 +485,12 @@ export default function BoardPage() {
         </Button>
       </div>
 
-      {/* Create form */}
-      {showForm && (
-        <Card data-board-form className="animate-board-form-enter">
+      {/* Create form — CSS-driven height transition so posts slide down smoothly */}
+      <div className={cn(
+        "overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+        showForm ? "max-h-[700px] opacity-100" : "max-h-0 opacity-0"
+      )}>
+        <Card data-board-form className="mb-1">
           <CardHeader>
             <CardTitle className="text-base">New Post</CardTitle>
           </CardHeader>
@@ -585,7 +613,7 @@ export default function BoardPage() {
             </form>
           </CardContent>
         </Card>
-      )}
+      </div>
 
       {/* Posts list */}
       {loading ? (
@@ -614,6 +642,15 @@ export default function BoardPage() {
                     <div className="space-y-3 animate-center-scale-in">
                       <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }} placeholder="Post title" />
                       <Textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} rows={3} placeholder="Post content" />
+                      {post.type === "notice" && (
+                        <div className="flex items-center gap-2">
+                          <Switch checked={editPinned} onCheckedChange={setEditPinned} />
+                          <Label className="text-sm">Pin to top</Label>
+                        </div>
+                      )}
+                      {post.type === "poll" && (
+                        <p className="text-xs text-muted-foreground">Poll options cannot be edited after creation.</p>
+                      )}
                       <div className="flex gap-2 justify-end">
                         <Button variant="ghost" size="sm" className="press-effect" onClick={() => setEditingId(null)}>Cancel</Button>
                         <Button size="sm" onClick={() => handleUpdatePost(post.id)} disabled={!editTitle.trim()} className="press-effect">Save</Button>
@@ -738,12 +775,14 @@ export default function BoardPage() {
 
                   {/* Comments section */}
                   {isExpanded && (
-                    <div className="space-y-3 pt-1 animate-comments-expand">
-                      <Separator />
+                    <div className="border-t pt-3 mt-3">
                       {commentsLoading ? (
-                        <div className="h-8 animate-pulse rounded bg-muted/40" />
+                        <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground animate-pulse">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Loading comments...
+                        </div>
                       ) : (
-                        <>
+                        <div className="animate-center-scale-in space-y-3">
                           {comments.filter((c) => !c.parent_id).map((c) => {
                             const replies = comments.filter((r) => r.parent_id === c.id);
                             return (
@@ -797,8 +836,6 @@ export default function BoardPage() {
                               </div>
                             );
                           })}
-                        </>
-                      )}
 
                       {/* Add comment */}
                       <div className="space-y-2">
@@ -841,6 +878,8 @@ export default function BoardPage() {
                           <Label htmlFor={`anon-${post.id}`} className="text-xs text-muted-foreground cursor-pointer">Post anonymously</Label>
                         </div>
                       </div>
+                    </div>
+                    )}
                     </div>
                   )}
                   </>

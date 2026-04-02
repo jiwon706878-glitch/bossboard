@@ -41,9 +41,9 @@ export function ProfileCard({ userId, initialName, initialAvatarUrl, isFetching 
       return;
     }
 
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml", "image/bmp", "image/tiff"];
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Only JPEG, PNG, WebP, and GIF images are allowed");
+      toast.error("Only JPEG, PNG, WebP, GIF, SVG, BMP, and TIFF images are allowed");
       return;
     }
 
@@ -55,7 +55,7 @@ export function ProfileCard({ userId, initialName, initialAvatarUrl, isFetching 
 
       const { error: uploadError } = await supabase.storage
         .from("attachments")
-        .upload(path, file, { upsert: true });
+        .upload(path, file, { upsert: true, contentType: file.type });
 
       if (uploadError) {
         console.error("Avatar upload error:", uploadError.message);
@@ -148,7 +148,7 @@ export function ProfileCard({ userId, initialName, initialAvatarUrl, isFetching 
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
+              accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,image/bmp,image/tiff"
               className="hidden"
               onChange={handleAvatarUpload}
             />

@@ -250,7 +250,7 @@ export default function TodosPage() {
               </button>
               <span className="flex-1 text-sm text-muted-foreground line-through">{todo.text}</span>
               {todo.completed_at && <span className="text-[10px] text-muted-foreground">{format(new Date(todo.completed_at), "h:mm a")}</span>}
-              <button type="button" className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(todo.id)}><Trash2 className="h-3 w-3" /></button>
+              <button type="button" className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(todo.id)} aria-label="Delete todo"><Trash2 className="h-3 w-3" /></button>
             </div>
           ))}
         </div>
@@ -300,8 +300,8 @@ const TodoItem = memo(function TodoItem({ todo, carried, editing, editText, onTo
       ) : (<span className="flex-1 text-sm">{todo.text}</span>)}
       {carried && <span className="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive">{carried}</span>}
       {!editing && (<>
-        <button type="button" tabIndex={-1} className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground" onClick={onStartEdit}><Pencil className="h-3 w-3" /></button>
-        <button type="button" tabIndex={-1} className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={onDelete}><Trash2 className="h-3 w-3" /></button>
+        <button type="button" tabIndex={-1} className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground" onClick={onStartEdit} aria-label="Edit todo"><Pencil className="h-3 w-3" /></button>
+        <button type="button" tabIndex={-1} className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={onDelete} aria-label="Delete todo"><Trash2 className="h-3 w-3" /></button>
       </>)}
     </div>
   );

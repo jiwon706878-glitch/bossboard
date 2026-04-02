@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   FileText,
   FolderPlus,
@@ -38,6 +39,7 @@ export function PageContextMenu() {
   const ref = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const close = useCallback(() => setMenu(null), []);
 
@@ -150,7 +152,7 @@ export function PageContextMenu() {
     entries.push({
       label: "Refresh",
       icon: RefreshCw,
-      action: () => { close(); router.refresh(); },
+      action: () => { close(); queryClient.invalidateQueries(); },
     });
   } else if (pathname === "/dashboard") {
     entries.push({
@@ -176,7 +178,7 @@ export function PageContextMenu() {
     entries.push({
       label: "Refresh",
       icon: RefreshCw,
-      action: () => { close(); router.refresh(); },
+      action: () => { close(); queryClient.invalidateQueries(); },
     });
   } else {
     entries.push({
@@ -193,7 +195,7 @@ export function PageContextMenu() {
     entries.push({
       label: "Refresh",
       icon: RefreshCw,
-      action: () => { close(); router.refresh(); },
+      action: () => { close(); queryClient.invalidateQueries(); },
     });
   }
 

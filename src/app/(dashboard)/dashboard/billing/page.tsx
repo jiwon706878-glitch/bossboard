@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { plans, type PlanId } from "@/config/plans";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +16,6 @@ export default function BillingPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
   const searchParams = useSearchParams();
-  const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
@@ -75,7 +74,7 @@ export default function BillingPage() {
             successUrl: `${window.location.origin}/dashboard/billing?success=true`,
           },
         });
-      } catch (err) {
+      } catch {
         toast.error("Failed to open checkout");
       }
 

@@ -268,6 +268,7 @@ export default function ChecklistsPage() {
                       className="text-muted-foreground hover:text-destructive"
                       disabled={deletingId === checklist.id}
                       onClick={() => handleDelete(checklist.id)}
+                      aria-label="Delete checklist"
                     >
                       {deletingId === checklist.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />

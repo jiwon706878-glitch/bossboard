@@ -6,6 +6,6 @@ export async function POST(req: NextRequest) {
   const result = await authenticateApiKey(req);
   if (result instanceof NextResponse) return result;
 
-  logApiCall(result.businessId, result.apiKeyId, "/api/v1/auth", "POST", 200);
+  logApiCall(result.businessId, result.apiKeyId, "/api/v1/auth", "POST", 200, result.keyName);
   return NextResponse.json({ authenticated: true, businessId: result.businessId });
 }

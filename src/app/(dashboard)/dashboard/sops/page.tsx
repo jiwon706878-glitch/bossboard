@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
+import { markdownToTipTap } from "@/lib/markdown-to-tiptap";
 import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogDescription,
@@ -17,7 +18,8 @@ import { FolderContextMenu } from "@/components/sops/folder-context-menu";
 import { FolderPanel } from "@/components/sops/folder-panel";
 import { TrashView } from "@/components/sops/trash-view";
 import { SopList } from "@/components/sops/sop-list";
-import { Folder } from "lucide-react";
+import { Folder, Upload } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { SOP } from "@/types/sops";
 
@@ -34,7 +36,8 @@ export default function SOPsPage() {
   const [deleteForeverId, setDeleteForeverId] = useState<string | null>(null);
   const [emptyTrashOpen, setEmptyTrashOpen] = useState(false);
   const [mobileFolderOpen, setMobileFolderOpen] = useState(false);
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [fileDropTarget, setFileDropTarget] = useState<string | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const supabase = createClient();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
@@ -52,6 +55,18 @@ export default function SOPsPage() {
   }, [currentBusiness, sops.fetchSops, foldersHook.fetchFolders]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Realtime: auto-refresh when any SOP changes
+  useEffect(() => {
+    if (!currentBusiness?.id) return;
+    const channel = supabase
+      .channel("sops-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "sops", filter: `business_id=eq.${currentBusiness.id}` }, () => {
+        fetchData();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [currentBusiness?.id, fetchData, supabase]);
 
   useEffect(() => {
     const onCreateFolder = (e: Event) => { const name = (e as CustomEvent).detail; if (name && currentBusiness?.id) handleCreateFolder(name); };
@@ -81,11 +96,6 @@ export default function SOPsPage() {
         setDeleteForeverOpen(false);
         setEmptyTrashOpen(false);
         setMobileFolderOpen(false);
-        setShortcutsOpen(false);
-      }
-      // ? -> show shortcuts help
-      if (e.key === "?" && !isInputFocused) {
-        setShortcutsOpen(true);
       }
     }
     window.addEventListener("keydown", handleKeyDown);
@@ -123,10 +133,19 @@ export default function SOPsPage() {
     await supabase.from("sops").update({ folder_id: null }).eq("folder_id", folderId);
     await foldersHook.handleDeleteFolder(folderId);
     if (selectedFolder === folderId) setSelectedFolder("unfiled");
-    toast.success("Folder deleted. SOPs moved to Unfiled.");
+    toast.success("Folder deleted. Documents moved to Unfiled.");
   }
   function handleDropOnFolder(folderId: string, e: React.DragEvent) {
     setDragOverFolder(null);
+    // Check if this is a file drop from the OS
+    if (e.dataTransfer.types.includes("Files")) {
+      const files = Array.from(e.dataTransfer.files).filter((f) => f.name.endsWith(".md") || f.name.endsWith(".txt"));
+      if (files.length > 0) {
+        e.preventDefault();
+        for (const file of files) handleFileImport(file, folderId);
+        return;
+      }
+    }
     foldersHook.handleDropOnFolder(folderId, e, sops.setAllSops, sops.fetchSops);
   }
   function handleMove(sopId: string, folderId: string) {
@@ -134,6 +153,63 @@ export default function SOPsPage() {
   }
   async function handleDeleteForeverConfirmed(sopId: string) { await sops.handleDeleteForever(sopId); setDeleteForeverOpen(false); setDeleteForeverId(null); }
   async function handleEmptyTrashConfirmed() { await sops.handleEmptyTrash(); setEmptyTrashOpen(false); }
+
+  async function handleFileImport(file: File, targetFolderId: string | null) {
+    if (!file.name.endsWith(".md") && !file.name.endsWith(".txt")) return;
+    if (!currentBusiness?.id) return;
+
+    const text = await file.text();
+    const tiptapContent = markdownToTipTap(text);
+
+    let docTitle = file.name.replace(/\.(md|txt)$/, "");
+    const firstHeading = tiptapContent.content?.find((n: any) => n.type === "heading");
+    if (firstHeading?.content?.[0]?.text) docTitle = firstHeading.content[0].text;
+
+    const firstPara = tiptapContent.content?.find((n: any) => n.type === "paragraph" && n.content?.length > 0);
+    const summary = firstPara?.content?.map((c: any) => c.text || "").join("").substring(0, 200) || null;
+
+    const { data, error } = await supabase
+      .from("sops")
+      .insert({
+        business_id: currentBusiness.id,
+        title: docTitle.trim(),
+        content: tiptapContent,
+        summary,
+        doc_type: "note",
+        folder_id: targetFolderId && targetFolderId !== "unfiled" && targetFolderId !== "trash" ? targetFolderId : null,
+        status: "published",
+        version: 1,
+      })
+      .select("id, title")
+      .single();
+
+    if (error) { toast.error("Failed to import: " + error.message); return; }
+
+    toast.success(`Imported "${docTitle}"`, {
+      action: data ? { label: "Open", onClick: () => router.push(`/dashboard/sops/${data.id}`) } : undefined,
+    });
+    await sops.fetchSops();
+  }
+
+  function handleFileDrop(e: React.DragEvent, targetFolder: string | null) {
+    e.preventDefault();
+    setFileDropTarget(null);
+    if (!e.dataTransfer.types.includes("Files")) return;
+    const files = Array.from(e.dataTransfer.files).filter((f) => f.name.endsWith(".md") || f.name.endsWith(".txt"));
+    if (files.length === 0) { toast.error("Only .md and .txt files are supported"); return; }
+    if (files.length > 1) toast.success(`Importing ${files.length} files...`);
+    for (const file of files) handleFileImport(file, targetFolder);
+  }
+
+  // Listen for file imports from folder panel
+  useEffect(() => {
+    function onImportEvent(e: Event) {
+      const { file, folderId } = (e as CustomEvent).detail;
+      handleFileImport(file, folderId);
+    }
+    window.addEventListener("wiki-import-file", onImportEvent);
+    return () => window.removeEventListener("wiki-import-file", onImportEvent);
+  }, [currentBusiness?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isTrashView = selectedFolder === "trash";
 
@@ -157,11 +233,11 @@ export default function SOPsPage() {
       )}
 
       <Dialog open={deleteForeverOpen} onOpenChange={setDeleteForeverOpen}>
-        <DialogContent><DialogHeader><DialogTitle>Delete Forever</DialogTitle><DialogDescription>This SOP will be permanently deleted. This action cannot be undone.</DialogDescription></DialogHeader>
+        <DialogContent><DialogHeader><DialogTitle>Delete Forever</DialogTitle><DialogDescription>This document will be permanently deleted. This action cannot be undone.</DialogDescription></DialogHeader>
           <DialogFooter><Button variant="outline" onClick={() => { setDeleteForeverOpen(false); setDeleteForeverId(null); }}>Cancel</Button><Button variant="destructive" onClick={() => deleteForeverId && handleDeleteForeverConfirmed(deleteForeverId)}>Delete Forever</Button></DialogFooter></DialogContent>
       </Dialog>
       <Dialog open={emptyTrashOpen} onOpenChange={setEmptyTrashOpen}>
-        <DialogContent><DialogHeader><DialogTitle>Empty Trash</DialogTitle><DialogDescription>All {sops.trashedSops.length} trashed SOPs will be permanently deleted. This action cannot be undone.</DialogDescription></DialogHeader>
+        <DialogContent><DialogHeader><DialogTitle>Empty Trash</DialogTitle><DialogDescription>All {sops.trashedSops.length} trashed documents will be permanently deleted. This action cannot be undone.</DialogDescription></DialogHeader>
           <DialogFooter><Button variant="outline" onClick={() => setEmptyTrashOpen(false)}>Cancel</Button><Button variant="destructive" onClick={handleEmptyTrashConfirmed}>Empty Trash</Button></DialogFooter></DialogContent>
       </Dialog>
 
@@ -194,59 +270,56 @@ export default function SOPsPage() {
         </SheetContent>
       </Sheet>
 
-      {isTrashView ? (
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <div className="flex items-center gap-2 border-b px-4 py-2">
-            <button type="button" className="lg:hidden shrink-0 rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted" onClick={() => setMobileFolderOpen(true)}><Folder className="h-4 w-4" /></button>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground"><span>Wiki</span><span className="text-foreground font-medium">Trash</span></div>
-            <div className="flex-1" />
-            {sops.trashedSops.length > 0 && <Button size="sm" variant="destructive" onClick={() => setEmptyTrashOpen(true)}>Empty Trash</Button>}
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            <TrashView trashedSops={sops.trashedSops} onRestore={sops.handleRestore} onDeleteForever={(id) => { setDeleteForeverId(id); setDeleteForeverOpen(true); }} />
-          </div>
-        </div>
-      ) : (
-        <SopList currentFolderName={currentFolderName} folderPath={folderPath} selectedFolder={selectedFolder} onSelectFolder={setSelectedFolder} isTrashView={false}
-          searchQuery={searchQuery} onSearchChange={setSearchQuery} loading={sops.loading} displaySops={displaySops}
-          pinnedSops={pinnedSops} unpinnedSops={unpinnedSops} trashedSopsCount={sops.trashedSops.length} totalSopsCount={sops.allSops.length}
-          router={router}
-          onPin={sops.handlePin} onDelete={sops.handleDelete} folders={foldersHook.folders} onMove={handleMove}
-          onSopMoveUp={(id) => sops.handleSopMoveUp(id, unpinnedSops)} onSopMoveDown={(id) => sops.handleSopMoveDown(id, unpinnedSops)}
-          onContextMenu={(e, sop) => setCtxMenu({ x: e.clientX, y: e.clientY, sop })} onEmptyTrash={() => setEmptyTrashOpen(true)}
-          onOpenMobileFolders={() => setMobileFolderOpen(true)} />
-      )}
-
-      {/* Keyboard shortcuts help */}
-      <button
-        type="button"
-        onClick={() => setShortcutsOpen(true)}
-        className="fixed bottom-4 left-4 z-40 flex h-8 w-8 items-center justify-center rounded-full border bg-card text-muted-foreground hover:text-foreground hover:bg-muted text-xs font-mono shadow-sm"
+      <div
+        className={cn("flex flex-1 flex-col overflow-hidden relative", fileDropTarget && "ring-2 ring-primary ring-inset")}
+        onDragOver={(e) => { if (!e.dataTransfer.types.includes("Files")) return; e.preventDefault(); setFileDropTarget(selectedFolder || "unfiled"); }}
+        onDragLeave={(e) => { e.preventDefault(); setFileDropTarget(null); }}
+        onDrop={(e) => handleFileDrop(e, selectedFolder === "trash" ? null : selectedFolder)}
       >
-        ?
-      </button>
-      <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Keyboard Shortcuts</DialogTitle>
-            <DialogDescription className="sr-only">Available keyboard shortcuts for the SOP list</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2 text-sm">
-            {[
-              ["Ctrl+K", "Focus search"],
-              ["Ctrl+N", "New SOP"],
-              ["Ctrl+Z", "Undo delete"],
-              ["Escape", "Close modal"],
-              ["?", "Shortcuts"],
-            ].map(([key, desc]) => (
-              <div key={key} className="flex items-center justify-between">
-                <span className="text-muted-foreground">{desc}</span>
-                <kbd className="rounded border bg-muted px-2 py-0.5 font-mono text-xs">{key}</kbd>
-              </div>
-            ))}
+        {fileDropTarget && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-primary/5 pointer-events-none">
+            <div className="rounded-lg border-2 border-dashed border-primary px-8 py-6 text-center bg-card/80 backdrop-blur-sm">
+              <p className="text-primary font-medium text-sm">Drop .md or .txt files to import</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {selectedFolder && selectedFolder !== "unfiled" && selectedFolder !== "trash"
+                  ? `Will be added to "${currentFolderName}"`
+                  : "Will be added as unfiled"}
+              </p>
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        )}
+        {isTrashView ? (
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex items-center gap-2 border-b px-4 py-2">
+              <button type="button" className="lg:hidden shrink-0 rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted" onClick={() => setMobileFolderOpen(true)}><Folder className="h-4 w-4" /></button>
+              <div className="flex items-center gap-1 text-sm text-muted-foreground"><span>Wiki</span><span className="text-foreground font-medium">Trash</span></div>
+              <div className="flex-1" />
+              {sops.trashedSops.length > 0 && <Button size="sm" variant="destructive" onClick={() => setEmptyTrashOpen(true)}>Empty Trash</Button>}
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <TrashView trashedSops={sops.trashedSops} onRestore={sops.handleRestore} onDeleteForever={(id) => { setDeleteForeverId(id); setDeleteForeverOpen(true); }} />
+            </div>
+          </div>
+        ) : (
+          <SopList currentFolderName={currentFolderName} folderPath={folderPath} selectedFolder={selectedFolder} onSelectFolder={setSelectedFolder} isTrashView={false}
+            searchQuery={searchQuery} onSearchChange={setSearchQuery} loading={sops.loading} displaySops={displaySops}
+            pinnedSops={pinnedSops} unpinnedSops={unpinnedSops} trashedSopsCount={sops.trashedSops.length} totalSopsCount={sops.allSops.length}
+            router={router}
+            onPin={sops.handlePin} onDelete={sops.handleDelete} folders={foldersHook.folders} onMove={handleMove}
+            onSopMoveUp={(id) => sops.handleSopMoveUp(id, unpinnedSops)} onSopMoveDown={(id) => sops.handleSopMoveDown(id, unpinnedSops)}
+            onContextMenu={(e, sop) => setCtxMenu({ x: e.clientX, y: e.clientY, sop })} onEmptyTrash={() => setEmptyTrashOpen(true)}
+            onOpenMobileFolders={() => setMobileFolderOpen(true)}
+            importInputRef={importInputRef}
+            onImportClick={() => importInputRef.current?.click()}
+          />
+        )}
+        <input ref={importInputRef} type="file" accept=".md,.txt" multiple className="hidden" onChange={(e) => {
+          const files = Array.from(e.target.files || []);
+          for (const file of files) handleFileImport(file, selectedFolder === "trash" ? null : selectedFolder);
+          e.target.value = "";
+        }} />
+      </div>
+
     </div>
   );
 }

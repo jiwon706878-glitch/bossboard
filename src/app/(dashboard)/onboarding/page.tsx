@@ -332,7 +332,6 @@ Documents not updated in 90+ days show an amber "90+ days" badge in the Wiki lis
   function handleGoToDashboard() {
     toast.success("Welcome to BossBoard!");
     router.push("/dashboard");
-    router.refresh();
   }
 
   const suggestions = sopSuggestions[industry] || sopSuggestions["other"];

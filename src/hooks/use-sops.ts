@@ -19,13 +19,13 @@ export function useSops(businessId: string | undefined) {
     const [{ data: sopsData }, { data: trashed }] = await Promise.all([
       supabase
         .from("sops")
-        .select("id, title, summary, category, status, version, folder_id, doc_type, tags, pinned, source_file_url, source_file_name, copy_protected, created_at, updated_at, deleted_at")
+        .select("id, title, summary, category, status, version, folder_id, doc_type, tags, pinned, source_file_url, source_file_name, copy_protected, created_at, updated_at, deleted_at, last_edited_by_name")
         .eq("business_id", businessId)
         .is("deleted_at", null)
         .order("updated_at", { ascending: false }),
       supabase
         .from("sops")
-        .select("id, title, summary, category, status, version, folder_id, doc_type, tags, pinned, source_file_url, source_file_name, copy_protected, created_at, updated_at, deleted_at")
+        .select("id, title, summary, category, status, version, folder_id, doc_type, tags, pinned, source_file_url, source_file_name, copy_protected, created_at, updated_at, deleted_at, last_edited_by_name")
         .eq("business_id", businessId)
         .not("deleted_at", "is", null)
         .order("deleted_at", { ascending: false }),

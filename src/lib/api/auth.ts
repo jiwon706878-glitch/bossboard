@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export interface ApiKeyContext {
   businessId: string;
   apiKeyId: string;
+  keyName: string;
 }
 
 async function hashKey(key: string): Promise<string> {
@@ -36,7 +37,7 @@ export async function authenticateApiKey(
 
   const { data, error } = await admin
     .from("api_keys")
-    .select("id, business_id")
+    .select("id, business_id, name")
     .eq("key_hash", keyHash)
     .single();
 
@@ -51,7 +52,7 @@ export async function authenticateApiKey(
     .eq("id", data.id)
     .then(() => {});
 
-  return { businessId: data.business_id, apiKeyId: data.id };
+  return { businessId: data.business_id, apiKeyId: data.id, keyName: data.name || "Unknown Agent" };
 }
 
 export async function logApiCall(
@@ -59,12 +60,13 @@ export async function logApiCall(
   apiKeyId: string,
   endpoint: string,
   method: string,
-  statusCode: number
+  statusCode: number,
+  keyName?: string
 ) {
   const admin = createAdminClient();
   admin
     .from("agent_activity_log")
-    .insert({ business_id: businessId, api_key_id: apiKeyId, endpoint, method, status_code: statusCode })
+    .insert({ business_id: businessId, api_key_id: apiKeyId, endpoint, method, status_code: statusCode, key_name: keyName || null })
     .then(() => {});
 }
 
@@ -78,7 +80,7 @@ export async function authenticateRawKey(
 
   const { data, error } = await admin
     .from("api_keys")
-    .select("id, business_id")
+    .select("id, business_id, name")
     .eq("key_hash", keyHash)
     .single();
 
@@ -90,7 +92,7 @@ export async function authenticateRawKey(
     .eq("id", data.id)
     .then(() => {});
 
-  return { businessId: data.business_id, apiKeyId: data.id };
+  return { businessId: data.business_id, apiKeyId: data.id, keyName: data.name || "Unknown Agent" };
 }
 
 export { hashKey };

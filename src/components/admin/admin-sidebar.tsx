@@ -35,7 +35,6 @@ export function AdminSidebar({ className }: { className?: string }) {
     await supabase.auth.signOut();
     toast.success("Logged out");
     router.push("/login");
-    router.refresh();
   }
 
   return (

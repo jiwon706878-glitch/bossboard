@@ -140,19 +140,54 @@ export const teamKeys = {
 };
 
 export async function fetchTeamMembers(businessId: string) {
-  const { data: business } = await supabase
-    .from("businesses")
-    .select("user_id")
-    .eq("id", businessId)
-    .single();
-  if (!business) return [];
-  const { data: ownerProfile } = await supabase
+  const { data: members, error } = await supabase
+    .from("business_members")
+    .select("user_id, role, email, joined_at")
+    .eq("business_id", businessId)
+    .order("joined_at");
+
+  if (error || !members || members.length === 0) {
+    // Fallback for businesses without members table entries
+    const { data: business } = await supabase
+      .from("businesses")
+      .select("user_id")
+      .eq("id", businessId)
+      .single();
+    if (!business) return [];
+    const { data: ownerProfile } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .eq("id", business.user_id)
+      .single();
+    if (!ownerProfile) return [];
+    return [{
+      id: ownerProfile.id,
+      full_name: ownerProfile.full_name,
+      email: null,
+      role: "owner",
+      created_at: null,
+    }];
+  }
+
+  // Get profile names for all members
+  const userIds = members.map((m: any) => m.user_id);
+  const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, full_name, email, role, created_at")
-    .eq("id", business.user_id)
-    .single();
-  if (!ownerProfile) return [];
-  return [{ ...ownerProfile, role: ownerProfile.role || "owner" }];
+    .select("id, full_name")
+    .in("id", userIds);
+
+  const profileMap = new Map<string, any>((profiles ?? []).map((p: any) => [p.id, p]));
+
+  return members.map((m: any) => {
+    const profile = profileMap.get(m.user_id);
+    return {
+      id: m.user_id,
+      full_name: profile?.full_name || null,
+      email: m.email || null,
+      role: m.role,
+      created_at: m.joined_at,
+    };
+  });
 }
 
 export async function fetchPendingInvites(businessId: string) {
@@ -242,13 +277,35 @@ export const businessKeys = {
 };
 
 export async function fetchUserBusinesses(userId: string) {
-  const { data, error } = await supabase
+  // Get businesses the user owns
+  const { data: ownedBiz } = await supabase
     .from("businesses")
     .select("*")
     .eq("user_id", userId)
     .order("created_at");
-  if (error) throw error;
-  return data ?? [];
+
+  // Get businesses the user is a member of (via business_members)
+  const { data: memberships } = await supabase
+    .from("business_members")
+    .select("business_id")
+    .eq("user_id", userId);
+
+  const ownedIds = new Set((ownedBiz ?? []).map((b: any) => b.id));
+  const memberBizIds = (memberships ?? [])
+    .map((m: any) => m.business_id)
+    .filter((id: string) => !ownedIds.has(id));
+
+  let memberBiz: any[] = [];
+  if (memberBizIds.length > 0) {
+    const { data } = await supabase
+      .from("businesses")
+      .select("*")
+      .in("id", memberBizIds)
+      .order("created_at");
+    memberBiz = data ?? [];
+  }
+
+  return [...(ownedBiz ?? []), ...memberBiz];
 }
 
 // ─── Board Posts ──────────────────────────────────

@@ -78,7 +78,7 @@ export default function EditSOPPage() {
         .single();
 
       if (error || !data) {
-        toast.error("SOP not found");
+        toast.error("Document not found");
         router.push("/dashboard/sops");
         return;
       }
@@ -122,20 +122,21 @@ export default function EditSOPPage() {
       .eq("id", sopId)
       .single();
 
-    if (currentSop) {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", user?.id ?? "")
-        .single();
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: editorProfile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user?.id ?? "")
+      .single();
+    const userName = editorProfile?.full_name || "Someone";
 
+    if (currentSop) {
       await supabase.from("sop_versions").insert({
         sop_id: sopId,
         version: currentSop.version ?? 1,
         content: currentSop.content,
         changed_by: user?.id,
-        change_summary: `Edited by ${profile?.full_name || "user"}`,
+        change_summary: `Edited by ${userName}`,
       });
 
       // Keep only last 3 versions
@@ -150,7 +151,6 @@ export default function EditSOPPage() {
         await supabase.from("sop_versions").delete().in("id", toDelete);
       }
     }
-
     const { error } = await supabase
       .from("sops")
       .update({
@@ -163,6 +163,7 @@ export default function EditSOPPage() {
         copy_protected: copyProtected,
         status,
         updated_at: new Date().toISOString(),
+        last_edited_by_name: userName,
       })
       .eq("id", sopId);
 
@@ -172,7 +173,7 @@ export default function EditSOPPage() {
       return;
     }
 
-    toast.success("SOP updated!");
+    toast.success("Document updated!");
     router.push(`/dashboard/sops/${sopId}`);
     if (currentBusiness?.id) {
       queryClient.invalidateQueries({ queryKey: sopKeys.all(currentBusiness.id) });
@@ -199,16 +200,16 @@ export default function EditSOPPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Edit SOP</h1>
+          <h1 className="text-3xl font-bold text-foreground">Edit Document</h1>
           <p className="text-muted-foreground">
-            Update your Standard Operating Procedure.
+            Update your document.
           </p>
         </div>
       </div>
 
       <Card className="border bg-card">
         <CardHeader>
-          <CardTitle className="text-foreground">SOP Details</CardTitle>
+          <CardTitle className="text-foreground">Document Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -220,7 +221,22 @@ export default function EditSOPPage() {
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label className="text-foreground">Type</Label>
+              <Select value={docType} onValueChange={setDocType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sop">SOP</SelectItem>
+                  <SelectItem value="note">Note</SelectItem>
+                  <SelectItem value="policy">Policy</SelectItem>
+                  <SelectItem value="meeting">Meeting</SelectItem>
+                  <SelectItem value="log">Log</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label className="text-foreground">Category</Label>
               <Select value={category} onValueChange={setCategory}>

@@ -31,7 +31,21 @@ export const useRoleStore = create<RoleState>((set, get) => ({
       return;
     }
 
-    // Check users table for role
+    // Check business_members for role
+    const { data: membership } = await supabase
+      .from("business_members")
+      .select("role")
+      .eq("user_id", user.id)
+      .limit(1)
+      .maybeSingle();
+
+    if (membership) {
+      const role = (membership.role as "owner" | "admin" | "member") ?? "member";
+      set({ role, loaded: true });
+      return;
+    }
+
+    // Fallback: check legacy users table
     const { data: userRow } = await supabase
       .from("users")
       .select("role")

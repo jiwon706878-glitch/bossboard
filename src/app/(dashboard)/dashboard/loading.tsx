@@ -1,16 +1,15 @@
-import { Skeleton } from "@/components/ui/skeleton";
-
-export default function DashboardLoading() {
+export default function Loading() {
   return (
-    <div className="space-y-6">
-      <div>
-        <Skeleton className="h-9 w-48" />
-        <Skeleton className="mt-2 h-4 w-72" />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-32 rounded-xl" />
+    <div className="space-y-6 animate-pulse">
+      <div className="h-8 w-56 rounded-md bg-muted" />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-24 rounded-lg border bg-muted/40" />
         ))}
+      </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="h-48 rounded-lg border bg-muted/40" />
+        <div className="h-48 rounded-lg border bg-muted/40" />
       </div>
     </div>
   );

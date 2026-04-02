@@ -61,7 +61,7 @@ export async function GET(
     return NextResponse.json({ error: "SOP not found" }, { status: 404 });
   }
 
-  logApiCall(auth.businessId, auth.apiKeyId, `/api/v1/sops/${id}`, "GET", 200);
+  logApiCall(auth.businessId, auth.apiKeyId, `/api/v1/sops/${id}`, "GET", 200, auth.keyName);
 
   return NextResponse.json({
     ...data,
@@ -122,6 +122,6 @@ export async function PUT(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  logApiCall(auth.businessId, auth.apiKeyId, `/api/v1/sops/${id}`, "PUT", 200);
+  logApiCall(auth.businessId, auth.apiKeyId, `/api/v1/sops/${id}`, "PUT", 200, auth.keyName);
   return NextResponse.json(data);
 }

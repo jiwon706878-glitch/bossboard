@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { useRoleStore } from "@/hooks/use-role";
+import { FilePreview } from "@/components/dashboard/file-preview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,10 +25,17 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   Loader2, Plus, Send, Megaphone, MessageCircle, BarChart3,
-  Eye, Trash2, X, ChevronDown, ChevronUp,
+  Eye, Trash2, X, ChevronDown, ChevronUp, Paperclip, FileIcon,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
+
+interface Attachment {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+}
 
 interface Post {
   id: string;
@@ -42,6 +50,7 @@ interface Post {
   read_count: number;
   poll_options?: PollOption[];
   user_voted_option_id?: string | null;
+  attachments?: Attachment[] | null;
 }
 
 interface PollOption {
@@ -86,6 +95,11 @@ export default function BoardPage() {
   const [formPinned, setFormPinned] = useState(false);
   const [pollInputs, setPollInputs] = useState(["", ""]);
   const [submitting, setSubmitting] = useState(false);
+  const [formAttachments, setFormAttachments] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // File preview
+  const [previewFile, setPreviewFile] = useState<Attachment | null>(null);
 
   // Expanded post (for comments)
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -105,7 +119,7 @@ export default function BoardPage() {
 
     const { data: postsData } = await supabase
       .from("board_posts")
-      .select("id, user_id, type, title, content, is_pinned, created_at")
+      .select("id, user_id, type, title, content, is_pinned, created_at, attachments")
       .eq("business_id", currentBusiness.id)
       .order("created_at", { ascending: false });
 
@@ -179,6 +193,7 @@ export default function BoardPage() {
         read_count: readCountMap.get(p.id) ?? 0,
         poll_options: opts.length > 0 ? opts : undefined,
         user_voted_option_id: votedOpt?.id ?? null,
+        attachments: p.attachments ?? null,
       };
     });
 
@@ -215,6 +230,20 @@ export default function BoardPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { toast.error("Not logged in"); setSubmitting(false); return; }
 
+    // Upload attachments
+    const uploadedFiles: Attachment[] = [];
+    for (const file of formAttachments) {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${currentBusiness.id}/${crypto.randomUUID()}.${fileExt}`;
+      const { data, error: uploadErr } = await supabase.storage
+        .from("attachments")
+        .upload(fileName, file);
+      if (!uploadErr && data) {
+        const { data: urlData } = supabase.storage.from("attachments").getPublicUrl(data.path);
+        uploadedFiles.push({ name: file.name, url: urlData.publicUrl, type: file.type, size: file.size });
+      }
+    }
+
     const { data: post, error } = await supabase
       .from("board_posts")
       .insert({
@@ -224,6 +253,7 @@ export default function BoardPage() {
         title: formTitle.trim(),
         content: formContent.trim() || null,
         is_pinned: formPinned && formType === "notice",
+        attachments: uploadedFiles.length > 0 ? uploadedFiles : null,
       })
       .select("id")
       .single();
@@ -255,6 +285,7 @@ export default function BoardPage() {
     setFormType("discussion");
     setFormPinned(false);
     setPollInputs(["", ""]);
+    setFormAttachments([]);
     setSubmitting(false);
     loadPosts();
   }
@@ -420,7 +451,7 @@ export default function BoardPage() {
                         placeholder={`Option ${i + 1}`}
                       />
                       {pollInputs.length > 2 && (
-                        <Button type="button" variant="ghost" size="sm" onClick={() => setPollInputs(pollInputs.filter((_, j) => j !== i))}>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setPollInputs(pollInputs.filter((_, j) => j !== i))} aria-label="Remove option">
                           <X className="h-4 w-4" />
                         </Button>
                       )}
@@ -434,10 +465,48 @@ export default function BoardPage() {
                 </div>
               )}
 
-              <Button type="submit" disabled={submitting || !formTitle.trim()}>
-                {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                {submitting ? "Posting..." : "Post"}
-              </Button>
+              {/* Attachment preview chips */}
+              {formAttachments.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formAttachments.map((file, i) => (
+                    <div key={i} className="flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs bg-muted/50">
+                      <FileIcon className="h-3 w-3 text-muted-foreground" />
+                      <span className="truncate max-w-[120px]">{file.name}</span>
+                      <span className="text-muted-foreground">({(file.size / 1024).toFixed(0)}KB)</span>
+                      <button
+                        type="button"
+                        onClick={() => setFormAttachments((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="text-muted-foreground hover:text-destructive ml-1"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    setFormAttachments((prev) => [...prev, ...files]);
+                    e.target.value = "";
+                  }}
+                />
+                <Button type="button" variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()}>
+                  <Paperclip className="h-4 w-4 mr-1" />
+                  Attach
+                </Button>
+                <Button type="submit" disabled={submitting || !formTitle.trim()}>
+                  {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                  {submitting ? "Posting..." : "Post"}
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
@@ -484,7 +553,7 @@ export default function BoardPage() {
                       </div>
                     </div>
                     {canDelete && (
-                      <Button variant="ghost" size="sm" className="shrink-0 text-muted-foreground hover:text-destructive" onClick={() => handleDeletePost(post.id)}>
+                      <Button variant="ghost" size="sm" className="shrink-0 text-muted-foreground hover:text-destructive" onClick={() => handleDeletePost(post.id)} aria-label="Delete post">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
@@ -493,6 +562,35 @@ export default function BoardPage() {
                   {/* Content */}
                   {post.content && (
                     <p className="text-sm whitespace-pre-wrap">{post.content}</p>
+                  )}
+
+                  {/* Attachments */}
+                  {post.attachments && post.attachments.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {post.attachments.map((file, i) => {
+                        const isImage = file.type?.startsWith("image/");
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => setPreviewFile(file)}
+                            className="group relative rounded-md border overflow-hidden hover:border-primary transition-colors"
+                          >
+                            {isImage ? (
+                              <img src={file.url} alt={file.name} className="h-20 w-20 object-cover" />
+                            ) : (
+                              <div className="h-20 w-20 flex flex-col items-center justify-center bg-muted/50 px-1">
+                                <FileIcon className="h-6 w-6 text-muted-foreground mb-1" />
+                                <span className="text-[9px] text-muted-foreground truncate w-full text-center">
+                                  {file.name.split(".").pop()?.toUpperCase()}
+                                </span>
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                          </button>
+                        );
+                      })}
+                    </div>
                   )}
 
                   {/* Poll */}
@@ -563,7 +661,7 @@ export default function BoardPage() {
                                 <p className="text-sm mt-0.5">{c.content}</p>
                               </div>
                               {c.user_id === currentUserId && (
-                                <Button variant="ghost" size="sm" className="shrink-0 h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteComment(c.id, post.id)}>
+                                <Button variant="ghost" size="sm" className="shrink-0 h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteComment(c.id, post.id)} aria-label="Delete comment">
                                   <X className="h-3 w-3" />
                                 </Button>
                               )}
@@ -591,6 +689,7 @@ export default function BoardPage() {
                             size="sm"
                             disabled={commentSubmitting || !commentText.trim()}
                             onClick={() => handleAddComment(post.id)}
+                            aria-label="Send comment"
                           >
                             {commentSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                           </Button>
@@ -608,6 +707,8 @@ export default function BoardPage() {
           })}
         </div>
       )}
+
+      <FilePreview file={previewFile} onClose={() => setPreviewFile(null)} />
     </div>
   );
 }

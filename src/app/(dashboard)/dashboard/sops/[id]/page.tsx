@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Edit, FileText, Clock, Lock, ArrowLeft } from "lucide-react";
@@ -34,6 +35,74 @@ export default function SOPDetailPage() {
   } = useSopDetail(sopId);
 
   const isCopyProtected = sop?.copy_protected === true;
+  const [backlinks, setBacklinks] = useState<Array<{ id: string; title: string }>>([]);
+
+  useEffect(() => {
+    if (!sopId || !currentBusiness?.id) return;
+    async function fetchBacklinks() {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("sops")
+        .select("id, title, content")
+        .eq("business_id", currentBusiness!.id)
+        .is("deleted_at", null)
+        .neq("id", sopId);
+      if (!data) return;
+      const refs = data.filter((doc: any) => {
+        const str = JSON.stringify(doc.content || {});
+        return str.includes(sopId);
+      });
+      setBacklinks(refs.map((r: any) => ({ id: r.id, title: r.title })));
+    }
+    fetchBacklinks();
+  }, [sopId, currentBusiness?.id]);
+
+  // Scroll position save/restore
+  useEffect(() => {
+    const mainEl = document.querySelector("main");
+    if (!mainEl) return;
+    function saveScroll() {
+      sessionStorage.setItem(`scroll-sop-${sopId}`, String(mainEl!.scrollTop));
+    }
+    mainEl.addEventListener("scroll", saveScroll, { passive: true });
+    return () => mainEl.removeEventListener("scroll", saveScroll);
+  }, [sopId]);
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem(`scroll-sop-${sopId}`);
+    if (saved) {
+      const mainEl = document.querySelector("main");
+      if (mainEl) setTimeout(() => { mainEl.scrollTop = parseInt(saved, 10); }, 100);
+    }
+  }, [sopId]);
+
+  // Close toggle blocks in view mode
+  useEffect(() => {
+    if (loading || !sop?.content) return;
+    setTimeout(() => {
+      document.querySelectorAll("details.toggle-block").forEach((el) => {
+        (el as HTMLDetailsElement).removeAttribute("open");
+      });
+    }, 50);
+  }, [sop?.content, loading]);
+
+  // Extract footnotes from content
+  const footnotes = useMemo(() => {
+    if (!sop?.content) return [];
+    const notes: Array<{ id: string; content: string; url: string | null }> = [];
+    const find = (node: any) => {
+      if (node.type === "footnoteRef") {
+        notes.push({
+          id: node.attrs?.noteId || String(notes.length + 1),
+          content: node.attrs?.noteContent || "",
+          url: node.attrs?.noteUrl || null,
+        });
+      }
+      if (node.content) node.content.forEach(find);
+    };
+    find(sop.content);
+    return notes;
+  }, [sop?.content]);
 
   useEffect(() => {
     if (!isCopyProtected) return;
@@ -114,6 +183,7 @@ export default function SOPDetailPage() {
           <span className="flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" />
             Updated {formatLongDate(sop.updated_at)}
+            {(sop as any).last_edited_by_name && <span>by {(sop as any).last_edited_by_name}</span>}
           </span>
         )}
       </div>
@@ -141,7 +211,7 @@ export default function SOPDetailPage() {
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <FileText className="mb-3 h-10 w-10 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">This SOP has no content yet.</p>
+              <p className="text-sm text-muted-foreground">This document has no content yet.</p>
               <Link href={`/dashboard/sops/${sop.id}/edit`} className="mt-3">
                 <Button variant="outline" size="sm">
                   <Edit className="mr-1 h-4 w-4" /> Add content
@@ -153,6 +223,45 @@ export default function SOPDetailPage() {
       </Card>
 
       <ReadTracking readBy={readBy} teamSize={teamSize} signedOff={signedOff} signingOff={signingOff} onSignOff={handleSignOff} />
+
+      {footnotes.length > 0 && (
+        <div className="border-t pt-4">
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">References</h3>
+          <div className="space-y-1">
+            {footnotes.map((fn) => (
+              <div key={fn.id} className="flex items-start gap-2 text-xs">
+                <span className="font-mono font-bold text-primary shrink-0">[{fn.id}]</span>
+                <span className="text-muted-foreground">
+                  {fn.content}
+                  {fn.url && (
+                    <>
+                      {fn.content && " — "}
+                      <a href={fn.url} className="text-primary hover:underline" target={fn.url.startsWith("/dashboard") ? "_self" : "_blank"} rel="noopener noreferrer">
+                        {fn.url.startsWith("/dashboard") ? "Open document" : fn.url}
+                      </a>
+                    </>
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {backlinks.length > 0 && (
+        <div className="border-t pt-4">
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">Referenced by</h3>
+          <div className="flex flex-wrap gap-2">
+            {backlinks.map((bl) => (
+              <Link key={bl.id} href={`/dashboard/sops/${bl.id}`}
+                className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs hover:bg-muted transition-colors">
+                <FileText className="h-3 w-3 text-muted-foreground" />
+                {bl.title}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       <VersionHistoryModal
         open={historyOpen} onOpenChange={setHistoryOpen}

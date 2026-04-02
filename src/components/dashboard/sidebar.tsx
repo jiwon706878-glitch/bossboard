@@ -123,7 +123,6 @@ export function DashboardSidebar({ className }: { className?: string }) {
     await supabase.auth.signOut();
     toast.success("Logged out");
     router.push("/login");
-    router.refresh();
   }, [supabase, router, queryClient]);
 
   return (

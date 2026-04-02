@@ -25,6 +25,6 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  logApiCall(auth.businessId, auth.apiKeyId, "/api/v1/context/write", "POST", 201);
+  logApiCall(auth.businessId, auth.apiKeyId, "/api/v1/context/write", "POST", 201, auth.keyName);
   return NextResponse.json(data, { status: 201 });
 }

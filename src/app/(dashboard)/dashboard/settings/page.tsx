@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
+import { useRoleStore } from "@/hooks/use-role";
 import { plans, type PlanId } from "@/config/plans";
 import { fetchCurrentUser, fetchProfile, fetchBusinessSettings, userKeys, settingsKeys } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ import { Lock } from "lucide-react";
 import { ApiKeysSection } from "@/components/settings/api-keys-section";
 import { ExternalApiKeysSection } from "@/components/settings/external-api-keys-section";
 import { ProfileCard } from "@/components/settings/profile-card";
+import { EmailChangeCard } from "@/components/settings/email-change-card";
 import { BusinessCard } from "@/components/settings/business-card";
 
 const LANGUAGES = [
@@ -59,6 +61,9 @@ export default function SettingsPage() {
   const queryClient = useQueryClient();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
   const businessId = currentBusiness?.id;
+  const { isAdmin, loadRole, loaded: roleLoaded } = useRoleStore();
+
+  useEffect(() => { loadRole(); }, [loadRole]);
 
   const { data: user } = useQuery({ queryKey: userKeys.current, queryFn: fetchCurrentUser, retry: false });
   const userId = user?.id;
@@ -194,14 +199,17 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">Manage your profile and business settings.</p>
       </div>
 
-      {/* Card 1: Profile — isolated component */}
+      {/* Card 1: Profile */}
       <ProfileCard userId={userId!} initialName={profile?.full_name ?? ""} isFetching={profileFetching} />
 
-      {/* Card 2: Business — isolated component */}
-      <BusinessCard userId={userId!} initialName={String(currentBusiness?.name ?? "")} />
+      {/* Card 2: Email Change */}
+      <EmailChangeCard />
 
-      {/* Card 3: Language & Region */}
-      <Card>
+      {/* Card 3: Business — admin only (show while role loading) */}
+      {(!roleLoaded || isAdmin()) && <BusinessCard userId={userId!} initialName={String(currentBusiness?.name ?? "")} />}
+
+      {/* Card 4: Language & Region — admin only */}
+      {(!roleLoaded || isAdmin()) && <Card>
         <CardHeader>
           <CardTitle>Language & Region</CardTitle>
           <CardDescription>Set your default language and timezone for your workspace.</CardDescription>
@@ -246,10 +254,10 @@ export default function SettingsPage() {
             </Button>
           </form>
         </CardContent>
-      </Card>
+      </Card>}
 
-      {/* Card 4: Notifications */}
-      <Card>
+      {/* Card 5: Notifications — admin only */}
+      {(!roleLoaded || isAdmin()) && <Card>
         <CardHeader>
           <CardTitle>Notifications</CardTitle>
           <CardDescription>Choose which notifications you receive.</CardDescription>
@@ -288,7 +296,7 @@ export default function SettingsPage() {
             </div>
           )}
         </CardContent>
-      </Card>
+      </Card>}
 
       {/* Card 5: Sticky Note */}
       <Card>
@@ -312,25 +320,27 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Card 6: Developer Mode */}
-      <Card>
-        <CardHeader><CardTitle>Developer Mode</CardTitle></CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label className="font-medium">Enable Developer Mode</Label>
-              <p className="text-sm text-muted-foreground">Show API keys, MCP connection guide, and Agent Activity in your sidebar.</p>
+      {/* Card 7: Developer Mode — admin only */}
+      {(!roleLoaded || isAdmin()) && (
+        <Card>
+          <CardHeader><CardTitle>Developer Mode</CardTitle></CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="font-medium">Enable Developer Mode</Label>
+                <p className="text-sm text-muted-foreground">Show API keys, MCP connection guide, and Agent Activity in your sidebar.</p>
+              </div>
+              <Switch checked={displayDevMode} onCheckedChange={handleToggleDevMode} disabled={savingDevMode} />
             </div>
-            <Switch checked={displayDevMode} onCheckedChange={handleToggleDevMode} disabled={savingDevMode} />
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Card 7: External API Keys (developer mode only) */}
-      {displayDevMode && <ExternalApiKeysSection />}
+      {/* Card 8: External API Keys (developer mode + admin only) */}
+      {(!roleLoaded || isAdmin()) && displayDevMode && <ExternalApiKeysSection />}
 
-      {/* Card 8: BossBoard API Keys (developer mode only) */}
-      {displayDevMode && <ApiKeysSection />}
+      {/* Card 9: BossBoard API Keys (developer mode + admin only) */}
+      {(!roleLoaded || isAdmin()) && displayDevMode && <ApiKeysSection />}
     </div>
   );
 }

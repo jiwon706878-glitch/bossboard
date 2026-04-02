@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,8 +19,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Token is required" }, { status: 400 });
     }
 
-    // Find the invite
-    const { data: invite, error: inviteError } = await supabase
+    // Find the invite (use admin client — accepting user may not have RLS access to invites)
+    const admin = createAdminClient();
+    const { data: invite, error: inviteError } = await admin
       .from("invites")
       .select("id, workspace_id, business_id, email, role, accepted, status, expires_at")
       .eq("token", token)
@@ -35,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     if (invite.status === "expired" || (invite.expires_at && new Date(invite.expires_at) < new Date())) {
       // Mark as expired
-      await supabase.from("invites").update({ status: "expired" }).eq("id", invite.id);
+      await admin.from("invites").update({ status: "expired" }).eq("id", invite.id);
       return NextResponse.json({ error: "This invite has expired" }, { status: 400 });
     }
 
@@ -49,8 +51,8 @@ export async function POST(req: NextRequest) {
 
     const businessId = invite.business_id || invite.workspace_id;
 
-    // Check if user is already a member of this business
-    const { data: existingBusiness } = await supabase
+    // Check if user is already the owner of this business
+    const { data: existingBusiness } = await admin
       .from("businesses")
       .select("id")
       .eq("id", businessId)
@@ -59,12 +61,26 @@ export async function POST(req: NextRequest) {
 
     if (existingBusiness) {
       // Mark invite as accepted anyway
-      await supabase.from("invites").update({ accepted: true, status: "accepted" }).eq("id", invite.id);
+      await admin.from("invites").update({ accepted: true, status: "accepted" }).eq("id", invite.id);
       return NextResponse.json({ businessId, alreadyMember: true });
     }
 
-    // Update the user's profile to link them to this business
-    const { error: profileError } = await supabase
+    // Add user as a member of the business
+    const { error: memberError } = await admin
+      .from("business_members")
+      .upsert({
+        business_id: businessId,
+        user_id: user.id,
+        role: invite.role || "member",
+        email: user.email || invite.email || null,
+      }, { onConflict: "business_id,user_id" });
+
+    if (memberError) {
+      console.error("Failed to add member:", memberError);
+    }
+
+    // Update the user's profile role
+    const { error: profileError } = await admin
       .from("profiles")
       .update({
         role: invite.role || "member",
@@ -76,7 +92,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Mark invite as accepted
-    const { error: updateError } = await supabase
+    const { error: updateError } = await admin
       .from("invites")
       .update({ accepted: true, status: "accepted" })
       .eq("id", invite.id);

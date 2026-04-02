@@ -93,11 +93,11 @@ export default function CalendarPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+                <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} aria-label="Previous month">
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <CardTitle className="text-lg">{format(currentMonth, "MMMM yyyy")}</CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+                <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} aria-label="Next month">
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -134,6 +134,7 @@ export default function CalendarPage() {
                     size="sm"
                     className="h-7 w-7 p-0 shrink-0"
                     onClick={() => setSelectedDate(null)}
+                    aria-label="Close panel"
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -152,11 +153,11 @@ export default function CalendarPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+              <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} aria-label="Previous month">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <CardTitle className="text-lg">{format(currentMonth, "MMMM yyyy")}</CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+              <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} aria-label="Next month">
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -185,6 +186,7 @@ export default function CalendarPage() {
                   size="sm"
                   className="h-7 w-7 p-0 shrink-0"
                   onClick={() => setSelectedDate(null)}
+                  aria-label="Close panel"
                 >
                   <X className="h-4 w-4" />
                 </Button>

@@ -35,6 +35,8 @@ export default function TeamPage() {
   const [adminOpen, setAdminOpen] = useState(false);
   const [newBizName, setNewBizName] = useState("");
   const [newBizType, setNewBizType] = useState("");
+  const [transferTarget, setTransferTarget] = useState("");
+  const [transferringOwnership, setTransferringOwnership] = useState(false);
 
   // Queries
   const { data: user } = useQuery({ queryKey: userKeys.current, queryFn: fetchCurrentUser, retry: false });
@@ -123,7 +125,7 @@ export default function TeamPage() {
 
   const changeRoleMutation = useMutation({
     mutationFn: async ({ memberId, newRole }: { memberId: string; newRole: string }) => {
-      const { error } = await supabase.from("profiles").update({ role: newRole }).eq("id", memberId);
+      const { error } = await supabase.from("business_members").update({ role: newRole }).eq("user_id", memberId).eq("business_id", businessId!);
       if (error) throw error;
     },
     onMutate: async ({ memberId, newRole }) => {
@@ -183,6 +185,65 @@ export default function TeamPage() {
     }
   }
 
+  // Get the current owner's user_id from the business record
+  const currentOwnerUserId = allBusinesses.find((b: any) => b.id === businessId)?.user_id;
+
+  async function handleRemoveMember(memberId: string, memberName: string) {
+    if (!confirm(`Remove ${memberName} from ${currentBusiness?.name}? They will lose access to all business data.`)) return;
+
+    const { error } = await supabase
+      .from("business_members")
+      .delete()
+      .eq("business_id", businessId!)
+      .eq("user_id", memberId);
+
+    if (error) toast.error("Failed to remove member");
+    else {
+      toast.success("Member removed");
+      invalidateTeam();
+    }
+  }
+
+  async function handleTransferOwnership() {
+    if (!transferTarget || !businessId) return;
+    const targetName = teamMembers.find((m: any) => m.id === transferTarget)?.full_name || "this user";
+    if (!confirm(`Transfer ownership of "${currentBusiness?.name}" to ${targetName}? You will be demoted to admin. This cannot be undone.`)) return;
+
+    setTransferringOwnership(true);
+    try {
+      // 1. Update business owner
+      const { error: bizError } = await supabase
+        .from("businesses")
+        .update({ user_id: transferTarget })
+        .eq("id", businessId);
+      if (bizError) throw bizError;
+
+      // 2. New owner gets "owner" role in business_members
+      await supabase
+        .from("business_members")
+        .update({ role: "owner" })
+        .eq("business_id", businessId)
+        .eq("user_id", transferTarget);
+
+      // 3. Current owner becomes admin
+      await supabase
+        .from("business_members")
+        .update({ role: "admin" })
+        .eq("business_id", businessId)
+        .eq("user_id", userId);
+
+      toast.success("Ownership transferred");
+      setTransferTarget("");
+      invalidateTeam();
+      queryClient.invalidateQueries({ queryKey: businessKeys.all(userId!) });
+      useRoleStore.getState().loaded = false;
+      loadRole();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to transfer ownership");
+    }
+    setTransferringOwnership(false);
+  }
+
   function pctBar(used: number, limit: number) { if (limit === -1) return 0; return Math.min(100, Math.round((used / limit) * 100)); }
   function barColor(pct: number) { if (pct >= 100) return "bg-destructive"; if (pct >= 80) return "bg-amber-400"; return "bg-primary"; }
 
@@ -215,8 +276,20 @@ export default function TeamPage() {
             <div className="space-y-2">
               {teamMembers.map((member: any) => (
                 <div key={member.id} className="flex items-center justify-between rounded-md border px-4 py-3">
-                  <div className="min-w-0"><p className="font-medium truncate">{member.full_name || "Unnamed"}</p><p className="text-sm text-muted-foreground truncate">{member.email}</p></div>
-                  <Badge variant="secondary" className="ml-2 shrink-0">{member.role || "member"}</Badge>
+                  <div className="min-w-0"><p className="font-medium truncate">{member.full_name || member.email || "Unnamed"}</p>{member.email && member.full_name && <p className="text-sm text-muted-foreground truncate">{member.email}</p>}</div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="shrink-0">{member.role || "member"}</Badge>
+                    {isAdmin() && member.role !== "owner" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-destructive hover:text-destructive"
+                        onClick={() => handleRemoveMember(member.id, member.full_name || member.email || "this member")}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -228,7 +301,7 @@ export default function TeamPage() {
               <div className="space-y-2">
                 {pendingInvites.map((invite: any) => (
                   <div key={invite.id} className="flex items-center justify-between rounded-md border border-dashed px-4 py-3">
-                    <div className="min-w-0"><p className="text-sm font-medium truncate">{invite.email}</p><p className="text-xs text-muted-foreground">Invited as {invite.role}</p></div>
+                    <div className="min-w-0"><p className="text-sm font-medium truncate">{invite.email || "Invite link"}</p><p className="text-xs text-muted-foreground">Invited as {invite.role} · {invite.email ? "Email invite" : "Link invite"}</p></div>
                     <Button variant="ghost" size="sm" className="ml-2 shrink-0 text-destructive" onClick={() => handleRevokeInvite(invite.id)} disabled={revokeLoadingId === invite.id}>{revokeLoadingId === invite.id ? "Revoking..." : "Revoke"}</Button>
                   </div>
                 ))}
@@ -341,13 +414,17 @@ export default function TeamPage() {
                     <tbody>
                       {teamMembers.map((m: any) => (
                         <tr key={m.id} className="border-b last:border-0">
-                          <td className="py-3 pr-4">{m.full_name || "\u2014"}</td>
+                          <td className="py-3 pr-4">{m.full_name || m.email || "\u2014"}</td>
                           <td className="py-3 pr-4 text-muted-foreground">{m.email || "\u2014"}</td>
                           <td className="py-3 pr-4">
-                            <Select value={m.role || "member"} onValueChange={(v) => changeRoleMutation.mutate({ memberId: m.id, newRole: v })}>
-                              <SelectTrigger className="h-7 w-24 text-xs"><SelectValue /></SelectTrigger>
-                              <SelectContent><SelectItem value="owner">Owner</SelectItem><SelectItem value="admin">Admin</SelectItem><SelectItem value="member">Member</SelectItem></SelectContent>
-                            </Select>
+                            {m.role === "owner" ? (
+                              <Badge variant="secondary" className="text-xs">Owner</Badge>
+                            ) : (
+                              <Select value={m.role || "member"} onValueChange={(v) => changeRoleMutation.mutate({ memberId: m.id, newRole: v })}>
+                                <SelectTrigger className="h-7 w-24 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent><SelectItem value="admin">Admin</SelectItem><SelectItem value="member">Member</SelectItem></SelectContent>
+                              </Select>
+                            )}
                           </td>
                           <td className="py-3 text-xs text-muted-foreground">{m.created_at ? new Date(m.created_at).toLocaleDateString() : "\u2014"}</td>
                         </tr>
@@ -355,6 +432,41 @@ export default function TeamPage() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Transfer Ownership — only the current owner sees this */}
+                {userId === currentOwnerUserId && teamMembers.length > 1 && (
+                  <>
+                    <Separator />
+                    <div className="rounded-md border border-dashed border-destructive/30 p-4 space-y-3">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-destructive">Transfer Ownership</p>
+                        <p className="text-xs text-muted-foreground">Transfer ownership to another team member. This cannot be undone — you will become an admin.</p>
+                      </div>
+                      <div className="flex gap-3">
+                        <Select value={transferTarget} onValueChange={setTransferTarget}>
+                          <SelectTrigger className="w-[200px]">
+                            <SelectValue placeholder="Select new owner" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {teamMembers.filter((m: any) => m.id !== userId).map((m: any) => (
+                              <SelectItem key={m.id} value={m.id}>
+                                {m.full_name || m.email || "Unnamed"}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          disabled={!transferTarget || transferringOwnership}
+                          onClick={handleTransferOwnership}
+                        >
+                          {transferringOwnership ? "Transferring..." : "Transfer"}
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </CollapsibleContent>
           </Card>

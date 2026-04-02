@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  logApiCall(auth.businessId, auth.apiKeyId, "/api/v1/sops", "GET", 200);
+  logApiCall(auth.businessId, auth.apiKeyId, "/api/v1/sops", "GET", 200, auth.keyName);
   return NextResponse.json({ sops: data ?? [] });
 }
 
@@ -72,6 +72,6 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  logApiCall(auth.businessId, auth.apiKeyId, "/api/v1/sops", "POST", 201);
+  logApiCall(auth.businessId, auth.apiKeyId, "/api/v1/sops", "POST", 201, auth.keyName);
   return NextResponse.json(data, { status: 201 });
 }

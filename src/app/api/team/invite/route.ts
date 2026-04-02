@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { plans, type PlanId } from "@/config/plans";
 import { Resend } from "resend";
 
@@ -42,8 +43,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify user owns this business
-    const { data: business, error: bizError } = await supabase
+    // Verify user owns this business (use admin client to bypass RLS)
+    const admin = createAdminClient();
+    const { data: business, error: bizError } = await admin
       .from("businesses")
       .select("id, user_id, name")
       .eq("id", businessId)
@@ -184,7 +186,8 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Invite ID is required" }, { status: 400 });
     }
 
-    const { data: invite } = await supabase
+    const admin = createAdminClient();
+    const { data: invite } = await admin
       .from("invites")
       .select("id, workspace_id")
       .eq("id", inviteId)
@@ -194,7 +197,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Invite not found" }, { status: 404 });
     }
 
-    const { data: business } = await supabase
+    const { data: business } = await admin
       .from("businesses")
       .select("user_id")
       .eq("id", invite.workspace_id)

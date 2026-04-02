@@ -32,7 +32,7 @@ export default function AgentActivityPage() {
   const loadData = useCallback(async () => {
     const { data: logData } = await supabase
       .from("agent_activity_log")
-      .select("id, api_key_id, endpoint, method, status_code, created_at")
+      .select("id, api_key_id, endpoint, method, status_code, created_at, key_name")
       .order("created_at", { ascending: false })
       .limit(200);
 
@@ -57,7 +57,7 @@ export default function AgentActivityPage() {
 
     const enriched: LogEntry[] = logData.map((l: any) => ({
       ...l,
-      key_name: l.api_key_id ? keyMap[l.api_key_id] || "Unknown key" : "—",
+      key_name: l.key_name || (l.api_key_id ? keyMap[l.api_key_id] || "Unknown key" : "—"),
     }));
 
     setLogs(enriched);

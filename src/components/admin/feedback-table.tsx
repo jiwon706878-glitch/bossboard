@@ -226,6 +226,7 @@ export function FeedbackTable({ items: initialItems }: { items: FeedbackItem[] }
                         className="text-muted-foreground hover:text-destructive"
                         onClick={() => handleDelete(f.id)}
                         disabled={deletingId === f.id}
+                        aria-label="Delete feedback"
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>

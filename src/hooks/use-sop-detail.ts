@@ -75,7 +75,7 @@ export function useSopDetail(sopId: string) {
 
   useEffect(() => {
     async function fetchSOP() {
-      const { data, error } = await supabase.from("sops").select("id, title, content, summary, category, status, version, doc_type, tags, pinned, source_file_url, source_file_name, copy_protected, created_by, created_at, updated_at").eq("id", sopId).single();
+      const { data, error } = await supabase.from("sops").select("id, title, content, summary, category, status, version, doc_type, tags, pinned, source_file_url, source_file_name, copy_protected, created_by, created_at, updated_at, last_edited_by_name").eq("id", sopId).single();
       if (error || !data) { toast.error("SOP not found"); router.push("/dashboard/sops"); return; }
       setSop(data);
       setLoading(false);
@@ -93,7 +93,6 @@ export function useSopDetail(sopId: string) {
     if (error) { toast.error(error.message); setDeleting(false); return; }
     toast.success("SOP moved to trash");
     router.push("/dashboard/sops");
-    router.refresh();
   }
 
   async function handleCreateChecklist() {

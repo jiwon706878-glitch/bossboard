@@ -464,6 +464,7 @@ export function Chatbot() {
               className="h-8 w-8 shrink-0"
             >
               <Send className="h-4 w-4" />
+              <span className="sr-only">Send message</span>
             </Button>
           </form>
         </div>

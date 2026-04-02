@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Menu, Search, MessageSquarePlus } from "lucide-react";
+import { Menu, Search, MessageSquarePlus, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -69,8 +69,43 @@ export function DashboardTopbar() {
             onClick={() => setSearchOpen(true)}
           >
             <Search className="h-4 w-4" />
+            <span className="sr-only">Search</span>
           </Button>
           <NotificationBell />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <HelpCircle className="h-4 w-4" />
+                <span className="sr-only">Help & Shortcuts</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-72 p-4">
+              <h3 className="text-sm font-semibold mb-3">Keyboard Shortcuts</h3>
+              <div className="space-y-2 text-sm">
+                {[
+                  ["Ctrl+K", "Search"],
+                  ["Ctrl+N", "New Document (in Wiki)"],
+                  ["Ctrl+B", "Bold"],
+                  ["Ctrl+I", "Italic"],
+                  ["Ctrl+U", "Underline"],
+                  ["Ctrl+Z", "Undo"],
+                  ["Ctrl+Shift+Z", "Redo"],
+                  ["[[", "Link to document"],
+                  ["Esc", "Close modal/menu"],
+                ].map(([key, desc]) => (
+                  <div key={key} className="flex items-center justify-between">
+                    <span className="text-muted-foreground">{desc}</span>
+                    <kbd className="rounded border bg-muted px-2 py-0.5 font-mono text-[10px]">{key}</kbd>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 border-t pt-3">
+                <p className="text-xs text-muted-foreground">
+                  Need help? Send feedback using the message icon.
+                </p>
+              </div>
+            </PopoverContent>
+          </Popover>
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon">

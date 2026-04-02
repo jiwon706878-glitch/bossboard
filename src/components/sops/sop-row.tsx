@@ -142,6 +142,7 @@ export const SopRow = memo(function SopRow({
       </div>
       <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">
         {formatShortDate(sop.updated_at || sop.created_at)}
+        {sop.last_edited_by_name && <span className="ml-1 text-muted-foreground/60">by {sop.last_edited_by_name}</span>}
       </span>
       <span className="shrink-0 font-mono text-[10px] text-muted-foreground">v{sop.version}</span>
       <DropdownMenu>

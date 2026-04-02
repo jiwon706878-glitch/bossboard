@@ -20,6 +20,6 @@ export async function GET(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  logApiCall(auth.businessId, auth.apiKeyId, "/api/v1/agent-log", "GET", 200);
+  logApiCall(auth.businessId, auth.apiKeyId, "/api/v1/agent-log", "GET", 200, auth.keyName);
   return NextResponse.json({ logs: data ?? [] });
 }

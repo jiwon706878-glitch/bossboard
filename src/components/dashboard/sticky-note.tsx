@@ -171,7 +171,7 @@ export function StickyNote() {
             Quick Notes
             {notes.length > 0 && <span className="text-xs text-muted-foreground">({notes.length})</span>}
           </div>
-          <button type="button" onClick={() => setIsOpen(false)} className="rounded p-0.5 text-muted-foreground hover:text-foreground">
+          <button type="button" onClick={() => setIsOpen(false)} className="rounded p-0.5 text-muted-foreground hover:text-foreground" aria-label="Close notes">
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -189,6 +189,7 @@ export function StickyNote() {
                 type="button"
                 onClick={() => deleteNote(note.id)}
                 className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity mt-0.5"
+                aria-label="Delete note"
               >
                 <Trash2 className="h-3 w-3" />
               </button>

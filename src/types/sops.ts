@@ -17,6 +17,7 @@ export interface SOP {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  last_edited_by_name?: string | null;
   isUnread?: boolean;
 }
 
@@ -59,6 +60,7 @@ export interface SOPDetail {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  last_edited_by_name?: string | null;
 }
 
 export function formatLongDate(dateStr: string) {

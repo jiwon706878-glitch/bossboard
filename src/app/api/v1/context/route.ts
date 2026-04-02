@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
         .limit(10),
     ]);
 
-  logApiCall(auth.businessId, auth.apiKeyId, "/api/v1/context", "GET", 200);
+  logApiCall(auth.businessId, auth.apiKeyId, "/api/v1/context", "GET", 200, auth.keyName);
 
   return NextResponse.json({
     business: business ?? {},

@@ -1,6 +1,4 @@
-import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { DashboardTopbar } from "@/components/dashboard/topbar";
 import { LazyOverlays } from "@/components/dashboard/lazy-overlays";
@@ -9,24 +7,13 @@ export const metadata: Metadata = {
   title: "Dashboard",
 };
 
-export default async function DashboardLayout({
+// Auth is handled by middleware — no server queries needed here.
+// This makes tab switching instant (no server roundtrip per navigation).
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  const { data: businesses } = await supabase
-    .from("businesses")
-    .select("id")
-    .eq("user_id", user.id)
-    .limit(1);
-
   return (
     <div className="flex h-dvh overflow-hidden">
       <DashboardSidebar className="hidden lg:flex" />

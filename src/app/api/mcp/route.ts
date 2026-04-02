@@ -338,13 +338,13 @@ export async function POST(req: NextRequest) {
       const result = await handleToolCall(toolName, toolArgs, auth);
 
       // Log the call
-      logApiCall(auth.businessId, auth.apiKeyId, `mcp/${toolName}`, "POST", 200);
+      logApiCall(auth.businessId, auth.apiKeyId, `mcp/${toolName}`, "POST", 200, auth.keyName);
 
       return jsonRpcResponse(id, {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
       });
     } catch (err) {
-      logApiCall(auth.businessId, auth.apiKeyId, `mcp/${toolName}`, "POST", 500);
+      logApiCall(auth.businessId, auth.apiKeyId, `mcp/${toolName}`, "POST", 500, auth.keyName);
       return jsonRpcError(id, -32000, err instanceof Error ? err.message : "Tool execution failed");
     }
   }

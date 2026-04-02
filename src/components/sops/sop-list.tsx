@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, FileText, Search, ChevronRight, Pin, Trash2, Folder } from "lucide-react";
+import { Plus, FileText, Search, ChevronRight, Pin, Trash2, Folder, Upload } from "lucide-react";
 import type { SOP, FolderRow } from "@/types/sops";
 import { SopRow } from "@/components/sops/sop-row";
 
@@ -32,6 +32,8 @@ interface SopListProps {
   onContextMenu: (e: React.MouseEvent, sop: SOP) => void;
   onEmptyTrash: () => void;
   onOpenMobileFolders?: () => void;
+  importInputRef?: React.RefObject<HTMLInputElement | null>;
+  onImportClick?: () => void;
 }
 
 export function SopList({
@@ -58,6 +60,7 @@ export function SopList({
   onContextMenu,
   onEmptyTrash,
   onOpenMobileFolders,
+  onImportClick,
 }: SopListProps) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -106,6 +109,12 @@ export function SopList({
                 className="h-8 pl-8 text-sm"
               />
             </div>
+            {onImportClick && (
+              <Button size="sm" variant="ghost" className="shrink-0" onClick={onImportClick} title="Import .md/.txt files">
+                <Upload className="h-3.5 w-3.5" />
+                <span className="sr-only">Import</span>
+              </Button>
+            )}
             <Link
               href={
                 selectedFolder && selectedFolder !== "unfiled"
@@ -115,7 +124,7 @@ export function SopList({
             >
               <Button size="sm" className="shrink-0 active:scale-[0.98]">
                 <Plus className="h-3.5 w-3.5 sm:mr-1" />
-                <span className="hidden sm:inline">New SOP</span>
+                <span className="hidden sm:inline">New Document</span>
               </Button>
             </Link>
           </>
@@ -139,12 +148,12 @@ export function SopList({
           <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
             <FileText className="h-10 w-10 text-muted-foreground/30" />
             <p className="text-sm font-medium text-foreground">
-              {searchQuery ? "No SOPs match your search" : totalSopsCount === 0 ? "No documents yet" : "This folder is empty"}
+              {searchQuery ? "No documents match your search" : totalSopsCount === 0 ? "No documents yet" : "This folder is empty"}
             </p>
             {!searchQuery && (
               <>
                 {totalSopsCount === 0 && (
-                  <p className="text-xs text-muted-foreground">Create your first SOP to get started.</p>
+                  <p className="text-xs text-muted-foreground">Create your first document to get started.</p>
                 )}
                 <Link
                   href={`/dashboard/sops/new${selectedFolder && selectedFolder !== "unfiled" ? `?folder=${selectedFolder}` : ""}`}

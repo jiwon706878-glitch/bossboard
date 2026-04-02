@@ -3,9 +3,10 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 function Input({ className, type, autoComplete, ...props }: React.ComponentProps<"input">) {
-  // Keep autofill for login/signup (email, password), disable elsewhere
-  const resolvedAutoComplete = autoComplete ?? (type === "email" || type === "password" ? undefined : "off");
-  const blockManagers = resolvedAutoComplete === "off";
+  // Keep autofill for login/signup (email, password), block everywhere else
+  // Chrome ignores "off" — use "one-time-code" which Chrome actually respects
+  const resolvedAutoComplete = autoComplete ?? (type === "email" || type === "password" ? undefined : "one-time-code");
+  const blockManagers = resolvedAutoComplete === "one-time-code" || resolvedAutoComplete === "off";
 
   return (
     <input

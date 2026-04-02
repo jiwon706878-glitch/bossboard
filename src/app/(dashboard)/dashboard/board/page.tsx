@@ -240,7 +240,8 @@ export default function BoardPage() {
       .single();
 
     if (error) {
-      toast.error(error.message);
+      console.error("Post creation error:", error.message);
+      toast.error("Failed to create post. Please try again.");
       setSubmitting(false);
       return;
     }
@@ -275,7 +276,7 @@ export default function BoardPage() {
 
   async function handleDeletePost(postId: string) {
     const { error } = await supabase.from("board_posts").delete().eq("id", postId);
-    if (error) toast.error(error.message);
+    if (error) { console.error("Post delete error:", error.message); toast.error("Failed to delete post. Please try again."); }
     else { toast.success("Post deleted"); invalidateBoard(); }
   }
 
@@ -287,8 +288,8 @@ export default function BoardPage() {
       user_id: currentUserId,
     });
     if (error) {
-      if (error.code === "23505") toast.error("You already voted");
-      else toast.error(error.message);
+      if (error.code === "23505") toast.error("You already voted on this poll");
+      else { console.error("Vote error:", error.message); toast.error("Failed to submit vote. Please try again."); }
       return;
     }
     invalidateBoard();
@@ -344,7 +345,7 @@ export default function BoardPage() {
       is_anonymous: commentAnon,
     });
 
-    if (error) toast.error(error.message);
+    if (error) { console.error("Comment error:", error.message); toast.error("Failed to post comment. Please try again."); }
     else {
       setCommentText("");
       setCommentAnon(false);

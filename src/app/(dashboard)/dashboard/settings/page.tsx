@@ -132,7 +132,7 @@ export default function SettingsPage() {
       .from("businesses")
       .update({ language: displayLanguage, timezone: displayTimezone })
       .eq("id", currentBusiness.id);
-    if (error) { toast.error(error.message); }
+    if (error) { console.error("Language save error:", error.message); toast.error("Failed to save language settings. Please try again."); }
     else {
       toast.success("Language & region saved");
       setLanguageInput(null);
@@ -147,7 +147,7 @@ export default function SettingsPage() {
     setSavingNotifications(true);
     const toSave = displayNotifications;
     const { error } = await supabase.from("profiles").update({ notification_settings: toSave }).eq("id", userId);
-    if (error) { toast.error(error.message); }
+    if (error) { console.error("Notification save error:", error.message); toast.error("Failed to save notification preferences. Please try again."); }
     else {
       toast.success("Notification preferences saved");
       setNotificationsInput(null);
@@ -161,7 +161,7 @@ export default function SettingsPage() {
     setDeveloperMode(enabled);
     setSavingDevMode(true);
     const { error } = await supabase.from("profiles").update({ developer_mode: enabled }).eq("id", userId);
-    if (error) { toast.error(error.message); setDeveloperMode(!enabled); }
+    if (error) { console.error("Dev mode toggle error:", error.message); toast.error("Failed to update developer mode. Please try again."); setDeveloperMode(!enabled); }
     else {
       toast.success(enabled ? "Developer mode enabled" : "Developer mode disabled");
       queryClient.setQueryData(userKeys.profile(userId), (old: any) => ({ ...old, developer_mode: enabled }));

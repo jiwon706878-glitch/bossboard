@@ -79,7 +79,8 @@ export default function NewChecklistPage() {
         .single();
 
       if (error) {
-        toast.error(error.message);
+        console.error("Checklist creation error:", error.message);
+        toast.error("Failed to create checklist. Please try again.");
         setCreating(false);
         return;
       }

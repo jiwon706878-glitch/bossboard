@@ -45,19 +45,26 @@ export function useSopDetail(sopId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: existing } = await supabase
-      .from("sop_reads").select("id, signed")
-      .eq("sop_id", sopId).eq("user_id", user.id).maybeSingle();
+    // Fetch existing read record, all reads, and team size in parallel
+    const [{ data: existing }, { data: reads }, teamSizeResult] = await Promise.all([
+      supabase
+        .from("sop_reads").select("id, signed")
+        .eq("sop_id", sopId).eq("user_id", user.id).maybeSingle(),
+      supabase.from("sop_reads").select("user_id, signed").eq("sop_id", sopId),
+      currentBusiness?.id
+        ? supabase.from("businesses").select("id", { count: "exact", head: true }).eq("id", currentBusiness.id)
+        : Promise.resolve({ count: 1 }),
+    ]);
 
     if (existing) {
       setSignedOff(existing.signed ?? false);
     } else {
-      await supabase.from("sop_reads").insert({
+      // Insert read record (fire-and-forget, don't block)
+      supabase.from("sop_reads").insert({
         sop_id: sopId, user_id: user.id, read_at: new Date().toISOString(), signed: false,
-      });
+      }).then(() => {});
     }
 
-    const { data: reads } = await supabase.from("sop_reads").select("user_id, signed").eq("sop_id", sopId);
     if (reads && reads.length > 0) {
       const userIds = reads.map((r: any) => r.user_id);
       const { data: profiles } = await supabase.from("profiles").select("id, full_name").in("id", userIds);
@@ -65,12 +72,7 @@ export function useSopDetail(sopId: string) {
       setReadBy(reads.map((r: any) => ({ id: r.user_id, full_name: profileMap.get(r.user_id) ?? null, signed: r.signed ?? false })));
     }
 
-    if (currentBusiness?.id) {
-      const { count } = await supabase.from("businesses").select("id", { count: "exact", head: true }).eq("id", currentBusiness.id);
-      // Team size: for now count is 1 (owner) since profiles has no business_id FK.
-      // When team invites are implemented, query the invites/users table instead.
-      setTeamSize(count ?? 1);
-    }
+    setTeamSize(teamSizeResult?.count ?? 1);
   }, [sopId, supabase, currentBusiness?.id]);
 
   useEffect(() => {
@@ -90,7 +92,7 @@ export function useSopDetail(sopId: string) {
   async function handleDelete() {
     setDeleting(true);
     const { error } = await supabase.from("sops").update({ deleted_at: new Date().toISOString() }).eq("id", sopId);
-    if (error) { toast.error(error.message); setDeleting(false); return; }
+    if (error) { console.error("SOP delete error:", error.message); toast.error("Failed to delete SOP. Please try again."); setDeleting(false); return; }
     toast.success("SOP moved to trash");
     router.push("/dashboard/sops");
   }
@@ -104,7 +106,7 @@ export function useSopDetail(sopId: string) {
     if (steps.length === 0) { toast.error("Could not extract any steps from this SOP. Try adding numbered or bulleted steps."); setCreatingChecklist(false); return; }
     const { data: user } = await supabase.auth.getUser();
     const { data, error } = await supabase.from("checklists").insert({ business_id: businessId, sop_id: sop.id, title: `${sop.title} — Checklist`, items: steps, status: "pending", created_by: user.user?.id }).select("id").single();
-    if (error) { toast.error(error.message); setCreatingChecklist(false); return; }
+    if (error) { console.error("Checklist creation error:", error.message); toast.error("Failed to create checklist. Please try again."); setCreatingChecklist(false); return; }
     toast.success(`Checklist created with ${steps.length} items`);
     router.push(`/dashboard/checklists/${data.id}`);
   }
@@ -115,7 +117,7 @@ export function useSopDetail(sopId: string) {
     if (!user) { setSigningOff(false); return; }
     const newSigned = !signedOff;
     const { error } = await supabase.from("sop_reads").update({ signed: newSigned }).eq("sop_id", sopId).eq("user_id", user.id);
-    if (error) { toast.error(error.message); setSigningOff(false); return; }
+    if (error) { console.error("Sign-off error:", error.message); toast.error("Failed to update sign-off. Please try again."); setSigningOff(false); return; }
     setSignedOff(newSigned);
     setReadBy((prev) => prev.map((r) => (r.id === user.id ? { ...r, signed: newSigned } : r)));
     toast.success(newSigned ? "Signed off" : "Sign-off removed");
@@ -126,7 +128,7 @@ export function useSopDetail(sopId: string) {
     if (!sop) return;
     const newPinned = !sop.pinned;
     const { error } = await supabase.from("sops").update({ pinned: newPinned }).eq("id", sopId);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error("Pin toggle error:", error.message); toast.error("Failed to update pin status. Please try again."); return; }
     setSop({ ...sop, pinned: newPinned });
     toast.success(newPinned ? "SOP pinned" : "SOP unpinned");
   }
@@ -143,7 +145,7 @@ export function useSopDetail(sopId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     await supabase.from("sop_versions").insert({ sop_id: sopId, version: sop.version, content: sop.content, changed_by: user?.id, change_summary: "Before restore" });
     const { error } = await supabase.from("sops").update({ content: versionContent, version: (sop.version ?? 1) + 1, updated_at: new Date().toISOString() }).eq("id", sopId);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error("Version restore error:", error.message); toast.error("Failed to restore version. Please try again."); return; }
     setSop({ ...sop, content: versionContent, version: (sop.version ?? 1) + 1 });
     setHistoryOpen(false);
     toast.success(`Restored to version ${versionNum}`);

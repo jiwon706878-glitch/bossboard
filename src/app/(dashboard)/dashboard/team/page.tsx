@@ -161,7 +161,7 @@ export default function TeamPage() {
       .insert({ name: newBizName.trim(), type: newBizType.trim() || "other", user_id: userId })
       .select()
       .single();
-    if (error) toast.error(error.message);
+    if (error) { console.error("Add business error:", error.message); toast.error("Failed to create workspace. Please try again."); }
     else {
       toast.success("Workspace added");
       setNewBizName("");
@@ -173,7 +173,7 @@ export default function TeamPage() {
   async function handleDeleteBusiness(bizId: string, bizName: string) {
     if (!confirm(`Delete "${bizName}"? This will remove all data associated with this workspace. This cannot be undone.`)) return;
     const { error } = await supabase.from("businesses").delete().eq("id", bizId);
-    if (error) toast.error(error.message);
+    if (error) { console.error("Delete business error:", error.message); toast.error("Failed to delete workspace. Please try again."); }
     else {
       toast.success("Workspace deleted");
       queryClient.invalidateQueries({ queryKey: businessKeys.all(userId!) });
@@ -218,19 +218,19 @@ export default function TeamPage() {
         .eq("id", businessId);
       if (bizError) throw bizError;
 
-      // 2. New owner gets "owner" role in business_members
-      await supabase
-        .from("business_members")
-        .update({ role: "owner" })
-        .eq("business_id", businessId)
-        .eq("user_id", transferTarget);
-
-      // 3. Current owner becomes admin
-      await supabase
-        .from("business_members")
-        .update({ role: "admin" })
-        .eq("business_id", businessId)
-        .eq("user_id", userId);
+      // 2. Update roles in parallel (independent of each other)
+      await Promise.all([
+        supabase
+          .from("business_members")
+          .update({ role: "owner" })
+          .eq("business_id", businessId)
+          .eq("user_id", transferTarget),
+        supabase
+          .from("business_members")
+          .update({ role: "admin" })
+          .eq("business_id", businessId)
+          .eq("user_id", userId),
+      ]);
 
       toast.success("Ownership transferred");
       setTransferTarget("");
@@ -239,7 +239,8 @@ export default function TeamPage() {
       useRoleStore.getState().loaded = false;
       loadRole();
     } catch (err: any) {
-      toast.error(err.message || "Failed to transfer ownership");
+      console.error("Transfer ownership error:", err.message);
+      toast.error("Failed to transfer ownership. Please try again.");
     }
     setTransferringOwnership(false);
   }

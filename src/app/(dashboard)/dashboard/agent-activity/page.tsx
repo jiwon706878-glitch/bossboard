@@ -3,10 +3,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { format, startOfDay, startOfWeek, startOfMonth, isToday, isYesterday } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Activity, Zap } from "lucide-react";
+import { Activity } from "lucide-react";
 
 interface LogEntry {
   id: string;

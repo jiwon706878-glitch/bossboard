@@ -68,7 +68,8 @@ export function AiGenerateTab({
       if (!aiTitle) setAiTitle(aiPrompt.length > 60 ? aiPrompt.slice(0, 60) : aiPrompt);
       toast.success(`Generated ${items.length} items`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to generate checklist");
+      console.error("Checklist generation error:", error instanceof Error ? error.message : error);
+      toast.error("Failed to generate checklist. Please try again.");
     } finally {
       setAiGenerating(false);
     }

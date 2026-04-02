@@ -43,7 +43,8 @@ export const FeedbackCard = memo(function FeedbackCard({
     });
 
     if (error) {
-      toast.error(error.message);
+      console.error("Feedback submit error:", error.message);
+      toast.error("Failed to submit feedback. Please try again.");
     } else {
       toast.success("Thanks for your feedback!");
       setText("");

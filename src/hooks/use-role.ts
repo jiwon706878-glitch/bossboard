@@ -19,25 +19,25 @@ export const useRoleStore = create<RoleState>((set, get) => ({
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Check if user owns any business (business owner = admin)
-    const { data: businesses } = await supabase
-      .from("businesses")
-      .select("id")
-      .eq("user_id", user.id)
-      .limit(1);
+    // Check ownership and membership in parallel
+    const [{ data: businesses }, { data: membership }] = await Promise.all([
+      supabase
+        .from("businesses")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1),
+      supabase
+        .from("business_members")
+        .select("role")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
     if (businesses && businesses.length > 0) {
       set({ role: "owner", loaded: true });
       return;
     }
-
-    // Check business_members for role
-    const { data: membership } = await supabase
-      .from("business_members")
-      .select("role")
-      .eq("user_id", user.id)
-      .limit(1)
-      .maybeSingle();
 
     if (membership) {
       const role = (membership.role as "owner" | "admin" | "member") ?? "member";

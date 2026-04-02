@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +32,6 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 interface OnboardingPath {
   id: string;
@@ -171,7 +169,8 @@ export default function OnboardingPathsPage() {
     });
 
     if (error) {
-      toast.error(error.message);
+      console.error("Onboarding path creation error:", error.message);
+      toast.error("Failed to create onboarding path. Please try again.");
       setSaving(false);
       return;
     }

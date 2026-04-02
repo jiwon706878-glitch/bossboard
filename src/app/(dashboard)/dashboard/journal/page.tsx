@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, memo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
@@ -116,7 +116,7 @@ export default function JournalPage() {
     onError: (err: any, params, ctx) => {
       queryClient.setQueryData(journalKeys.entries(businessId!, 50), ctx?.prev);
       if (err?.code === "23505") toast.error("You already have an entry for this date. Click it to edit.");
-      else toast.error(err?.message || "Failed to save");
+      else { console.error("Journal save error:", err?.message); toast.error("Failed to save journal entry. Please try again."); }
     },
     onSuccess: (_, params) => { toast.success(params.isEdit ? "Journal entry updated" : "Journal entry saved"); if (params.isEdit) setEditingId(null); },
     onSettled: () => queryClient.invalidateQueries({ queryKey: journalKeys.entries(businessId!, 50) }),
@@ -255,7 +255,7 @@ export default function JournalPage() {
   );
 }
 
-function EntryCard({ entry, currentUserId, isAdmin, feedbackEntryId, feedbackText, feedbackSubmitting, formatEntryDate, onEdit, onFeedback, onStartFeedback, onCancelFeedback, onFeedbackTextChange }: {
+const EntryCard = memo(function EntryCard({ entry, currentUserId, isAdmin, feedbackEntryId, feedbackText, feedbackSubmitting, formatEntryDate, onEdit, onFeedback, onStartFeedback, onCancelFeedback, onFeedbackTextChange }: {
   entry: JournalEntry; currentUserId: string | null; isAdmin: boolean; feedbackEntryId: string | null; feedbackText: string; feedbackSubmitting: boolean;
   formatEntryDate: (dateStr: string) => string; onEdit: (entry: JournalEntry) => void; onFeedback: (entryId: string) => void;
   onStartFeedback: (id: string) => void; onCancelFeedback: () => void; onFeedbackTextChange: (text: string) => void;
@@ -287,4 +287,4 @@ function EntryCard({ entry, currentUserId, isAdmin, feedbackEntryId, feedbackTex
       </CardContent>
     </Card>
   );
-}
+});

@@ -34,7 +34,8 @@ export function EmailChangeCard() {
     const { error } = await supabase.auth.updateUser({ email: newEmail.trim() });
 
     if (error) {
-      toast.error(error.message);
+      console.error("Email change error:", error.message);
+      toast.error("Failed to update email. Please try again.");
     } else {
       toast.success("Confirmation email sent to your new address. Please check your inbox.");
       setNewEmail("");

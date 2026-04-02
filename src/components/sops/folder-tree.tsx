@@ -368,7 +368,8 @@ export function FolderTree() {
       .single();
 
     if (error) {
-      toast.error(error.message);
+      console.error("Business creation error:", error.message);
+      toast.error("Failed to create workspace. Please try again.");
       setCreatingBusiness(false);
       return;
     }
@@ -487,7 +488,7 @@ export function FolderTree() {
       .update({ name, updated_at: new Date().toISOString() })
       .eq("id", id);
 
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error("Folder operation error:", error.message); toast.error("Something went wrong. Please try again."); return; }
     setTree((prev) => {
       const update = (nodes: FolderNode[]): FolderNode[] =>
         nodes.map((n) => ({ ...n, name: n.id === id ? name : n.name, children: update(n.children) }));
@@ -498,7 +499,7 @@ export function FolderTree() {
   async function handleDelete(id: string) {
     await supabase.from("sops").update({ folder_id: null }).eq("folder_id", id);
     const { error } = await supabase.from("folders").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error("Folder operation error:", error.message); toast.error("Something went wrong. Please try again."); return; }
     toast.success("Folder deleted. SOPs moved to Unfiled.");
     loadFolders();
     if (activeFolderId === id) router.push("/dashboard/sops");
@@ -516,7 +517,7 @@ export function FolderTree() {
       created_by: user?.id,
     });
 
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error("Folder operation error:", error.message); toast.error("Something went wrong. Please try again."); return; }
     setNewName("");
     setCreating(false);
     setCreatingParentId(null);
@@ -530,7 +531,7 @@ export function FolderTree() {
       .eq("id", sopId);
 
     if (error) {
-      toast.error(error.message);
+      console.error("Folder operation error:", error.message); toast.error("Something went wrong. Please try again.");
       return;
     }
 
@@ -561,7 +562,7 @@ export function FolderTree() {
       .from("folders")
       .update({ parent_id: targetFolderId })
       .eq("id", draggedFolderId);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error("Folder operation error:", error.message); toast.error("Something went wrong. Please try again."); return; }
     toast.success("Folder moved");
     loadFolders();
   }
@@ -627,7 +628,7 @@ export function FolderTree() {
       .eq("id", accessFolderId);
 
     if (error) {
-      toast.error(error.message);
+      console.error("Folder operation error:", error.message); toast.error("Something went wrong. Please try again.");
     } else {
       toast.success("Access control updated");
       loadFolders();

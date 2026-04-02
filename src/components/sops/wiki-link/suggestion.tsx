@@ -8,7 +8,6 @@ import {
   useCallback,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useBusinessStore } from "@/hooks/use-business";
 import { FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 

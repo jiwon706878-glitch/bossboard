@@ -18,7 +18,7 @@ import { FolderContextMenu } from "@/components/sops/folder-context-menu";
 import { FolderPanel } from "@/components/sops/folder-panel";
 import { TrashView } from "@/components/sops/trash-view";
 import { SopList } from "@/components/sops/sop-list";
-import { Folder, Upload } from "lucide-react";
+import { Folder } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { SOP } from "@/types/sops";
@@ -183,7 +183,7 @@ export default function SOPsPage() {
       .select("id, title")
       .single();
 
-    if (error) { toast.error("Failed to import: " + error.message); return; }
+    if (error) { console.error("SOP import error:", error.message); toast.error("Failed to import document. Please try again."); return; }
 
     toast.success(`Imported "${docTitle}"`, {
       action: data ? { label: "Open", onClick: () => router.push(`/dashboard/sops/${data.id}`) } : undefined,

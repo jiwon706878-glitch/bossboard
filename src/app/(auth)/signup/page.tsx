@@ -39,7 +39,16 @@ export default function SignupPage() {
     });
 
     if (error) {
-      toast.error(error.message);
+      console.error("Signup error:", error.message);
+      if (error.message.includes("already registered")) {
+        toast.error("An account with this email already exists. Try logging in instead.");
+      } else if (error.message.includes("valid email")) {
+        toast.error("Please enter a valid email address.");
+      } else if (error.message.includes("password")) {
+        toast.error("Password must be at least 6 characters.");
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
       setLoading(false);
       return;
     }
@@ -57,7 +66,8 @@ export default function SignupPage() {
       if (error.message.includes("not enabled") || error.message.includes("Unsupported provider") || error.message.includes("redirect_uri_mismatch")) {
         toast.error("Google login is being configured. Please use email and password for now.");
       } else {
-        toast.error(error.message);
+        console.error("OAuth error:", error.message);
+        toast.error("Something went wrong with Google login. Please try again.");
       }
     }
   }

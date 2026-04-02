@@ -472,7 +472,8 @@ export default function NewSOPPage() {
         .eq("id", savedSopId);
 
       if (error) {
-        toast.error(error.message);
+        console.error("SOP publish error:", error.message);
+        toast.error("Failed to publish document. Please try again.");
         setPublishing(false);
         return;
       }
@@ -521,7 +522,8 @@ export default function NewSOPPage() {
         .single();
 
       if (error) {
-        toast.error(error.message);
+        console.error("SOP publish error:", error.message);
+        toast.error("Failed to publish document. Please try again.");
         setPublishing(false);
         return;
       }

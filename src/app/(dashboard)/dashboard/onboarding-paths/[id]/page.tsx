@@ -76,7 +76,7 @@ export default function OnboardingPathDetailPage() {
   const [deleting, setDeleting] = useState(false);
 
   const loadData = useCallback(async () => {
-    // Load path
+    // Load path first (needed for steps), assignments and members in parallel
     const { data: pathData, error } = await supabase
       .from("onboarding_paths")
       .select("id, title, description, steps, sop_ids, business_id, assigned_to, checklist_ids, created_at")
@@ -90,73 +90,82 @@ export default function OnboardingPathDetailPage() {
     }
     setPath(pathData);
 
-    // Load assignments
-    const { data: assignments } = await supabase
-      .from("onboarding_assignments")
-      .select("id, path_id, user_id, started_at, completed_at, created_at")
-      .eq("path_id", pathId);
+    // Load assignments and team members in parallel
+    const [assignmentResult, memberResult] = await Promise.all([
+      supabase
+        .from("onboarding_assignments")
+        .select("id, path_id, user_id, started_at, completed_at, created_at")
+        .eq("path_id", pathId),
+      currentBusiness?.id
+        ? supabase.from("profiles").select("id, full_name").eq("business_id", currentBusiness.id)
+        : Promise.resolve({ data: [] as { id: string; full_name: string | null }[] }),
+    ]);
 
-    // Load team members for assignment dropdown
-    let members: { id: string; full_name: string | null }[] = [];
-    if (currentBusiness?.id) {
-      const { data: memberData } = await supabase
+    const assignments = assignmentResult.data ?? [];
+    const members = (memberResult.data ?? []) as { id: string; full_name: string | null }[];
+    setTeamMembers(members);
+
+    // Calculate progress: batch-fetch all reads and completions instead of N+1 queries
+    const steps = (pathData.steps as Step[]) ?? [];
+    const assignedUserIds = assignments.map((a: any) => a.user_id);
+    const sopStepTargetIds = steps.filter((s) => s.type === "read_sop").map((s) => s.target_id);
+    const checklistStepTargetIds = steps.filter((s) => s.type === "complete_checklist").map((s) => s.target_id);
+
+    const [sopReadsResult, checklistCompletionsResult] = await Promise.all([
+      sopStepTargetIds.length > 0 && assignedUserIds.length > 0
+        ? supabase
+            .from("sop_reads")
+            .select("sop_id, user_id, signed")
+            .in("sop_id", sopStepTargetIds)
+            .in("user_id", assignedUserIds)
+            .eq("signed", true)
+        : Promise.resolve({ data: [] as { sop_id: string; user_id: string; signed: boolean }[] }),
+      checklistStepTargetIds.length > 0 && assignedUserIds.length > 0
+        ? supabase
+            .from("checklist_completions")
+            .select("checklist_id, completed_by")
+            .in("checklist_id", checklistStepTargetIds)
+            .in("completed_by", assignedUserIds)
+        : Promise.resolve({ data: [] as { checklist_id: string; completed_by: string }[] }),
+    ]);
+
+    const sopReadSet = new Set(
+      (sopReadsResult.data ?? []).map((r: any) => `${r.user_id}:${r.sop_id}`)
+    );
+    const checklistCompleteSet = new Set(
+      (checklistCompletionsResult.data ?? []).map((c: any) => `${c.completed_by}:${c.checklist_id}`)
+    );
+
+    // Build name map, batch-fetch missing names
+    const memberMap = new Map(members.map((m) => [m.id, m.full_name]));
+    const missingNameIds = assignedUserIds.filter((uid: string) => !memberMap.get(uid));
+    if (missingNameIds.length > 0) {
+      const { data: extraProfiles } = await supabase
         .from("profiles")
         .select("id, full_name")
-        .eq("business_id", currentBusiness.id);
-      members = memberData ?? [];
-      setTeamMembers(members);
+        .in("id", missingNameIds);
+      for (const p of extraProfiles ?? []) {
+        memberMap.set(p.id, p.full_name);
+      }
     }
 
-    // Calculate progress for each assigned member
-    const steps = (pathData.steps as Step[]) ?? [];
-    const progressList: MemberProgress[] = [];
-
-    for (const assignment of assignments ?? []) {
+    const progressList: MemberProgress[] = assignments.map((assignment: any) => {
       const completedSteps = new Set<number>();
-
       for (let i = 0; i < steps.length; i++) {
         const step = steps[i];
-
-        if (step.type === "read_sop") {
-          const { data: read } = await supabase
-            .from("sop_reads")
-            .select("signed")
-            .eq("sop_id", step.target_id)
-            .eq("user_id", assignment.user_id)
-            .eq("signed", true)
-            .maybeSingle();
-          if (read) completedSteps.add(i);
-        } else if (step.type === "complete_checklist") {
-          const { data: completion } = await supabase
-            .from("checklist_completions")
-            .select("id")
-            .eq("checklist_id", step.target_id)
-            .eq("completed_by", assignment.user_id)
-            .limit(1)
-            .maybeSingle();
-          if (completion) completedSteps.add(i);
+        if (step.type === "read_sop" && sopReadSet.has(`${assignment.user_id}:${step.target_id}`)) {
+          completedSteps.add(i);
+        } else if (step.type === "complete_checklist" && checklistCompleteSet.has(`${assignment.user_id}:${step.target_id}`)) {
+          completedSteps.add(i);
         }
       }
-
-      // Find name from local members array (not state, avoids stale closure)
-      const member = members.find((m) => m.id === assignment.user_id);
-      let name = member?.full_name ?? "";
-      if (!name) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", assignment.user_id)
-          .single();
-        name = profile?.full_name ?? "Member";
-      }
-
-      progressList.push({
+      return {
         assignment,
-        name,
+        name: memberMap.get(assignment.user_id) ?? "Member",
         completedSteps,
         totalSteps: steps.length,
-      });
-    }
+      };
+    });
 
     setMemberProgress(progressList);
     setLoading(false);
@@ -177,7 +186,7 @@ export default function OnboardingPathDetailPage() {
     });
 
     if (error) {
-      toast.error(error.message);
+      console.error("Onboarding path error:", error.message); toast.error("Something went wrong. Please try again.");
       setAssigning(false);
       return;
     }
@@ -195,7 +204,7 @@ export default function OnboardingPathDetailPage() {
       .eq("id", assignmentId);
 
     if (error) {
-      toast.error(error.message);
+      console.error("Onboarding path error:", error.message); toast.error("Something went wrong. Please try again.");
       return;
     }
     toast.success("Assignment removed");
@@ -210,7 +219,7 @@ export default function OnboardingPathDetailPage() {
       .eq("id", pathId);
 
     if (error) {
-      toast.error(error.message);
+      console.error("Onboarding path error:", error.message); toast.error("Something went wrong. Please try again.");
       setDeleting(false);
       return;
     }

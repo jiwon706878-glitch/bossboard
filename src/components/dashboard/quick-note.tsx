@@ -105,7 +105,8 @@ export function QuickNoteButton() {
       .single();
 
     if (error) {
-      toast.error(error.message);
+      console.error("Quick note save error:", error.message);
+      toast.error("Failed to save note. Please try again.");
       setSaving(false);
       return;
     }
@@ -238,7 +239,7 @@ function QuickNoteInline() {
       .single();
 
     setSaving(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error("Quick note save error:", error.message); toast.error("Failed to save note. Please try again."); return; }
     setOpen(false);
     setTitle("");
     setContent("");

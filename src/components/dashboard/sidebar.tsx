@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, memo } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useActiveTab } from "@/hooks/use-active-tab";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { plans, type PlanId } from "@/config/plans";
@@ -46,6 +46,22 @@ const navLinks = [
   { key: "settings", href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
+// Tab IDs map href → tab id for instant switching
+const TAB_IDS: Record<string, string> = {
+  "/dashboard": "dashboard",
+  "/dashboard/sops": "sops",
+  "/dashboard/checklists": "checklists",
+  "/dashboard/todos": "todos",
+  "/dashboard/calendar": "calendar",
+  "/dashboard/journal": "journal",
+  "/dashboard/board": "board",
+  "/dashboard/team": "team",
+  "/dashboard/settings": "settings",
+  "/dashboard/agent-activity": "agent-activity",
+  "/dashboard/api-docs": "api-docs",
+  "/dashboard/mcp-guide": "mcp-guide",
+};
+
 const NavLink = memo(function NavLink({
   href,
   label,
@@ -62,8 +78,18 @@ const NavLink = memo(function NavLink({
   const isActive =
     pathname === href ||
     (href !== "/dashboard" && pathname.startsWith(href));
+
+  const tabId = TAB_IDS[href];
+
+  function handleClick(e: React.MouseEvent) {
+    if (tabId) {
+      e.preventDefault();
+      window.dispatchEvent(new CustomEvent("dashboard-switch-tab", { detail: tabId }));
+    }
+  }
+
   return (
-    <Link href={href} onMouseEnter={onHover}>
+    <a href={href} onClick={handleClick} onMouseEnter={onHover}>
       <Button
         variant={isActive ? "secondary" : "ghost"}
         className={cn(
@@ -74,12 +100,12 @@ const NavLink = memo(function NavLink({
         <Icon className="h-4 w-4 shrink-0 min-w-[16px]" />
         <span className="truncate">{label}</span>
       </Button>
-    </Link>
+    </a>
   );
 });
 
 export function DashboardSidebar({ className }: { className?: string }) {
-  const pathname = usePathname();
+  const pathname = useActiveTab((s) => s.activePath);
   const router = useRouter();
   const supabase = createClient();
   const queryClient = useQueryClient();

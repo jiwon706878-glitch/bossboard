@@ -30,7 +30,7 @@ export function ProfileCard({ userId, initialName, isFetching }: ProfileCardProp
     if (!nameToSave?.trim()) { toast.error("Name cannot be empty"); return; }
     setSaving(true);
     const { error } = await supabase.from("profiles").update({ full_name: nameToSave.trim() }).eq("id", userId);
-    if (error) { toast.error(error.message); }
+    if (error) { console.error("Profile update error:", error.message); toast.error("Failed to update profile. Please try again."); }
     else {
       toast.success("Profile updated");
       setNameInput(null);

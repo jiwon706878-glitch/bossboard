@@ -86,7 +86,8 @@ export function useSops(businessId: string | undefined) {
 
     const { error } = await supabase.from("sops").update({ deleted_at: now }).eq("id", sopId);
     if (error) {
-      toast.error(error.message);
+      console.error("SOP operation error:", error.message);
+      toast.error("Something went wrong. Please try again.");
       fetchSops();
       return;
     }
@@ -103,7 +104,8 @@ export function useSops(businessId: string | undefined) {
 
     const { error } = await supabase.from("sops").update({ deleted_at: null }).eq("id", sopId);
     if (error) {
-      toast.error(error.message);
+      console.error("SOP operation error:", error.message);
+      toast.error("Something went wrong. Please try again.");
       fetchSops();
       return;
     }
@@ -113,7 +115,7 @@ export function useSops(businessId: string | undefined) {
 
   async function handleDeleteForever(sopId: string) {
     const { error } = await supabase.from("sops").delete().eq("id", sopId);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error("SOP operation error:", error.message); toast.error("Something went wrong. Please try again."); return; }
     setTrashedSops((prev) => prev.filter((s) => s.id !== sopId));
     toast.success("SOP permanently deleted");
   }
@@ -122,7 +124,7 @@ export function useSops(businessId: string | undefined) {
     const ids = trashedSops.map((s) => s.id);
     if (ids.length === 0) return;
     const { error } = await supabase.from("sops").delete().in("id", ids);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error("SOP operation error:", error.message); toast.error("Something went wrong. Please try again."); return; }
     setTrashedSops([]);
     toast.success("Trash emptied");
   }

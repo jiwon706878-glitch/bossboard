@@ -183,7 +183,7 @@ export default function SOPDetailPage() {
           <span className="flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" />
             Updated {formatLongDate(sop.updated_at)}
-            {(sop as any).last_edited_by_name && <span>by {(sop as any).last_edited_by_name}</span>}
+            {sop.last_edited_by_name && <span>by {sop.last_edited_by_name}</span>}
           </span>
         )}
       </div>

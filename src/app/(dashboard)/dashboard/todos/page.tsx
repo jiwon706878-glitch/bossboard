@@ -6,7 +6,6 @@ import { format, isYesterday } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { fetchCurrentUser, fetchActiveTodos, fetchCompletedTodos, userKeys, todoKeys } from "@/lib/queries";
-import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Trash2, Pencil, Loader2, ListTodo } from "lucide-react";
 import { toast } from "sonner";

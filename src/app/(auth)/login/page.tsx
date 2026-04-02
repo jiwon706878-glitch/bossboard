@@ -34,7 +34,14 @@ export default function LoginPage() {
     });
 
     if (error) {
-      toast.error(error.message);
+      console.error("Login error:", error.message);
+      if (error.message.includes("Invalid login credentials")) {
+        toast.error("Invalid email or password. Please try again.");
+      } else if (error.message.includes("Email not confirmed")) {
+        toast.error("Please check your email and confirm your account first.");
+      } else {
+        toast.error("Unable to sign in. Please try again.");
+      }
       setLoading(false);
       return;
     }
@@ -52,7 +59,8 @@ export default function LoginPage() {
       if (error.message.includes("not enabled") || error.message.includes("Unsupported provider") || error.message.includes("redirect_uri_mismatch")) {
         toast.error("Google login is being configured. Please use email and password for now.");
       } else {
-        toast.error(error.message);
+        console.error("OAuth error:", error.message);
+        toast.error("Something went wrong with Google login. Please try again.");
       }
     }
   }

@@ -88,7 +88,8 @@ export default function ChecklistsPage() {
     setDeletingId(id);
     const { error } = await supabase.from("checklists").delete().eq("id", id);
     if (error) {
-      toast.error(error.message);
+      console.error("Checklist delete error:", error.message);
+      toast.error("Failed to delete checklist. Please try again.");
       setDeletingId(null);
       return;
     }

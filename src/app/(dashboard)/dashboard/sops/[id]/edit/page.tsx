@@ -168,7 +168,8 @@ export default function EditSOPPage() {
       .eq("id", sopId);
 
     if (error) {
-      toast.error(error.message);
+      console.error("SOP update error:", error.message);
+      toast.error("Failed to save document. Please try again.");
       setSaving(false);
       return;
     }

@@ -93,7 +93,7 @@ export function FeedbackTable({ items: initialItems }: { items: FeedbackItem[] }
     if (!confirm("Delete this feedback?")) return;
     setDeletingId(id);
     const { error } = await supabase.from("feedback").delete().eq("id", id);
-    if (error) toast.error(error.message);
+    if (error) { console.error("Feedback delete error:", error.message); toast.error("Failed to delete feedback. Please try again."); }
     else { setItems((prev) => prev.filter((f) => f.id !== id)); toast.success("Feedback deleted"); }
     setDeletingId(null);
   }

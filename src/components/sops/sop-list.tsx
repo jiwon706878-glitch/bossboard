@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,7 @@ interface SopListProps {
   onImportClick?: () => void;
 }
 
-export function SopList({
+export const SopList = memo(function SopList({
   currentFolderName,
   folderPath,
   selectedFolder,
@@ -218,4 +219,4 @@ export function SopList({
       </div>
     </div>
   );
-}
+});

@@ -85,7 +85,8 @@ export function ExternalApiKeysSection() {
       .eq("id", userId);
 
     if (error) {
-      toast.error(error.message);
+      console.error("API keys save error:", error.message);
+      toast.error("Failed to save API keys. Please try again.");
     } else {
       toast.success("API keys saved");
       setKeys(null);

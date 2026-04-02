@@ -40,7 +40,8 @@ export default function ResetPasswordPage() {
     const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
-      toast.error(error.message);
+      console.error("Password update error:", error.message);
+      toast.error("Failed to update password. Please try again.");
       setLoading(false);
       return;
     }

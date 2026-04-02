@@ -110,7 +110,8 @@ export default function OnboardingPage() {
       });
 
     if (profileError) {
-      toast.error(profileError.message);
+      console.error("Profile save error:", profileError.message);
+      toast.error("Failed to save your profile. Please try again.");
       setLoading(false);
       return false;
     }
@@ -127,7 +128,8 @@ export default function OnboardingPage() {
       .single();
 
     if (bizError) {
-      toast.error(bizError.message);
+      console.error("Business creation error:", bizError.message);
+      toast.error("Failed to create your business. Please try again.");
       setLoading(false);
       return false;
     }
@@ -154,7 +156,8 @@ export default function OnboardingPage() {
       .eq("id", currentBusiness.id);
 
     if (error) {
-      toast.error(error.message);
+      console.error("Industry update error:", error.message);
+      toast.error("Failed to update your industry. Please try again.");
       setLoading(false);
       return false;
     }

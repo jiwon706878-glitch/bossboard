@@ -186,7 +186,8 @@ export default function ChecklistDetailPage() {
       .eq("id", checklistId);
 
     if (error) {
-      toast.error(error.message);
+      console.error("Checklist assign error:", error.message);
+      toast.error("Failed to assign checklist item. Please try again.");
       return;
     }
 
@@ -220,7 +221,8 @@ export default function ChecklistDetailPage() {
       });
 
     if (completionError) {
-      toast.error(completionError.message);
+      console.error("Checklist completion error:", completionError.message);
+      toast.error("Failed to save checklist completion. Please try again.");
       setSaving(false);
       return;
     }
@@ -231,7 +233,8 @@ export default function ChecklistDetailPage() {
       .eq("id", checklistId);
 
     if (updateError) {
-      toast.error(updateError.message);
+      console.error("Checklist update error:", updateError.message);
+      toast.error("Failed to update checklist status. Please try again.");
       setSaving(false);
       return;
     }

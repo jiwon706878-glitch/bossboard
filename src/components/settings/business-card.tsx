@@ -38,7 +38,7 @@ export function BusinessCard({ userId, initialName }: BusinessCardProps) {
       .eq("id", currentBusiness.id)
       .select()
       .single();
-    if (error) { toast.error(error.message); }
+    if (error) { console.error("Business update error:", error.message); toast.error("Failed to update business. Please try again."); }
     else {
       toast.success("Business updated");
       setNameInput(null);

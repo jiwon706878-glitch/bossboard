@@ -43,30 +43,35 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await authenticateApiKey(req);
-  if (auth instanceof NextResponse) return auth;
+  try {
+    const auth = await authenticateApiKey(req);
+    if (auth instanceof NextResponse) return auth;
 
-  const { id } = await params;
-  const admin = createAdminClient();
+    const { id } = await params;
+    const admin = createAdminClient();
 
-  const { data, error } = await admin
-    .from("sops")
-    .select("id, title, content, summary, doc_type, status, category, tags, version, created_at, updated_at")
-    .eq("id", id)
-    .eq("business_id", auth.businessId)
-    .is("deleted_at", null)
-    .single();
+    const { data, error } = await admin
+      .from("sops")
+      .select("id, title, content, summary, doc_type, status, category, tags, version, created_at, updated_at")
+      .eq("id", id)
+      .eq("business_id", auth.businessId)
+      .is("deleted_at", null)
+      .single();
 
-  if (error || !data) {
-    return NextResponse.json({ error: "SOP not found" }, { status: 404 });
+    if (error || !data) {
+      return NextResponse.json({ error: "SOP not found" }, { status: 404 });
+    }
+
+    logApiCall(auth.businessId, auth.apiKeyId, `/api/v1/sops/${id}`, "GET", 200, auth.keyName);
+
+    return NextResponse.json({
+      ...data,
+      content_markdown: tiptapToMarkdown(data.content),
+    });
+  } catch (error) {
+    console.error("V1 SOP GET error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  logApiCall(auth.businessId, auth.apiKeyId, `/api/v1/sops/${id}`, "GET", 200, auth.keyName);
-
-  return NextResponse.json({
-    ...data,
-    content_markdown: tiptapToMarkdown(data.content),
-  });
 }
 
 // PUT /api/v1/sops/:id — Update SOP
@@ -74,54 +79,59 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await authenticateApiKey(req);
-  if (auth instanceof NextResponse) return auth;
+  try {
+    const auth = await authenticateApiKey(req);
+    if (auth instanceof NextResponse) return auth;
 
-  const { id } = await params;
-  const body = await req.json();
-  const admin = createAdminClient();
+    const { id } = await params;
+    const body = await req.json();
+    const admin = createAdminClient();
 
-  // Verify SOP belongs to this business
-  const { data: existing } = await admin
-    .from("sops")
-    .select("id")
-    .eq("id", id)
-    .eq("business_id", auth.businessId)
-    .single();
+    // Verify SOP belongs to this business
+    const { data: existing } = await admin
+      .from("sops")
+      .select("id")
+      .eq("id", id)
+      .eq("business_id", auth.businessId)
+      .single();
 
-  if (!existing) {
-    return NextResponse.json({ error: "SOP not found" }, { status: 404 });
-  }
+    if (!existing) {
+      return NextResponse.json({ error: "SOP not found" }, { status: 404 });
+    }
 
-  const updates: Record<string, unknown> = {
-    updated_at: new Date().toISOString(),
-  };
-
-  if (body.title) updates.title = body.title.trim();
-  if (body.status) updates.status = body.status;
-  if (body.type) updates.doc_type = body.type;
-  if (body.folder_id !== undefined) updates.folder_id = body.folder_id || null;
-
-  if (body.content) {
-    updates.content = {
-      type: "doc",
-      content: body.content.split("\n").map((line: string) => ({
-        type: "paragraph",
-        content: line.trim() ? [{ type: "text", text: line }] : [],
-      })),
+    const updates: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
     };
-    updates.summary = body.content.substring(0, 200).replace(/\n/g, " ").trim();
+
+    if (body.title) updates.title = body.title.trim();
+    if (body.status) updates.status = body.status;
+    if (body.type) updates.doc_type = body.type;
+    if (body.folder_id !== undefined) updates.folder_id = body.folder_id || null;
+
+    if (body.content) {
+      updates.content = {
+        type: "doc",
+        content: body.content.split("\n").map((line: string) => ({
+          type: "paragraph",
+          content: line.trim() ? [{ type: "text", text: line }] : [],
+        })),
+      };
+      updates.summary = body.content.substring(0, 200).replace(/\n/g, " ").trim();
+    }
+
+    const { data, error } = await admin
+      .from("sops")
+      .update(updates)
+      .eq("id", id)
+      .select("id, title, doc_type, status, updated_at")
+      .single();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    logApiCall(auth.businessId, auth.apiKeyId, `/api/v1/sops/${id}`, "PUT", 200, auth.keyName);
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error("V1 SOP PUT error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const { data, error } = await admin
-    .from("sops")
-    .update(updates)
-    .eq("id", id)
-    .select("id, title, doc_type, status, updated_at")
-    .single();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  logApiCall(auth.businessId, auth.apiKeyId, `/api/v1/sops/${id}`, "PUT", 200, auth.keyName);
-  return NextResponse.json(data);
 }

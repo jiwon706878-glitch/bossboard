@@ -287,18 +287,18 @@ export const businessKeys = {
 };
 
 export async function fetchUserBusinesses(userId: string) {
-  // Get businesses the user owns
-  const { data: ownedBiz } = await supabase
-    .from("businesses")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at");
-
-  // Get businesses the user is a member of (via business_members)
-  const { data: memberships } = await supabase
-    .from("business_members")
-    .select("business_id")
-    .eq("user_id", userId);
+  // Get owned businesses and memberships in parallel
+  const [{ data: ownedBiz }, { data: memberships }] = await Promise.all([
+    supabase
+      .from("businesses")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at"),
+    supabase
+      .from("business_members")
+      .select("business_id")
+      .eq("user_id", userId),
+  ]);
 
   const ownedIds = new Set((ownedBiz ?? []).map((b: any) => b.id));
   const memberBizIds = (memberships ?? [])

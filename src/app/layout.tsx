@@ -53,7 +53,7 @@ export default function RootLayout({
             <PaddleProvider>
               <TooltipProvider>
                 {children}
-                <Toaster richColors position="bottom-right" />
+                <Toaster richColors position="bottom-right" closeButton />
               </TooltipProvider>
             </PaddleProvider>
           </QueryProvider>

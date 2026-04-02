@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   Loader2, Plus, Send, Megaphone, MessageCircle, BarChart3,
-  Eye, Trash2, X, ChevronDown, ChevronUp, Paperclip, FileIcon, Share2,
+  Eye, Trash2, X, ChevronDown, ChevronUp, Paperclip, FileIcon, Share2, Pencil,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -112,6 +112,11 @@ export default function BoardPage() {
   const [commentAnon, setCommentAnon] = useState(false);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
+
+  // Edit post
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
 
   // ─── Load posts via React Query ──────────────────────────────────────────
 
@@ -274,12 +279,38 @@ export default function BoardPage() {
     invalidateBoard();
   }
 
-  // ─── Delete post ─────────────────────────────────────────────────────────
+  // ─── Edit post ──────────────────────────────────────────────────────────
 
-  async function handleDeletePost(postId: string) {
+  function startEditing(post: Post) {
+    setEditingId(post.id);
+    setEditTitle(post.title);
+    setEditContent(post.content || "");
+  }
+
+  async function handleUpdatePost(postId: string) {
+    if (!editTitle.trim()) return;
+    const { error } = await supabase
+      .from("board_posts")
+      .update({ title: editTitle.trim(), content: editContent.trim() || null })
+      .eq("id", postId);
+    if (error) { toast.error("Failed to update post"); return; }
+    toast.success("Post updated");
+    setEditingId(null);
+    invalidateBoard();
+  }
+
+  // ─── Delete with animation ─────────────────────────────────────────────
+
+  async function handleDeletePostAnimated(postId: string) {
+    const card = document.querySelector(`[data-post-id="${postId}"]`);
+    if (card) {
+      card.classList.add("animate-post-exit");
+      await new Promise((r) => setTimeout(r, 250));
+    }
     const { error } = await supabase.from("board_posts").delete().eq("id", postId);
-    if (error) { console.error("Post delete error:", error.message); toast.error("Failed to delete post. Please try again."); }
-    else { toast.success("Post deleted"); invalidateBoard(); }
+    if (error) { toast.error("Failed to delete post"); return; }
+    toast.success("Post deleted");
+    invalidateBoard();
   }
 
   // ─── Poll vote ───────────────────────────────────────────────────────────
@@ -446,7 +477,7 @@ export default function BoardPage() {
 
       {/* Create form */}
       {showForm && (
-        <Card>
+        <Card className="animate-board-form-enter">
           <CardHeader>
             <CardTitle className="text-base">New Post</CardTitle>
           </CardHeader>
@@ -473,7 +504,7 @@ export default function BoardPage() {
               </div>
               <div className="space-y-2">
                 <Label>Title</Label>
-                <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="Post title" required />
+                <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }} placeholder="Post title" required />
               </div>
               <div className="space-y-2">
                 <Label>Content</Label>
@@ -556,7 +587,7 @@ export default function BoardPage() {
                   <Paperclip className="h-4 w-4 mr-1" />
                   Attach
                 </Button>
-                <Button type="submit" disabled={submitting || !formTitle.trim()}>
+                <Button type="submit" disabled={submitting || !formTitle.trim()} className="active:scale-95 transition-transform">
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                   {submitting ? "Posting..." : "Post"}
                 </Button>
@@ -578,7 +609,7 @@ export default function BoardPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {posts.map((post) => {
+          {posts.map((post, index) => {
             const typeConf = TYPE_CONFIG[post.type] || TYPE_CONFIG.discussion;
             const isExpanded = expandedId === post.id;
             const canDelete = post.user_id === currentUserId || isAdmin();
@@ -586,8 +617,20 @@ export default function BoardPage() {
             const totalVotes = post.poll_options?.reduce((s, o) => s + o.vote_count, 0) ?? 0;
 
             return (
-              <Card key={post.id} className="border bg-card">
+              <Card key={post.id} data-post-id={post.id} className="border bg-card animate-post-enter" style={{ animationDelay: `${Math.min(index * 30, 150)}ms` }}>
                 <CardContent className="py-4 space-y-3">
+                  {/* Edit mode */}
+                  {editingId === post.id ? (
+                    <div className="space-y-3 animate-scale-in">
+                      <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }} placeholder="Post title" />
+                      <Textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} rows={3} placeholder="Post content" />
+                      <div className="flex gap-2 justify-end">
+                        <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>Cancel</Button>
+                        <Button size="sm" onClick={() => handleUpdatePost(post.id)} disabled={!editTitle.trim()} className="active:scale-95 transition-transform">Save</Button>
+                      </div>
+                    </div>
+                  ) : (
+                  <>
                   {/* Header */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 space-y-1">
@@ -611,9 +654,14 @@ export default function BoardPage() {
                         <Share2 className="h-3.5 w-3.5" />
                       </Button>
                       {canDelete && (
-                        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive" onClick={() => handleDeletePost(post.id)} aria-label="Delete post">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        <>
+                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => startEditing(post)} aria-label="Edit post">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive" onClick={() => handleDeletePostAnimated(post.id)} aria-label="Delete post">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -703,7 +751,7 @@ export default function BoardPage() {
 
                   {/* Comments section */}
                   {isExpanded && (
-                    <div className="space-y-3 pt-1">
+                    <div className="space-y-3 pt-1 animate-comments-expand">
                       <Separator />
                       {commentsLoading ? (
                         <div className="h-8 animate-pulse rounded bg-muted/40" />
@@ -807,6 +855,8 @@ export default function BoardPage() {
                         </div>
                       </div>
                     </div>
+                  )}
+                  </>
                   )}
                 </CardContent>
               </Card>

@@ -35,31 +35,31 @@ export function ProfileCard({ userId, initialName, initialAvatarUrl, isFetching 
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const maxSize = 2 * 1024 * 1024; // 2MB
-    if (file.size > maxSize) {
-      toast.error("Image must be under 2MB");
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image must be under 10MB");
       return;
     }
 
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml", "image/bmp", "image/tiff"];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error("Only JPEG, PNG, WebP, GIF, SVG, BMP, and TIFF images are allowed");
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
       return;
     }
 
     setUploading(true);
     try {
       const ext = file.name.split(".").pop() || "jpg";
-      const uuid = crypto.randomUUID();
-      const path = `avatars/${userId}/${uuid}.${ext}`;
+      const path = `avatars/${userId}/${crypto.randomUUID()}.${ext}`;
+
+      // Ensure bucket exists (silently fails if already created)
+      await supabase.storage.createBucket("attachments", { public: true, fileSizeLimit: 10485760 });
 
       const { error: uploadError } = await supabase.storage
         .from("attachments")
         .upload(path, file, { upsert: true, contentType: file.type });
 
       if (uploadError) {
-        console.error("Avatar upload error:", uploadError.message);
-        toast.error("Failed to upload avatar. Please try again.");
+        console.error("Avatar upload error:", JSON.stringify(uploadError));
+        toast.error("Upload failed. Please try a different image.");
         return;
       }
 
@@ -148,7 +148,7 @@ export function ProfileCard({ userId, initialName, initialAvatarUrl, isFetching 
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,image/bmp,image/tiff"
+              accept="image/*"
               className="hidden"
               onChange={handleAvatarUpload}
             />

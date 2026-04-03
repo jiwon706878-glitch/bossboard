@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
@@ -14,7 +14,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -26,8 +25,8 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
-  Loader2, Plus, Send, Megaphone, MessageCircle, BarChart3,
-  Eye, Trash2, X, ChevronDown, ChevronUp, Paperclip, FileIcon, Pencil,
+  Loader2, Plus, Send, MessageCircle,
+  Eye, Trash2, X, ChevronDown, ChevronUp, Paperclip, FileIcon, Pencil, Pin,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -90,8 +89,9 @@ export default function BoardPage() {
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Create form
-  const [showForm, setShowForm] = useState(false);
+  // Create form — two-step mount/visible for smooth CSS transition
+  const [formMounted, setFormMounted] = useState(false);
+  const [formVisible, setFormVisible] = useState(false);
   const [formType, setFormType] = useState("discussion");
   const [formTitle, setFormTitle] = useState("");
   const [formContent, setFormContent] = useState("");
@@ -224,20 +224,26 @@ export default function BoardPage() {
 
     // Upload attachments — use UUID path to avoid special character issues
     const uploadedFiles: Attachment[] = [];
-    for (const file of formAttachments) {
-      const fileExt = file.name.split(".").pop() || "bin";
-      const storagePath = `${currentBusiness.id}/board/${crypto.randomUUID()}.${fileExt}`;
-      const { data, error: uploadErr } = await supabase.storage
-        .from("attachments")
-        .upload(storagePath, file, { contentType: file.type });
-      if (uploadErr) {
-        console.error("Upload error:", uploadErr.message, "for file:", file.name);
-        toast.error(`Failed to upload ${file.name}`);
-        continue;
-      }
-      if (data) {
-        const { data: urlData } = supabase.storage.from("attachments").getPublicUrl(data.path);
-        uploadedFiles.push({ name: file.name, url: urlData.publicUrl, type: file.type, size: file.size });
+    if (formAttachments.length > 0) {
+      // Ensure bucket exists (silently fails if already created)
+      await supabase.storage.createBucket("attachments", { public: true, fileSizeLimit: 10485760 });
+
+      for (const file of formAttachments) {
+        const fileExt = file.name.split(".").pop() || "bin";
+        const storagePath = `${currentBusiness.id}/board/${crypto.randomUUID()}.${fileExt}`;
+        console.log("Uploading:", file.name, "→", storagePath, "size:", file.size, "type:", file.type);
+        const { data, error: uploadErr } = await supabase.storage
+          .from("attachments")
+          .upload(storagePath, file, { contentType: file.type });
+        if (uploadErr) {
+          console.error("UPLOAD ERROR:", JSON.stringify(uploadErr), "file:", file.name);
+          toast.error(`Failed to upload ${file.name}`);
+          continue;
+        }
+        if (data) {
+          const { data: urlData } = supabase.storage.from("attachments").getPublicUrl(data.path);
+          uploadedFiles.push({ name: file.name, url: urlData.publicUrl, type: file.type, size: file.size });
+        }
       }
     }
 
@@ -277,8 +283,8 @@ export default function BoardPage() {
     }
 
     toast.success("Post created");
-    closeForm();
     setSubmitting(false);
+    closeForm();
     invalidateBoard();
   }
 
@@ -324,15 +330,19 @@ export default function BoardPage() {
       card.style.transform = "scale(0.95)";
       card.style.opacity = "0";
       await new Promise((r) => setTimeout(r, 200));
-      // Step 2: Collapse height — posts below slide up
-      card.style.maxHeight = card.offsetHeight + "px";
-      card.offsetHeight; // force reflow
-      card.style.maxHeight = "0px";
-      card.style.marginBottom = "0px";
-      card.style.paddingTop = "0px";
-      card.style.paddingBottom = "0px";
-      card.style.overflow = "hidden";
-      await new Promise((r) => setTimeout(r, 300));
+      // Step 2: Collapse height + hide borders
+      card.style.borderColor = "transparent";
+      card.style.boxShadow = "none";
+      const h = card.scrollHeight;
+      card.style.maxHeight = h + "px";
+      requestAnimationFrame(() => {
+        card.style.maxHeight = "0px";
+        card.style.marginBottom = "0px";
+        card.style.paddingTop = "0px";
+        card.style.paddingBottom = "0px";
+        card.style.overflow = "hidden";
+      });
+      await new Promise((r) => setTimeout(r, 350));
     }
     const { error } = await supabase.from("board_posts").delete().eq("id", postId);
     if (error) { toast.error("Failed to delete post"); invalidateBoard(); return; }
@@ -340,15 +350,21 @@ export default function BoardPage() {
     invalidateBoard();
   }
 
-  function closeForm() {
-    setShowForm(false);
-    setFormTitle("");
-    setFormContent("");
-    setFormType("discussion");
-    setFormPinned(false);
-    setPollInputs(["", ""]);
-    setFormAttachments([]);
-  }
+  const openForm = useCallback(() => {
+    setFormMounted(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setFormVisible(true));
+    });
+  }, []);
+
+  const closeForm = useCallback(() => {
+    setFormVisible(false);
+    setTimeout(() => {
+      setFormMounted(false);
+      setFormTitle(""); setFormContent(""); setFormType("discussion");
+      setFormPinned(false); setPollInputs(["", ""]); setFormAttachments([]);
+    }, 400);
+  }, []);
 
   // ─── Poll vote ───────────────────────────────────────────────────────────
 
@@ -358,20 +374,27 @@ export default function BoardPage() {
 
     const post = posts.find((p) => p.id === postId);
     if (!post?.poll_options) { setVotingLock(false); return; }
-    const optionIds = post.poll_options.map((o) => o.id);
 
-    // Optimistic update — update UI immediately before server responds
+    const previousVoteId = post.user_voted_option_id;
+
+    // Clicking same option — do nothing
+    if (previousVoteId === optionId) {
+      setVotingLock(false);
+      return;
+    }
+
+    // Optimistic update
     queryClient.setQueryData(boardKeys.all(businessId!), (old: Post[] | undefined) => {
       if (!old) return old;
       return old.map((p) => {
-        if (p.id !== postId) return p;
+        if (p.id !== postId || !p.poll_options) return p;
         return {
           ...p,
-          poll_options: p.poll_options?.map((o) => ({
+          poll_options: p.poll_options.map((o) => ({
             ...o,
             vote_count: o.id === optionId
-              ? o.vote_count + (p.user_voted_option_id === optionId ? 0 : 1)
-              : o.id === p.user_voted_option_id
+              ? o.vote_count + 1
+              : o.id === previousVoteId
                 ? Math.max(0, o.vote_count - 1)
                 : o.vote_count,
           })),
@@ -381,19 +404,20 @@ export default function BoardPage() {
     });
 
     // Server update
-    await supabase.from("poll_votes").delete().eq("user_id", currentUserId).in("option_id", optionIds);
-    const { error } = await supabase.from("poll_votes").insert({ option_id: optionId, user_id: currentUserId });
-
-    if (error) {
+    const optionIds = post.poll_options.map((o) => o.id);
+    try {
+      await supabase.from("poll_votes").delete().eq("user_id", currentUserId).in("option_id", optionIds);
+      await supabase.from("poll_votes").insert({ option_id: optionId, user_id: currentUserId });
+    } catch {
       toast.error("Failed to vote");
       invalidateBoard();
     }
 
-    // Release lock after server confirms + slight delay
+    // Refresh with actual server data
     setTimeout(() => {
-      setVotingLock(false);
       invalidateBoard();
-    }, 600);
+      setVotingLock(false);
+    }, 800);
   }
 
   // ─── Comments ────────────────────────────────────────────────────────────
@@ -479,18 +503,19 @@ export default function BoardPage() {
           <h1 className="text-3xl font-bold">Board</h1>
           <p className="text-muted-foreground">Team bulletin board</p>
         </div>
-        <Button className="press-effect" onClick={() => showForm ? closeForm() : setShowForm(true)}>
-          {showForm ? <X className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
-          {showForm ? "Cancel" : "New Post"}
+        <Button className="press-effect" onClick={formMounted ? closeForm : openForm}>
+          {formMounted ? <X className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
+          {formMounted ? "Cancel" : "New Post"}
         </Button>
       </div>
 
-      {/* Create form — CSS-driven height transition so posts slide down smoothly */}
+      {/* Create form — two-step mount then CSS transition for smooth open/close */}
+      {formMounted && (
       <div className={cn(
         "overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
-        showForm ? "max-h-[700px] opacity-100" : "max-h-0 opacity-0"
+        formVisible ? "max-h-[700px] opacity-100 mb-0" : "max-h-0 opacity-0 mb-0"
       )}>
-        <Card data-board-form className="mb-1">
+        <Card data-board-form>
           <CardHeader>
             <CardTitle className="text-base">New Post</CardTitle>
           </CardHeader>
@@ -614,6 +639,7 @@ export default function BoardPage() {
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* Posts list */}
       {loading ? (
@@ -662,10 +688,10 @@ export default function BoardPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        {post.is_pinned && <Megaphone className="h-4 w-4 text-amber-500 shrink-0" />}
                         <Badge variant="secondary" className={cn("text-[10px] px-1.5 py-0.5", typeConf.color)}>
                           {typeConf.label}
                         </Badge>
+                        {post.is_pinned && <Pin className="h-3.5 w-3.5 text-amber-500 fill-amber-500 shrink-0" />}
                         <span className="font-medium text-sm">{post.title}</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">

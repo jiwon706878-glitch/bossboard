@@ -63,7 +63,10 @@ export default function CalendarPage() {
   const [quickTitle, setQuickTitle] = useState("");
   const [quickTime, setQuickTime] = useState("");
   const [quickType, setQuickType] = useState<"todo" | "google">("todo");
-  const monthKey = format(currentMonth, "yyyy-MM");
+
+  // Month animation
+  const [monthAnimating, setMonthAnimating] = useState(false);
+  const [animDir, setAnimDir] = useState<"left" | "right">("right");
 
   // Context menus
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; date: string } | null>(null);
@@ -163,9 +166,19 @@ export default function CalendarPage() {
   // ─── Handlers ─────────────────────────────────────────────────────────────
 
   function toggleDate(dateStr: string) { setSelectedDate(selectedDate === dateStr ? null : dateStr); setShowQuickAdd(false); }
-  function goNextMonth() { setCurrentMonth(addMonths(currentMonth, 1)); }
-  function goPrevMonth() { setCurrentMonth(subMonths(currentMonth, 1)); }
-  function goToday() { setCurrentMonth(new Date()); setSelectedDate(format(new Date(), "yyyy-MM-dd")); }
+
+  function goNextMonth() {
+    setAnimDir("right"); setMonthAnimating(true);
+    setTimeout(() => { setCurrentMonth(addMonths(currentMonth, 1)); setMonthAnimating(false); }, 150);
+  }
+  function goPrevMonth() {
+    setAnimDir("left"); setMonthAnimating(true);
+    setTimeout(() => { setCurrentMonth(subMonths(currentMonth, 1)); setMonthAnimating(false); }, 150);
+  }
+  function goToday() {
+    setAnimDir("right"); setMonthAnimating(true);
+    setTimeout(() => { setCurrentMonth(new Date()); setSelectedDate(format(new Date(), "yyyy-MM-dd")); setMonthAnimating(false); }, 150);
+  }
 
   function invalidateCal() {
     queryClient.invalidateQueries({ queryKey: ["calendar"] });
@@ -281,9 +294,14 @@ export default function CalendarPage() {
             ))}
           </div>
 
-          {/* Day grid */}
-          <div key={monthKey} className="animate-cal-month flex-1 min-h-0">
-            <div className="grid grid-cols-7 h-full rounded-xl border border-border/70 overflow-hidden">
+          {/* Day grid — fixed height fills available space, cells auto-distribute */}
+          <div className="flex-1 min-h-0">
+            <div className={cn(
+              "grid grid-cols-7 h-full rounded-xl border border-border/70 overflow-hidden transition-all duration-200",
+              monthAnimating && animDir === "right" && "opacity-0 -translate-x-3",
+              monthAnimating && animDir === "left" && "opacity-0 translate-x-3",
+              !monthAnimating && "opacity-100 translate-x-0",
+            )}>
               {days.map((day) => {
                 const dateStr = format(day, "yyyy-MM-dd");
                 const dayEvs = getEvents(dateStr);
@@ -495,11 +513,20 @@ function EventCard({ event: ev, index, onContextMenu }: { event: CalendarEvent; 
       draggable={isDraggable}
       onDragStart={(e) => {
         if (!isDraggable) { e.preventDefault(); return; }
+        // Custom ghost card
+        const ghost = document.createElement("div");
+        ghost.className = "rounded-lg border bg-card shadow-lg px-3 py-2 text-xs font-medium";
+        ghost.style.cssText = "position:absolute;top:-1000px;width:160px;pointer-events:none;";
+        ghost.innerHTML = `<div style="display:flex;align-items:center;gap:6px"><div style="width:3px;height:16px;border-radius:2px;background:${ev.color}"></div>${ev.title}</div>`;
+        document.body.appendChild(ghost);
+        e.dataTransfer.setDragImage(ghost, 80, 16);
         e.dataTransfer.setData("application/json", JSON.stringify({ eventId: ev.id, eventType: ev.type, originalDate: ev.startDate }));
         e.dataTransfer.effectAllowed = "move";
-        (e.currentTarget as HTMLElement).style.opacity = "0.85";
+        requestAnimationFrame(() => { try { document.body.removeChild(ghost); } catch {} });
+        const card = e.currentTarget as HTMLElement;
+        setTimeout(() => { card.style.opacity = "0.3"; card.style.transform = "scale(0.95)"; }, 0);
       }}
-      onDragEnd={(e) => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
+      onDragEnd={(e) => { const card = e.currentTarget as HTMLElement; card.style.opacity = "1"; card.style.transform = "scale(1)"; }}
       onContextMenu={onContextMenu}
       className={cn(
         "flex items-start gap-3 rounded-xl border border-border/70 px-3.5 py-3 text-sm transition-all animate-stagger-in",

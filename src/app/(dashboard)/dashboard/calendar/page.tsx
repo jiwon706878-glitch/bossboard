@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 import { ChevronLeft, ChevronRight, CheckSquare, ListTodo, CalendarDays, Plus, X, Settings } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -51,6 +52,9 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickAddTitle, setQuickAddTitle] = useState("");
+  const [dragOverDate, setDragOverDate] = useState<string | null>(null);
+
+  const supabase = createClient();
 
   const { data: user } = useQuery({ queryKey: userKeys.current, queryFn: fetchCurrentUser, retry: false });
   const userId = user?.id;
@@ -181,6 +185,37 @@ export default function CalendarPage() {
     quickAddMutation.mutate({ summary: quickAddTitle.trim(), date: selectedDate });
   }
 
+  async function handleEventDrop(e: React.DragEvent, targetDate: string) {
+    e.preventDefault();
+    setDragOverDate(null);
+
+    try {
+      const data = JSON.parse(e.dataTransfer.getData("application/json"));
+      if (data.originalDate === targetDate) return; // No change
+
+      if (data.eventType === "todo") {
+        await supabase.from("todos").update({ due_date: targetDate }).eq("id", data.eventId);
+        toast.success("Todo moved");
+      } else if (data.eventType === "google") {
+        const res = await fetch("/api/calendar/google", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ eventId: data.eventId, date: targetDate }),
+        });
+        if (!res.ok) throw new Error("Failed to move event");
+        toast.success("Event moved");
+      } else if (data.eventType === "checklist") {
+        await supabase.from("checklists").update({ due_date: targetDate }).eq("id", data.eventId);
+        toast.success("Checklist moved");
+      }
+      // Invalidate calendar queries to refresh
+      queryClient.invalidateQueries({ queryKey: ["calendar"] });
+      queryClient.invalidateQueries({ queryKey: ["google-calendar"] });
+    } catch {
+      toast.error("Failed to move event");
+    }
+  }
+
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
@@ -214,6 +249,10 @@ export default function CalendarPage() {
                 selectedDate={selectedDate}
                 eventsForDate={eventsForDate}
                 onSelectDate={(dateStr) => setSelectedDate(selectedDate === dateStr ? null : dateStr)}
+                dragOverDate={dragOverDate}
+                onDragOver={(dateStr) => setDragOverDate(dateStr)}
+                onDragLeave={() => setDragOverDate(null)}
+                onDrop={handleEventDrop}
               />
               <Legend googleConnected={googleConnected} />
             </CardContent>
@@ -304,6 +343,10 @@ export default function CalendarPage() {
               selectedDate={selectedDate}
               eventsForDate={eventsForDate}
               onSelectDate={(dateStr) => setSelectedDate(selectedDate === dateStr ? null : dateStr)}
+              dragOverDate={dragOverDate}
+              onDragOver={(dateStr) => setDragOverDate(dateStr)}
+              onDragLeave={() => setDragOverDate(null)}
+              onDrop={handleEventDrop}
             />
             <Legend googleConnected={googleConnected} />
           </CardContent>
@@ -373,12 +416,20 @@ function CalendarGrid({
   selectedDate,
   eventsForDate,
   onSelectDate,
+  dragOverDate,
+  onDragOver,
+  onDragLeave,
+  onDrop,
 }: {
   days: Date[];
   currentMonth: Date;
   selectedDate: string | null;
   eventsForDate: (date: Date) => CalendarEvent[];
   onSelectDate: (dateStr: string) => void;
+  dragOverDate: string | null;
+  onDragOver: (dateStr: string) => void;
+  onDragLeave: () => void;
+  onDrop: (e: React.DragEvent, dateStr: string) => void;
 }) {
   return (
     <>
@@ -414,9 +465,13 @@ function CalendarGrid({
                 inMonth ? "text-foreground" : "text-muted-foreground/40",
                 today && "bg-primary/5",
                 isSelected && "border-primary bg-primary/10",
-                !isSelected && inMonth && "hover:bg-muted/50"
+                !isSelected && inMonth && "hover:bg-muted/50",
+                dragOverDate === dateStr && "ring-2 ring-primary bg-primary/5"
               )}
               onClick={() => onSelectDate(dateStr)}
+              onDragOver={(e) => { e.preventDefault(); onDragOver(dateStr); }}
+              onDragLeave={() => onDragLeave()}
+              onDrop={(e) => onDrop(e, dateStr)}
             >
               <span className={cn(
                 "text-sm font-mono",
@@ -452,7 +507,18 @@ function EventList({ events }: { events: CalendarEvent[] }) {
   return (
     <div className="space-y-2">
       {events.map((ev) => (
-        <div key={ev.id} className="flex items-center gap-3 rounded-md border px-3 py-2">
+        <div
+          key={ev.id}
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.setData("application/json", JSON.stringify({
+              eventId: ev.id,
+              eventType: ev.type,
+              originalDate: ev.date,
+            }));
+            e.dataTransfer.effectAllowed = "move";
+          }}
+          className="flex items-center gap-3 rounded-md border px-3 py-2 cursor-grab active:cursor-grabbing">
           {ev.type === "google" ? (
             <CalendarDays className="h-4 w-4 shrink-0 text-blue-400" />
           ) : ev.type === "checklist" ? (

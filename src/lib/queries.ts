@@ -74,7 +74,7 @@ export async function fetchActiveChecklists(businessId: string) {
 export async function fetchAllChecklists(businessId: string) {
   const { data, error } = await supabase
     .from("checklists")
-    .select("id, title, status, due_date, items, assigned_to, recurrence_type, sop_id, created_at")
+    .select("id, title, status, due_date, items, assigned_to, recurrence_type, sop_id, created_at, show_on_calendar")
     .eq("business_id", businessId)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -220,8 +220,9 @@ export async function fetchCalendarEvents(businessId: string, userId: string, mo
   const [{ data: checklists }, { data: todos }] = await Promise.all([
     supabase
       .from("checklists")
-      .select("id, title, due_date, status")
+      .select("id, title, due_date, status, recurrence_type")
       .eq("business_id", businessId)
+      .eq("show_on_calendar", true)
       .gte("due_date", monthStart)
       .lte("due_date", monthEnd),
     supabase

@@ -8,6 +8,8 @@ import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { extractStepsFromContent } from "@/lib/checklists/extract-steps";
@@ -24,8 +26,18 @@ export default function NewChecklistPage() {
   const [tab, setTab] = useState("from-sop");
   const [sops, setSops] = useState<SOPOption[]>([]);
   const [recurrence, setRecurrence] = useState("none");
+  const [showOnCalendar, setShowOnCalendar] = useState(false);
   const [dueDate, setDueDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [creating, setCreating] = useState(false);
+
+  // Auto-set showOnCalendar default based on recurrence
+  useEffect(() => {
+    if (recurrence === "daily" || recurrence === "none") {
+      setShowOnCalendar(false);
+    } else {
+      setShowOnCalendar(true);
+    }
+  }, [recurrence]);
 
   // Load SOPs
   useEffect(() => {
@@ -74,6 +86,7 @@ export default function NewChecklistPage() {
           created_by: user?.id,
           is_template: isTemplate,
           recurrence_type: recurrence === "none" ? null : recurrence,
+          show_on_calendar: showOnCalendar,
         })
         .select("id")
         .single();
@@ -89,7 +102,7 @@ export default function NewChecklistPage() {
       setCreating(false);
       if (data?.id) router.push(`/dashboard/checklists/${data.id}`);
     },
-    [currentBusiness?.id, dueDate, recurrence, router, supabase]
+    [currentBusiness?.id, dueDate, recurrence, showOnCalendar, router, supabase]
   );
 
   const handleFromSop = useCallback(
@@ -137,6 +150,11 @@ export default function NewChecklistPage() {
             Create a new checklist from an SOP, AI, or from scratch.
           </p>
         </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Switch checked={showOnCalendar} onCheckedChange={setShowOnCalendar} />
+        <Label className="text-sm">Show on calendar</Label>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>

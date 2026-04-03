@@ -12,6 +12,7 @@ import {
   Plus,
   Loader2,
   Trash2,
+  CalendarDays,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
@@ -30,6 +31,7 @@ interface Checklist {
   status: string;
   due_date: string | null;
   assigned_to: string | null;
+  show_on_calendar?: boolean;
   created_at: string;
 }
 
@@ -217,6 +219,11 @@ export default function ChecklistsPage() {
                       >
                         {STATUS_LABELS[checklist.status] ?? checklist.status}
                       </Badge>
+                      {checklist.show_on_calendar && (
+                        <span title="Shown on calendar">
+                          <CalendarDays className="h-3 w-3 text-muted-foreground" />
+                        </span>
+                      )}
                     </div>
                     <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
                       <span>{itemCount} items</span>

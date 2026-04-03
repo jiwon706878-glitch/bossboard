@@ -5,6 +5,7 @@ import { LazyOverlays } from "@/components/dashboard/lazy-overlays";
 import { DashboardPrefetcher } from "@/components/dashboard/prefetcher";
 import { TabShell } from "@/components/dashboard/tab-shell";
 import { ContextMenuBlocker } from "@/components/dashboard/context-menu-blocker";
+import { GlobalShortcuts } from "@/components/dashboard/global-shortcuts";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -25,6 +26,7 @@ export default function DashboardLayout({
         <TabShell>{children}</TabShell>
         <LazyOverlays />
         <DashboardPrefetcher />
+        <GlobalShortcuts />
       </div>
     </ContextMenuBlocker>
   );

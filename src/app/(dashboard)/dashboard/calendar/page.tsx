@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
@@ -8,17 +8,16 @@ import {
 } from "date-fns";
 import { useBusinessStore } from "@/hooks/use-business";
 import { fetchCurrentUser, fetchProfile, fetchCalendarEvents, userKeys, calendarKeys } from "@/lib/queries";
+import { pushUndo } from "@/components/dashboard/global-shortcuts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import {
-  ChevronLeft, ChevronRight, Plus, X, CalendarDays,
-  Clock, Check, Trash2, ExternalLink,
+  ChevronLeft, ChevronRight, Plus, X, CalendarDays, Clock, Check, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -47,7 +46,7 @@ const COLORS = { google: "#378ADD", todo: "#1D9E75", checklist: "#EF9F27" } as c
 const EASE = "cubic-bezier(0.16,1,0.3,1)";
 const CELL_W = 90;
 const CELL_H = 72;
-const GRID_W = CELL_W * 7; // 630px
+const GRID_W = CELL_W * 7;
 
 // ─── Page ───────────────────────────────────────────────────────────────────
 
@@ -56,7 +55,6 @@ export default function CalendarPage() {
   const businessId = currentBusiness?.id;
   const queryClient = useQueryClient();
   const supabase = createClient();
-  const router = useRouter();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -69,15 +67,20 @@ export default function CalendarPage() {
 
   // Selection
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [lastDeleted, setLastDeleted] = useState<CalendarEvent | null>(null);
+  const [anchor, setAnchor] = useState<string | null>(null);
 
-  // Context menus
+  // Drag
+  const [draggedEvent, setDraggedEvent] = useState<CalendarEvent | null>(null);
+  const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
+  const [dragOverDate, setDragOverDate] = useState<string | null>(null);
+
+  // Context menu
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; date: string } | null>(null);
 
   // Clear selection on date change
-  useEffect(() => { setSelected(new Set()); }, [selectedDate]);
+  useEffect(() => { setSelected(new Set()); setAnchor(null); }, [selectedDate]);
 
-  // Escape/scroll closes menus
+  // Close context menus
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") setCtxMenu(null); }
     function onScroll() { setCtxMenu(null); }
@@ -85,6 +88,16 @@ export default function CalendarPage() {
     window.addEventListener("scroll", onScroll, true);
     return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("scroll", onScroll, true); };
   }, []);
+
+  // Drag position tracking
+  useEffect(() => {
+    if (!draggedEvent) return;
+    function onDrag(e: DragEvent) { if (e.clientX || e.clientY) setDragPos({ x: e.clientX, y: e.clientY }); }
+    function onDragOver(e: DragEvent) { e.preventDefault(); }
+    window.addEventListener("drag", onDrag);
+    window.addEventListener("dragover", onDragOver);
+    return () => { window.removeEventListener("drag", onDrag); window.removeEventListener("dragover", onDragOver); };
+  }, [draggedEvent]);
 
   // ─── Queries ──────────────────────────────────────────────────────────────
 
@@ -171,7 +184,6 @@ export default function CalendarPage() {
   // ─── Handlers ─────────────────────────────────────────────────────────────
 
   function toggleDate(dateStr: string) { setSelectedDate(selectedDate === dateStr ? null : dateStr); setShowQuickAdd(false); }
-
   function goNextMonth() { setAnimDir("right"); setMonthAnimating(true); setTimeout(() => { setCurrentMonth(addMonths(currentMonth, 1)); setMonthAnimating(false); }, 150); }
   function goPrevMonth() { setAnimDir("left"); setMonthAnimating(true); setTimeout(() => { setCurrentMonth(subMonths(currentMonth, 1)); setMonthAnimating(false); }, 150); }
   function goToday() { setAnimDir("right"); setMonthAnimating(true); setTimeout(() => { setCurrentMonth(new Date()); setSelectedDate(format(new Date(), "yyyy-MM-dd")); setMonthAnimating(false); }, 150); }
@@ -195,32 +207,32 @@ export default function CalendarPage() {
     setQuickTitle(""); setQuickTime(""); setShowQuickAdd(false); invalidateCal();
   }
 
-  // Event actions
   async function handleCompleteTodo(id: string, completed: boolean) {
+    pushUndo({ type: "todo_complete", data: { id, previousState: !completed } });
     await supabase.from("todos").update({ completed }).eq("id", id);
     toast.success(completed ? "Completed" : "Reopened");
     invalidateCal();
   }
 
-  const handleDeleteEvent = useCallback(async (ev: CalendarEvent) => {
-    setLastDeleted(ev);
-    if (ev.type === "todo") await supabase.from("todos").delete().eq("id", ev.id);
-    toast.success("Deleted", {
-      action: {
-        label: "Undo",
-        onClick: async () => {
-          if (ev.type === "todo") {
-            await supabase.from("todos").insert({ text: ev.title, due_date: ev.startDate, user_id: userId, completed: false });
-            toast.success("Restored");
-            invalidateCal();
-          }
-        },
-      },
-    });
+  async function handleDeleteEvent(ev: CalendarEvent) {
+    if (ev.type !== "todo") return;
+    const { data } = await supabase.from("todos").select("*").eq("id", ev.id).single();
+    if (data) pushUndo({ type: "todo_delete", data });
+    await supabase.from("todos").delete().eq("id", ev.id);
+    toast.success("Deleted");
     invalidateCal();
-  }, [supabase, userId]);
+  }
 
-  // Bulk actions
+  async function handleBulkDelete() {
+    const ids = [...selected].filter((id) => dayEvents.find((e) => e.id === id && e.type === "todo"));
+    if (ids.length === 0) return;
+    const { data } = await supabase.from("todos").select("*").in("id", ids);
+    if (data) pushUndo({ type: "bulk_delete", data });
+    await supabase.from("todos").delete().in("id", ids);
+    toast.success(`${ids.length} deleted`);
+    setSelected(new Set()); invalidateCal();
+  }
+
   async function handleBulkComplete() {
     const ids = [...selected].filter((id) => dayEvents.find((e) => e.id === id && e.type === "todo"));
     if (ids.length === 0) return;
@@ -229,40 +241,82 @@ export default function CalendarPage() {
     setSelected(new Set()); invalidateCal();
   }
 
-  async function handleBulkDelete() {
-    const ids = [...selected].filter((id) => dayEvents.find((e) => e.id === id && e.type === "todo"));
-    if (ids.length === 0) return;
-    await supabase.from("todos").delete().in("id", ids);
-    toast.success(`${ids.length} deleted`);
-    setSelected(new Set()); invalidateCal();
-  }
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if ((e.key === "Delete" || e.key === "Backspace") && selected.size > 0 && !(e.target as HTMLElement).closest("input,textarea")) {
-        e.preventDefault(); handleBulkDelete();
+  // Selection
+  function handleEventClick(e: React.MouseEvent, ev: CalendarEvent, index: number) {
+    if (e.shiftKey && anchor !== null) {
+      const anchorIdx = dayEvents.findIndex((de) => de.id === anchor);
+      if (anchorIdx !== -1) {
+        const start = Math.min(anchorIdx, index);
+        const end = Math.max(anchorIdx, index);
+        setSelected(new Set(dayEvents.slice(start, end + 1).map((de) => de.id)));
       }
-      if (e.key === "Escape") {
-        if (selected.size > 0) setSelected(new Set());
-        else if (showQuickAdd) setShowQuickAdd(false);
-        else if (selectedDate) { setSelectedDate(null); setShowQuickAdd(false); }
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === "a" && selectedDate && !(e.target as HTMLElement).closest("input,textarea")) {
-        e.preventDefault(); setSelected(new Set(dayEvents.map((e) => e.id)));
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  });
-
-  function toggleSelect(id: string, shift: boolean) {
-    if (shift) {
-      setSelected((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+    } else if (e.ctrlKey || e.metaKey) {
+      setSelected((prev) => { const next = new Set(prev); if (next.has(ev.id)) next.delete(ev.id); else next.add(ev.id); return next; });
+      setAnchor(ev.id);
     } else {
-      setSelected(new Set([id]));
+      setSelected(new Set([ev.id]));
+      setAnchor(ev.id);
     }
   }
+
+  // Drag
+  function handleDragStart(e: React.DragEvent, ev: CalendarEvent) {
+    if (ev.type === "checklist") { e.preventDefault(); return; }
+    const emptyImg = new Image();
+    emptyImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=";
+    e.dataTransfer.setDragImage(emptyImg, 0, 0);
+    e.dataTransfer.setData("application/json", JSON.stringify({ eventId: ev.id, eventType: ev.type, originalDate: ev.startDate }));
+    setDraggedEvent(ev);
+  }
+
+  async function handleEventDrop(e: React.DragEvent, targetDate: string) {
+    e.preventDefault(); setDragOverDate(null); setDraggedEvent(null);
+    try {
+      const data = JSON.parse(e.dataTransfer.getData("application/json"));
+      if (data.originalDate === targetDate) return;
+      if (data.eventType === "todo") { await supabase.from("todos").update({ due_date: targetDate }).eq("id", data.eventId); toast.success("Todo moved"); }
+      else if (data.eventType === "google") {
+        const res = await fetch("/api/calendar/google", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId: data.eventId, date: targetDate }) });
+        if (!res.ok) throw new Error();
+        toast.success("Event moved");
+      }
+      invalidateCal();
+    } catch { toast.error("Failed to move event"); }
+  }
+
+  // Global shortcut listeners
+  useEffect(() => {
+    function onUndo(e: Event) {
+      const entry = (e as CustomEvent).detail;
+      if (entry.type === "todo_delete" && entry.data) {
+        const { id: _id, ...rest } = entry.data;
+        supabase.from("todos").insert(rest).then(() => { invalidateCal(); toast.success("Restored"); });
+      } else if (entry.type === "bulk_delete" && entry.data) {
+        const cleaned = entry.data.map((d: any) => { const { id: _id, ...rest } = d; return rest; });
+        supabase.from("todos").insert(cleaned).then(() => { invalidateCal(); toast.success(`${cleaned.length} restored`); });
+      } else if (entry.type === "todo_complete" && entry.data) {
+        supabase.from("todos").update({ completed: entry.data.previousState }).eq("id", entry.data.id).then(() => invalidateCal());
+      }
+    }
+    function onDelete() { if (selected.size > 0) handleBulkDelete(); }
+    function onSelectAll() { if (selectedDate) setSelected(new Set(dayEvents.filter((e) => e.type === "todo").map((e) => e.id))); }
+    function onEscape() {
+      if (selected.size > 0) setSelected(new Set());
+      else if (showQuickAdd) setShowQuickAdd(false);
+      else if (selectedDate) setSelectedDate(null);
+    }
+
+    window.addEventListener("bossboard-undo", onUndo);
+    window.addEventListener("bossboard-delete", onDelete);
+    window.addEventListener("bossboard-select-all", onSelectAll);
+    window.addEventListener("bossboard-escape", onEscape);
+    return () => {
+      window.removeEventListener("bossboard-undo", onUndo);
+      window.removeEventListener("bossboard-delete", onDelete);
+      window.removeEventListener("bossboard-select-all", onSelectAll);
+      window.removeEventListener("bossboard-escape", onEscape);
+    };
+  });
 
   // ─── Quick Add Form ───────────────────────────────────────────────────────
 
@@ -292,7 +346,7 @@ export default function CalendarPage() {
     );
   }
 
-  // ─── Side Panel Content ───────────────────────────────────────────────────
+  // ─── Panel Content ────────────────────────────────────────────────────────
 
   function PanelContent() {
     if (!selectedDate) return null;
@@ -325,13 +379,17 @@ export default function CalendarPage() {
             {dayEvents.map((ev, i) => (
               <div
                 key={ev.id}
-                onClick={(e) => toggleSelect(ev.id, e.shiftKey)}
-                onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, date: selectedDate }); }}
+                draggable={ev.type !== "checklist"}
+                onDragStart={(e) => handleDragStart(e, ev)}
+                onDragEnd={() => setDraggedEvent(null)}
+                onClick={(e) => handleEventClick(e, ev, i)}
                 className={cn(
-                  "group flex items-start gap-3 rounded-xl border px-3.5 py-3 text-sm transition-all animate-stagger-in cursor-pointer",
+                  "group flex items-start gap-3 rounded-xl border px-3.5 py-3 text-sm transition-all animate-stagger-in",
                   "hover:bg-muted/40",
+                  ev.type !== "checklist" ? "cursor-grab active:cursor-grabbing" : "cursor-default",
                   selected.has(ev.id) ? "bg-primary/[0.08] border-primary/30" : "border-border/70 hover:border-border",
                   (ev.completed || ev.status === "completed") && "opacity-35",
+                  draggedEvent?.id === ev.id && "opacity-0 h-0 overflow-hidden py-0 my-0 border-0",
                 )}
                 style={{ animationDelay: `${i * 50}ms`, animationFillMode: "both" }}
               >
@@ -343,44 +401,30 @@ export default function CalendarPage() {
                     {" · "}{ev.type === "google" ? "Google Calendar" : ev.type === "todo" ? "Todo" : "Checklist"}
                   </p>
                 </div>
-                {/* Action buttons — hover only */}
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                  {ev.type === "todo" && (
-                    <>
-                      <button onClick={(e) => { e.stopPropagation(); handleCompleteTodo(ev.id, !ev.completed); }}
-                        className="h-6 w-6 rounded-full flex items-center justify-center hover:bg-muted transition-colors" title={ev.completed ? "Reopen" : "Complete"}>
-                        <Check className="h-3 w-3" />
-                      </button>
-                      <button onClick={(e) => { e.stopPropagation(); handleDeleteEvent(ev); }}
-                        className="h-6 w-6 rounded-full flex items-center justify-center hover:bg-destructive/10 hover:text-destructive transition-colors" title="Delete">
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </>
-                  )}
-                  {ev.type === "checklist" && (
-                    <button onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/checklists/${ev.id}`); }}
-                      className="h-6 w-6 rounded-full flex items-center justify-center hover:bg-muted transition-colors" title="Open">
-                      <ExternalLink className="h-3 w-3" />
+                {ev.type === "todo" && (
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <button onClick={(e) => { e.stopPropagation(); handleCompleteTodo(ev.id, !ev.completed); }}
+                      className="h-6 w-6 rounded-full flex items-center justify-center hover:bg-muted transition-colors" title={ev.completed ? "Reopen" : "Complete"}>
+                      <Check className="h-3 w-3" />
                     </button>
-                  )}
-                </div>
+                    <button onClick={(e) => { e.stopPropagation(); handleDeleteEvent(ev); }}
+                      className="h-6 w-6 rounded-full flex items-center justify-center hover:bg-destructive/10 hover:text-destructive transition-colors" title="Delete">
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         )}
 
-        {/* Bulk action bar */}
         {selected.size > 1 && (
           <div className="sticky bottom-0 mt-4 p-3 bg-card border-t rounded-b-xl animate-slide-up">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">{selected.size} selected</span>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="h-7 text-xs press-effect" onClick={handleBulkComplete}>
-                  <Check className="h-3 w-3 mr-1" /> Complete
-                </Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs text-destructive press-effect" onClick={handleBulkDelete}>
-                  <Trash2 className="h-3 w-3 mr-1" /> Delete
-                </Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs press-effect" onClick={handleBulkComplete}><Check className="h-3 w-3 mr-1" /> Complete</Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs text-destructive press-effect" onClick={handleBulkDelete}><Trash2 className="h-3 w-3 mr-1" /> Delete</Button>
               </div>
             </div>
           </div>
@@ -400,21 +444,17 @@ export default function CalendarPage() {
   return (
     <div className="-m-4 lg:-m-6 flex h-[calc(100vh-4rem)] overflow-hidden">
       {/* ── Left: Calendar ── */}
-      <div className={cn(
-        "flex-1 flex items-start overflow-y-auto py-4 transition-all duration-[400ms]",
-        panelOpen ? "justify-start pl-8" : "justify-center",
-      )} style={{ transitionTimingFunction: EASE }}>
-        <div>
+      <div className="flex-1 flex items-start justify-center overflow-y-auto py-4">
+        <div
+          className="transition-transform duration-[400ms]"
+          style={{ transform: panelOpen ? "translateX(-170px)" : "translateX(0)", transitionTimingFunction: EASE }}
+        >
           {/* Header */}
           <div style={{ width: GRID_W }} className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full press-effect active:translate-x-[-2px]" onClick={goPrevMonth}>
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full press-effect active:translate-x-[-2px]" onClick={goPrevMonth}><ChevronLeft className="h-5 w-5" /></Button>
               <h1 className="text-2xl font-bold min-w-[160px] text-center tracking-tight">{format(currentMonth, "MMMM yyyy")}</h1>
-              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full press-effect active:translate-x-[2px]" onClick={goNextMonth}>
-                <ChevronRight className="h-5 w-5" />
-              </Button>
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full press-effect active:translate-x-[2px]" onClick={goNextMonth}><ChevronRight className="h-5 w-5" /></Button>
             </div>
             <div className="flex items-center gap-4">
               <div className="hidden md:flex items-center gap-4 text-xs text-muted-foreground">
@@ -428,21 +468,16 @@ export default function CalendarPage() {
 
           {/* Weekday headers */}
           <div style={{ width: GRID_W }} className="grid grid-cols-7 mb-1 border-b border-border/70">
-            {WEEKDAYS.map((w) => (
-              <div key={w} className="py-2 text-center text-[11px] font-medium text-muted-foreground uppercase tracking-widest">{w}</div>
-            ))}
+            {WEEKDAYS.map((w) => <div key={w} className="py-2 text-center text-[11px] font-medium text-muted-foreground uppercase tracking-widest">{w}</div>)}
           </div>
 
-          {/* Grid — fixed cell size */}
-          <div
-            style={{ width: GRID_W }}
-            className={cn(
-              "grid grid-cols-7 rounded-xl border border-border/70 overflow-hidden transition-all duration-200",
-              monthAnimating && animDir === "right" && "opacity-0 -translate-x-3",
-              monthAnimating && animDir === "left" && "opacity-0 translate-x-3",
-              !monthAnimating && "opacity-100 translate-x-0",
-            )}
-          >
+          {/* Grid */}
+          <div style={{ width: GRID_W }} className={cn(
+            "grid grid-cols-7 rounded-xl border border-border/70 overflow-hidden transition-all duration-200",
+            monthAnimating && animDir === "right" && "opacity-0 -translate-x-3",
+            monthAnimating && animDir === "left" && "opacity-0 translate-x-3",
+            !monthAnimating && "opacity-100 translate-x-0",
+          )}>
             {days.map((day) => {
               const dateStr = format(day, "yyyy-MM-dd");
               const dayEvs = getEvents(dateStr);
@@ -450,24 +485,25 @@ export default function CalendarPage() {
               const inMonth = isSameMonth(day, currentMonth);
               const today = isToday(day);
               const isSelected = selectedDate === dateStr;
-
+              const isDragOver = dragOverDate === dateStr;
               const dots = singleDay.slice(0, 5).map((e) => e.color);
               const overflow = singleDay.length > 5 ? singleDay.length - 5 : 0;
               const bars = multiDayEvents.filter((e) => { const s = new Date(e.startDate); const end = new Date(e.endDate!); return day >= s && day <= end; });
 
               return (
-                <button
-                  key={dateStr}
-                  type="button"
-                  style={{ width: CELL_W, height: CELL_H }}
+                <button key={dateStr} type="button" style={{ width: CELL_W, height: CELL_H }}
                   className={cn(
                     "relative flex flex-col p-1.5 text-left border-b border-r border-border/70 transition-all duration-200 group active:scale-[0.97]",
                     inMonth ? "bg-card" : "bg-card opacity-50",
                     isSelected && "bg-primary/[0.08]",
                     !isSelected && inMonth && "hover:bg-muted/40",
+                    isDragOver && "bg-primary/[0.12]",
                   )}
                   onClick={() => toggleDate(dateStr)}
                   onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, date: dateStr }); }}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverDate(dateStr); }}
+                  onDragLeave={() => setDragOverDate(null)}
+                  onDrop={(e) => handleEventDrop(e, dateStr)}
                 >
                   <div className="flex items-center justify-between">
                     <span className={cn(
@@ -475,12 +511,8 @@ export default function CalendarPage() {
                       today && "bg-primary text-primary-foreground w-6 h-6 rounded-full font-semibold text-[10px]",
                       !today && inMonth && "font-medium text-foreground/80",
                       !inMonth && "text-muted-foreground",
-                    )}>
-                      {format(day, "d")}
-                    </span>
-                    <span className="opacity-0 group-hover:opacity-60 transition-opacity">
-                      <Plus className="h-3 w-3 text-muted-foreground" />
-                    </span>
+                    )}>{format(day, "d")}</span>
+                    <span className="opacity-0 group-hover:opacity-60 transition-opacity"><Plus className="h-3 w-3 text-muted-foreground" /></span>
                   </div>
                   {dots.length > 0 && (
                     <div className="flex gap-1 mt-1 flex-wrap">
@@ -503,20 +535,26 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* ── Right: Side panel (desktop) ── */}
-      <div
-        className={cn("hidden lg:block flex-shrink-0 bg-card overflow-y-auto scroll-smooth", panelOpen && "border-l")}
-        style={{ width: panelOpen ? 340 : 0, opacity: panelOpen ? 1 : 0, transition: `all 400ms ${EASE}` }}
-      >
-        <div className="p-5 min-w-[340px]">
-          <PanelContent />
-        </div>
+      {/* ── Right: Side panel ── */}
+      <div className={cn("hidden lg:block flex-shrink-0 bg-card overflow-y-auto scroll-smooth", panelOpen && "border-l")}
+        style={{ width: panelOpen ? 340 : 0, opacity: panelOpen ? 1 : 0, transition: `all 400ms ${EASE}` }}>
+        <div className="p-5 min-w-[340px]"><PanelContent /></div>
       </div>
 
       {/* ── Mobile: bottom sheet ── */}
       {selectedDate && (
         <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 max-h-[60vh] overflow-y-auto scroll-smooth rounded-t-2xl border-t bg-card shadow-lg animate-slide-up p-5">
           <PanelContent />
+        </div>
+      )}
+
+      {/* ── Drag ghost ── */}
+      {draggedEvent && (
+        <div className="fixed z-[9999] pointer-events-none" style={{ left: dragPos.x - 80, top: dragPos.y - 16 }}>
+          <div className="w-[160px] rounded-lg border bg-card shadow-lg px-3 py-2 text-xs font-medium flex items-center gap-2">
+            <div className="w-[3px] h-4 rounded-full" style={{ background: draggedEvent.color }} />
+            <span className="truncate">{draggedEvent.title}</span>
+          </div>
         </div>
       )}
 
@@ -527,31 +565,19 @@ export default function CalendarPage() {
           <div className="fixed z-50 w-48 rounded-xl border border-border/70 bg-card shadow-lg p-1 animate-center-scale-in"
             style={{ left: Math.min(ctxMenu.x, typeof window !== "undefined" ? window.innerWidth - 210 : 999), top: Math.min(ctxMenu.y, typeof window !== "undefined" ? window.innerHeight - 160 : 999) }}>
             <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-              onClick={() => { setSelectedDate(ctxMenu.date); setShowQuickAdd(true); setCtxMenu(null); }}>
-              <Plus className="h-3.5 w-3.5" /> Add event
-            </button>
+              onClick={() => { setSelectedDate(ctxMenu.date); setShowQuickAdd(true); setCtxMenu(null); }}><Plus className="h-3.5 w-3.5" /> Add event</button>
             <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-              onClick={() => { setSelectedDate(ctxMenu.date); setCtxMenu(null); }}>
-              <CalendarDays className="h-3.5 w-3.5" /> View day
-            </button>
+              onClick={() => { setSelectedDate(ctxMenu.date); setCtxMenu(null); }}><CalendarDays className="h-3.5 w-3.5" /> View day</button>
             <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-              onClick={() => { goToday(); setCtxMenu(null); }}>
-              <Clock className="h-3.5 w-3.5" /> Go to today
-            </button>
-            {panelOpen && (
-              <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-                onClick={() => { setSelectedDate(null); setShowQuickAdd(false); setCtxMenu(null); }}>
-                <X className="h-3.5 w-3.5" /> Close panel
-              </button>
-            )}
+              onClick={() => { goToday(); setCtxMenu(null); }}><Clock className="h-3.5 w-3.5" /> Go to today</button>
+            {panelOpen && <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+              onClick={() => { setSelectedDate(null); setShowQuickAdd(false); setCtxMenu(null); }}><X className="h-3.5 w-3.5" /> Close panel</button>}
           </div>
         </>
       )}
     </div>
   );
 }
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
 
 function addHour(time: string): string {
   const [h, m] = time.split(":").map(Number);

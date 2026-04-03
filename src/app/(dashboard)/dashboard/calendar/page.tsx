@@ -57,6 +57,7 @@ export default function CalendarPage() {
   const [quickTitle, setQuickTitle] = useState("");
   const [quickTime, setQuickTime] = useState("");
   const [quickType, setQuickType] = useState<"todo" | "google">("todo");
+  const [monthKey, setMonthKey] = useState(0); // bump to retrigger animation
 
   // ─── Queries ──────────────────────────────────────────────────────────────
 
@@ -153,18 +154,22 @@ export default function CalendarPage() {
   // ─── Handlers ─────────────────────────────────────────────────────────────
 
   function toggleDate(dateStr: string) {
-    if (selectedDate === dateStr) {
-      setSelectedDate(null);
-      setShowQuickAdd(false);
-    } else {
-      setSelectedDate(dateStr);
-      setShowQuickAdd(false);
-    }
+    setSelectedDate(selectedDate === dateStr ? null : dateStr);
+    setShowQuickAdd(false);
   }
 
+  function goNextMonth() {
+    setCurrentMonth(addMonths(currentMonth, 1));
+    setMonthKey((k) => k + 1);
+  }
+  function goPrevMonth() {
+    setCurrentMonth(subMonths(currentMonth, 1));
+    setMonthKey((k) => k + 1);
+  }
   function goToday() {
     setCurrentMonth(new Date());
     setSelectedDate(format(new Date(), "yyyy-MM-dd"));
+    setMonthKey((k) => k + 1);
   }
 
   async function handleQuickAdd() {
@@ -221,145 +226,147 @@ export default function CalendarPage() {
 
   return (
     <div className="-m-4 lg:-m-6 flex h-[calc(100vh-4rem)] overflow-hidden">
-      {/* ── Left: Calendar grid (animated width) ── */}
-      <div
-        className="flex-1 flex items-start justify-center overflow-y-auto py-6"
-        style={{ transition: `all 400ms ${EASE}` }}
-      >
-        <div
-          className="w-full px-4"
-          style={{ maxWidth: panelOpen ? 600 : 720, transition: `max-width 400ms ${EASE}` }}
-        >
+      {/* ── Left: Calendar grid ── */}
+      <div className="flex-1 flex items-start justify-center overflow-y-auto py-6" style={{ transition: `all 400ms ${EASE}` }}>
+        <div className="w-full px-4" style={{ maxWidth: panelOpen ? 600 : 720, transition: `max-width 400ms ${EASE}` }}>
+
           {/* Header */}
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full press-effect" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full press-effect active:translate-x-[-2px]" onClick={goPrevMonth}>
                 <ChevronLeft className="h-5 w-5" />
               </Button>
               <h1 className="text-2xl font-bold min-w-[180px] text-center tracking-tight">
                 {format(currentMonth, "MMMM yyyy")}
               </h1>
-              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full press-effect" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full press-effect active:translate-x-[2px]" onClick={goNextMonth}>
                 <ChevronRight className="h-5 w-5" />
               </Button>
             </div>
             <div className="flex items-center gap-4">
               <div className="hidden md:flex items-center gap-4 text-xs text-muted-foreground">
-                {googleConnected && <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS.google }} />Events</span>}
-                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS.todo }} />Todos</span>
-                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS.checklist }} />Checklists</span>
+                {googleConnected && (
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full hover:scale-125 transition-transform" style={{ background: COLORS.google }} />Events
+                  </span>
+                )}
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full hover:scale-125 transition-transform" style={{ background: COLORS.todo }} />Todos
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full hover:scale-125 transition-transform" style={{ background: COLORS.checklist }} />Checklists
+                </span>
               </div>
-              <Button variant="outline" size="sm" className="h-8 text-xs font-medium press-effect" onClick={goToday}>Today</Button>
+              <Button variant="outline" size="sm" className="h-8 text-xs font-medium press-effect rounded-lg" onClick={goToday}>Today</Button>
             </div>
           </div>
 
           {/* Weekday headers */}
-          <div className="grid grid-cols-7 mb-1">
+          <div className="grid grid-cols-7 mb-1 border-b border-border/40">
             {WEEKDAYS.map((w) => (
-              <div key={w} className="py-2 text-center text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest">{w}</div>
+              <div key={w} className="py-2 text-center text-[11px] font-medium text-muted-foreground/70 uppercase tracking-widest">{w}</div>
             ))}
           </div>
 
-          {/* Day grid */}
-          <div className="grid grid-cols-7 rounded-lg border border-border/30 overflow-hidden">
-            {days.map((day) => {
-              const dateStr = format(day, "yyyy-MM-dd");
-              const dayEvs = getEvents(dateStr);
-              const singleDay = dayEvs.filter((e) => !e.endDate || e.endDate === e.startDate);
-              const inMonth = isSameMonth(day, currentMonth);
-              const today = isToday(day);
-              const isSelected = selectedDate === dateStr;
-              const isDragOver = dragOverDate === dateStr;
+          {/* Day grid — keyed for month transition animation */}
+          <div key={monthKey} className="animate-cal-month">
+            <div className="grid grid-cols-7 rounded-xl border border-border/50 overflow-hidden">
+              {days.map((day) => {
+                const dateStr = format(day, "yyyy-MM-dd");
+                const dayEvs = getEvents(dateStr);
+                const singleDay = dayEvs.filter((e) => !e.endDate || e.endDate === e.startDate);
+                const inMonth = isSameMonth(day, currentMonth);
+                const today = isToday(day);
+                const isSelected = selectedDate === dateStr;
+                const isDragOver = dragOverDate === dateStr;
 
-              const dots = singleDay.slice(0, 5).map((e) => e.color);
-              const overflow = singleDay.length > 5 ? singleDay.length - 5 : 0;
+                const dots = singleDay.slice(0, 5).map((e) => e.color);
+                const overflow = singleDay.length > 5 ? singleDay.length - 5 : 0;
 
-              const bars = multiDayEvents.filter((e) => {
-                const s = new Date(e.startDate); const end = new Date(e.endDate!);
-                return day >= s && day <= end;
-              });
+                const bars = multiDayEvents.filter((e) => {
+                  const s = new Date(e.startDate); const end = new Date(e.endDate!);
+                  return day >= s && day <= end;
+                });
 
-              return (
-                <button
-                  key={dateStr}
-                  type="button"
-                  className={cn(
-                    "relative flex flex-col min-h-[85px] p-2 text-left border-b border-r border-border/30 transition-all duration-200 group",
-                    inMonth ? "bg-card" : "bg-card opacity-30",
-                    today && "bg-primary/[0.03]",
-                    isSelected && "bg-primary/[0.06] ring-1 ring-primary/40 ring-inset z-10",
-                    !isSelected && inMonth && "hover:bg-muted/40",
-                    isDragOver && "ring-2 ring-primary bg-primary/5 z-10",
-                  )}
-                  onClick={() => toggleDate(dateStr)}
-                  onDragOver={(e) => { e.preventDefault(); setDragOverDate(dateStr); }}
-                  onDragLeave={() => setDragOverDate(null)}
-                  onDrop={(e) => handleEventDrop(e, dateStr)}
-                >
-                  {/* Date + hover plus */}
-                  <div className="flex items-center justify-between">
-                    <span className={cn(
-                      "text-sm inline-flex items-center justify-center transition-all",
-                      today ? "bg-primary text-primary-foreground w-7 h-7 rounded-full font-semibold text-xs" : "",
-                      !today && inMonth && "font-medium text-foreground/70",
-                      !inMonth && "text-muted-foreground/40",
-                    )}>
-                      {format(day, "d")}
-                    </span>
-                    <span className="opacity-0 group-hover:opacity-60 transition-opacity">
-                      <Plus className="h-3.5 w-3.5 text-muted-foreground" />
-                    </span>
-                  </div>
-
-                  {/* Dots */}
-                  {dots.length > 0 && (
-                    <div className="flex gap-1.5 mt-2 flex-wrap">
-                      {dots.map((c, i) => (
-                        <span key={i} className="w-2 h-2 rounded-full transition-transform group-hover:scale-110" style={{ background: c }} />
-                      ))}
-                      {overflow > 0 && <span className="text-[10px] text-muted-foreground font-medium">+{overflow}</span>}
+                return (
+                  <button
+                    key={dateStr}
+                    type="button"
+                    className={cn(
+                      "relative flex flex-col min-h-[85px] p-2 text-left border-b border-r border-border/50 transition-all duration-200 group",
+                      "active:scale-[0.97]",
+                      inMonth ? "bg-card" : "bg-card opacity-40",
+                      today && "bg-primary/[0.04]",
+                      isSelected && "bg-primary/[0.07] ring-1 ring-primary/30 ring-inset z-10",
+                      !isSelected && inMonth && "hover:bg-muted/40 hover:scale-[1.01]",
+                      isDragOver && "ring-2 ring-primary bg-primary/5 z-10",
+                    )}
+                    onClick={() => toggleDate(dateStr)}
+                    onDragOver={(e) => { e.preventDefault(); setDragOverDate(dateStr); }}
+                    onDragLeave={() => setDragOverDate(null)}
+                    onDrop={(e) => handleEventDrop(e, dateStr)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className={cn(
+                        "text-sm inline-flex items-center justify-center transition-all",
+                        today ? "bg-primary text-primary-foreground w-7 h-7 rounded-full font-semibold text-xs" : "",
+                        !today && inMonth && "font-medium text-foreground/80",
+                        !inMonth && "text-muted-foreground/50",
+                      )}>
+                        {format(day, "d")}
+                      </span>
+                      <span className="opacity-0 group-hover:opacity-60 transition-opacity">
+                        <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                      </span>
                     </div>
-                  )}
 
-                  {/* Multi-day bars */}
-                  {bars.length > 0 && (
-                    <div className="absolute bottom-1 left-1 right-1 space-y-[2px]">
-                      {bars.slice(0, 2).map((ev) => {
-                        const isFirst = dateStr === ev.startDate;
-                        const isLast = dateStr === ev.endDate;
-                        return (
-                          <div
-                            key={ev.id}
-                            className={cn("h-[3px]", isFirst && "rounded-l-full", isLast && "rounded-r-full", !isFirst && "ml-[-1px]", !isLast && "mr-[-1px]")}
-                            style={{ background: ev.color }}
-                            title={ev.title}
-                          />
-                        );
-                      })}
-                    </div>
-                  )}
-                </button>
-              );
-            })}
+                    {dots.length > 0 && (
+                      <div className="flex gap-1.5 mt-2 flex-wrap">
+                        {dots.map((c, i) => (
+                          <span key={i} className="w-2 h-2 rounded-full transition-transform group-hover:scale-125" style={{ background: c }} />
+                        ))}
+                        {overflow > 0 && <span className="text-[10px] text-muted-foreground font-medium">+{overflow}</span>}
+                      </div>
+                    )}
+
+                    {bars.length > 0 && (
+                      <div className="absolute bottom-1 left-1 right-1 space-y-[2px]">
+                        {bars.slice(0, 2).map((ev) => {
+                          const isFirst = dateStr === ev.startDate;
+                          const isLast = dateStr === ev.endDate;
+                          return (
+                            <div
+                              key={ev.id}
+                              className={cn("h-[3px]", isFirst && "rounded-l-full", isLast && "rounded-r-full", !isFirst && "ml-[-1px]", !isLast && "mr-[-1px]")}
+                              style={{ background: ev.color }}
+                              title={ev.title}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── Right: Side panel (desktop, animated slide) ── */}
+      {/* ── Right: Side panel (desktop) ── */}
       <div
-        className={cn("hidden lg:block flex-shrink-0 bg-card overflow-y-auto", panelOpen && "border-l")}
+        className={cn("hidden lg:block flex-shrink-0 bg-card overflow-y-auto scroll-smooth", panelOpen && "border-l")}
         style={{ width: panelOpen ? 340 : 0, opacity: panelOpen ? 1 : 0, transition: `all 400ms ${EASE}` }}
       >
         <div className="w-[340px] p-5">
           {selectedDate && (
             <div className="animate-tab-enter">
-              {/* Date header */}
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     {format(new Date(selectedDate + "T00:00:00"), "EEEE")}
                   </p>
-                  <p className="text-4xl font-bold tracking-tight mt-1">
+                  <p className="text-4xl font-bold tracking-tight text-foreground mt-1">
                     {format(new Date(selectedDate + "T00:00:00"), "d")}
                   </p>
                   <p className="text-sm text-muted-foreground mt-0.5">
@@ -380,16 +387,16 @@ export default function CalendarPage() {
 
               {/* Quick add */}
               {showQuickAdd && (
-                <div className="animate-center-scale-in mb-4 rounded-xl border p-3 space-y-2.5 bg-muted/20">
+                <div data-quick-add className="animate-center-scale-in mb-4 rounded-xl border p-3 space-y-2.5 bg-muted/20">
                   <Input placeholder="Add event or todo..." autoFocus value={quickTitle}
                     onChange={(e) => setQuickTitle(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter" && quickTitle.trim()) handleQuickAdd(); if (e.key === "Escape") setShowQuickAdd(false); }}
-                    className="h-9 text-sm"
+                    className="h-9 text-sm rounded-lg"
                   />
                   <div className="flex gap-2">
-                    <Input type="time" value={quickTime} onChange={(e) => setQuickTime(e.target.value)} className="w-28 h-9 text-xs" />
+                    <Input type="time" value={quickTime} onChange={(e) => setQuickTime(e.target.value)} className="w-28 h-9 text-xs rounded-lg" />
                     <Select value={quickType} onValueChange={(v) => setQuickType(v as "todo" | "google")}>
-                      <SelectTrigger className="flex-1 h-9 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="flex-1 h-9 text-xs rounded-lg"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="todo">Todo</SelectItem>
                         {googleConnected && <SelectItem value="google">Event</SelectItem>}
@@ -397,8 +404,8 @@ export default function CalendarPage() {
                     </Select>
                   </div>
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowQuickAdd(false)}>Cancel</Button>
-                    <Button size="sm" className="h-7 text-xs press-effect" onClick={handleQuickAdd} disabled={!quickTitle.trim()}>Add</Button>
+                    <Button variant="ghost" size="sm" className="h-7 text-xs rounded-lg" onClick={() => setShowQuickAdd(false)}>Cancel</Button>
+                    <Button size="sm" className="h-7 text-xs press-effect rounded-lg" onClick={handleQuickAdd} disabled={!quickTitle.trim()}>Add</Button>
                   </div>
                 </div>
               )}
@@ -414,15 +421,13 @@ export default function CalendarPage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {selectedEvents.map((ev, i) => (
-                    <EventCard key={ev.id} event={ev} index={i} />
-                  ))}
+                  {selectedEvents.map((ev, i) => <EventCard key={ev.id} event={ev} index={i} />)}
                 </div>
               )}
 
               {/* Google hint */}
               {!googleConnected && (
-                <div className="mt-8 rounded-xl bg-muted/20 p-3.5 text-center">
+                <div className="mt-8 rounded-2xl bg-muted/20 p-3.5 text-center animate-stagger-in" style={{ animationDelay: "400ms" }}>
                   <p className="text-[11px] text-muted-foreground">
                     Connect Google Calendar in <a href="/dashboard/settings" className="text-primary hover:underline">Settings</a> to sync events
                   </p>
@@ -435,7 +440,7 @@ export default function CalendarPage() {
 
       {/* ── Mobile: bottom sheet ── */}
       {selectedDate && (
-        <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 max-h-[60vh] overflow-y-auto rounded-t-2xl border-t bg-card shadow-lg animate-slide-up">
+        <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 max-h-[60vh] overflow-y-auto scroll-smooth rounded-t-2xl border-t bg-card shadow-lg animate-slide-up">
           <div className="p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -445,10 +450,10 @@ export default function CalendarPage() {
                 <p className="text-2xl font-bold">{format(new Date(selectedDate + "T00:00:00"), "d MMMM")}</p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => setShowQuickAdd(!showQuickAdd)}>
+                <Button variant="outline" size="icon" className="h-8 w-8 rounded-full press-effect" onClick={() => setShowQuickAdd(!showQuickAdd)}>
                   <Plus className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => { setSelectedDate(null); setShowQuickAdd(false); }}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full press-effect" onClick={() => { setSelectedDate(null); setShowQuickAdd(false); }}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -457,11 +462,11 @@ export default function CalendarPage() {
             {showQuickAdd && (
               <div className="animate-center-scale-in mb-4 rounded-xl border p-3 space-y-2.5 bg-muted/20">
                 <Input placeholder="Add event or todo..." autoFocus value={quickTitle} onChange={(e) => setQuickTitle(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && quickTitle.trim()) handleQuickAdd(); }} className="h-9 text-sm" />
+                  onKeyDown={(e) => { if (e.key === "Enter" && quickTitle.trim()) handleQuickAdd(); }} className="h-9 text-sm rounded-lg" />
                 <div className="flex gap-2">
-                  <Input type="time" value={quickTime} onChange={(e) => setQuickTime(e.target.value)} className="w-28 h-9 text-xs" />
+                  <Input type="time" value={quickTime} onChange={(e) => setQuickTime(e.target.value)} className="w-28 h-9 text-xs rounded-lg" />
                   <Select value={quickType} onValueChange={(v) => setQuickType(v as "todo" | "google")}>
-                    <SelectTrigger className="flex-1 h-9 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="flex-1 h-9 text-xs rounded-lg"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todo">Todo</SelectItem>
                       {googleConnected && <SelectItem value="google">Event</SelectItem>}
@@ -469,8 +474,8 @@ export default function CalendarPage() {
                   </Select>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowQuickAdd(false)}>Cancel</Button>
-                  <Button size="sm" className="h-7 text-xs press-effect" onClick={handleQuickAdd} disabled={!quickTitle.trim()}>Add</Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs rounded-lg" onClick={() => setShowQuickAdd(false)}>Cancel</Button>
+                  <Button size="sm" className="h-7 text-xs press-effect rounded-lg" onClick={handleQuickAdd} disabled={!quickTitle.trim()}>Add</Button>
                 </div>
               </div>
             )}
@@ -505,11 +510,11 @@ function EventCard({ event: ev, index }: { event: CalendarEvent; index: number }
       }}
       className={cn(
         "flex items-start gap-3 rounded-xl border border-border/40 px-3.5 py-3 text-sm transition-all animate-stagger-in",
-        "hover:bg-muted/30 hover:border-border/60",
+        "hover:bg-muted/40 hover:border-border/60",
         isDraggable ? "cursor-grab active:cursor-grabbing" : "cursor-default",
         (ev.completed || ev.status === "completed") && "opacity-35",
       )}
-      style={{ animationDelay: `${index * 40}ms` }}
+      style={{ animationDelay: `${index * 60}ms` }}
     >
       <div className="w-[3px] self-stretch rounded-full shrink-0 mt-0.5" style={{ background: ev.color }} />
       <div className="flex-1 min-w-0">

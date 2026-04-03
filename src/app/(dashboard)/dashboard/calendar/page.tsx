@@ -63,7 +63,7 @@ export default function CalendarPage() {
   const [quickTitle, setQuickTitle] = useState("");
   const [quickTime, setQuickTime] = useState("");
   const [quickType, setQuickType] = useState<"todo" | "google">("todo");
-  const [monthKey, setMonthKey] = useState(0);
+  const monthKey = format(currentMonth, "yyyy-MM");
 
   // Context menus
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; date: string } | null>(null);
@@ -163,9 +163,9 @@ export default function CalendarPage() {
   // ─── Handlers ─────────────────────────────────────────────────────────────
 
   function toggleDate(dateStr: string) { setSelectedDate(selectedDate === dateStr ? null : dateStr); setShowQuickAdd(false); }
-  function goNextMonth() { setCurrentMonth(addMonths(currentMonth, 1)); setMonthKey((k) => k + 1); }
-  function goPrevMonth() { setCurrentMonth(subMonths(currentMonth, 1)); setMonthKey((k) => k + 1); }
-  function goToday() { setCurrentMonth(new Date()); setSelectedDate(format(new Date(), "yyyy-MM-dd")); setMonthKey((k) => k + 1); }
+  function goNextMonth() { setCurrentMonth(addMonths(currentMonth, 1)); }
+  function goPrevMonth() { setCurrentMonth(subMonths(currentMonth, 1)); }
+  function goToday() { setCurrentMonth(new Date()); setSelectedDate(format(new Date(), "yyyy-MM-dd")); }
 
   function invalidateCal() {
     queryClient.invalidateQueries({ queryKey: ["calendar"] });
@@ -250,11 +250,11 @@ export default function CalendarPage() {
   return (
     <div className="-m-4 lg:-m-6 flex h-[calc(100vh-4rem)] overflow-hidden">
       {/* ── Left: Calendar grid ── */}
-      <div className="flex-1 flex items-start justify-center overflow-y-auto py-6" style={{ transition: `all 400ms ${EASE}` }}>
-        <div className="w-full px-4" style={{ maxWidth: panelOpen ? 600 : 720, transition: `max-width 400ms ${EASE}` }}>
+      <div className="flex-1 flex items-start justify-center overflow-hidden py-4" style={{ transition: `all 400ms ${EASE}` }}>
+        <div className="w-full px-4 flex flex-col h-full" style={{ maxWidth: panelOpen ? 600 : 720, transition: `max-width 400ms ${EASE}` }}>
 
           {/* Header */}
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between mb-5 flex-shrink-0">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full press-effect active:translate-x-[-2px]" onClick={goPrevMonth}>
                 <ChevronLeft className="h-5 w-5" />
@@ -275,15 +275,15 @@ export default function CalendarPage() {
           </div>
 
           {/* Weekday headers */}
-          <div className="grid grid-cols-7 mb-1 border-b border-border/70">
+          <div className="grid grid-cols-7 mb-1 border-b border-border/70 flex-shrink-0">
             {WEEKDAYS.map((w) => (
               <div key={w} className="py-2 text-center text-[11px] font-medium text-muted-foreground uppercase tracking-widest">{w}</div>
             ))}
           </div>
 
           {/* Day grid */}
-          <div key={monthKey} className="animate-cal-month">
-            <div className="grid grid-cols-7 rounded-xl border border-border/70 overflow-hidden">
+          <div key={monthKey} className="animate-cal-month flex-1 min-h-0">
+            <div className="grid grid-cols-7 h-full rounded-xl border border-border/70 overflow-hidden">
               {days.map((day) => {
                 const dateStr = format(day, "yyyy-MM-dd");
                 const dayEvs = getEvents(dateStr);
@@ -302,11 +302,11 @@ export default function CalendarPage() {
                     key={dateStr}
                     type="button"
                     className={cn(
-                      "relative flex flex-col min-h-[85px] p-2 text-left border-b border-r border-border/70 transition-all duration-200 group active:scale-[0.97]",
+                      "relative flex flex-col p-2 text-left border-b border-r border-border/70 transition-all duration-200 group active:scale-[0.97]",
                       inMonth ? "bg-card" : "bg-card opacity-50",
                       isSelected && "bg-primary/[0.08]",
                       !isSelected && inMonth && "hover:bg-muted/40",
-                      isDragOver && "ring-2 ring-primary bg-primary/5 z-10",
+                      isDragOver && "bg-primary/[0.12] z-10",
                     )}
                     onClick={() => toggleDate(dateStr)}
                     onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, date: dateStr }); }}
@@ -354,10 +354,13 @@ export default function CalendarPage() {
         className={cn("hidden lg:block flex-shrink-0 bg-card overflow-y-auto scroll-smooth", panelOpen && "border-l")}
         style={{ width: panelOpen ? 340 : 0, opacity: panelOpen ? 1 : 0, transition: `all 400ms ${EASE}` }}
       >
-        <div className="w-[340px] p-5">
+        <div className="p-5 min-w-[340px]">
           {selectedDate && (
             <div className="animate-tab-enter">
-              <div className="flex items-center justify-between mb-6">
+              <div
+                className="flex items-center justify-between mb-6"
+                onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, date: selectedDate! }); }}
+              >
                 <div>
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{format(new Date(selectedDate + "T00:00:00"), "EEEE")}</p>
                   <p className="text-4xl font-bold tracking-tight text-foreground mt-1">{format(new Date(selectedDate + "T00:00:00"), "d")}</p>
@@ -435,6 +438,12 @@ export default function CalendarPage() {
               onClick={() => { goToday(); setCtxMenu(null); }}>
               <Clock className="h-3.5 w-3.5" /> Go to today
             </button>
+            {selectedDate && (
+              <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                onClick={() => { setSelectedDate(null); setShowQuickAdd(false); setCtxMenu(null); }}>
+                <X className="h-3.5 w-3.5" /> Close panel
+              </button>
+            )}
           </div>
         </>
       )}
@@ -488,7 +497,7 @@ function EventCard({ event: ev, index, onContextMenu }: { event: CalendarEvent; 
         if (!isDraggable) { e.preventDefault(); return; }
         e.dataTransfer.setData("application/json", JSON.stringify({ eventId: ev.id, eventType: ev.type, originalDate: ev.startDate }));
         e.dataTransfer.effectAllowed = "move";
-        (e.currentTarget as HTMLElement).style.opacity = "0.7";
+        (e.currentTarget as HTMLElement).style.opacity = "0.85";
       }}
       onDragEnd={(e) => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
       onContextMenu={onContextMenu}

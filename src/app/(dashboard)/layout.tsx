@@ -4,6 +4,7 @@ import { DashboardTopbar } from "@/components/dashboard/topbar";
 import { LazyOverlays } from "@/components/dashboard/lazy-overlays";
 import { DashboardPrefetcher } from "@/components/dashboard/prefetcher";
 import { TabShell } from "@/components/dashboard/tab-shell";
+import { ContextMenuBlocker } from "@/components/dashboard/context-menu-blocker";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -17,7 +18,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-dvh overflow-hidden">
+    <ContextMenuBlocker className="flex h-dvh overflow-hidden">
       <DashboardSidebar className="hidden lg:flex" />
       <div className="flex min-h-0 flex-1 flex-col">
         <DashboardTopbar />
@@ -25,6 +26,6 @@ export default function DashboardLayout({
         <LazyOverlays />
         <DashboardPrefetcher />
       </div>
-    </div>
+    </ContextMenuBlocker>
   );
 }

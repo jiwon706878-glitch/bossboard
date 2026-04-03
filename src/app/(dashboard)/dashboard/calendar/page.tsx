@@ -13,9 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import { ChevronLeft, ChevronRight, Plus, CalendarDays } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
-import Link from "next/link";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -41,6 +40,7 @@ interface GoogleApiEvent {
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const COLORS = { google: "#378ADD", todo: "#1D9E75", checklist: "#EF9F27" } as const;
+const EASE = "cubic-bezier(0.16,1,0.3,1)";
 
 // ─── Page ───────────────────────────────────────────────────────────────────
 
@@ -62,12 +62,9 @@ export default function CalendarPage() {
 
   const { data: user } = useQuery({ queryKey: userKeys.current, queryFn: fetchCurrentUser, retry: false });
   const userId = user?.id;
-
   const { data: profile } = useQuery({
-    queryKey: userKeys.profile(userId ?? ""),
-    queryFn: () => fetchProfile(userId!),
-    enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
+    queryKey: userKeys.profile(userId ?? ""), queryFn: () => fetchProfile(userId!),
+    enabled: !!userId, staleTime: 5 * 60 * 1000,
   });
 
   const googleConnected = !!profile?.google_calendar_tokens;
@@ -89,21 +86,17 @@ export default function CalendarPage() {
       if (!res.ok) return { events: [], connected: false };
       return res.json();
     },
-    enabled: googleConnected,
-    staleTime: 2 * 60 * 1000,
+    enabled: googleConnected, staleTime: 2 * 60 * 1000,
   });
 
   // ─── Map events ───────────────────────────────────────────────────────────
 
   const allEvents: CalendarEvent[] = [
     ...localEvents.map((e) => ({
-      id: e.id,
-      title: e.title,
-      startDate: e.date,
+      id: e.id, title: e.title, startDate: e.date,
       type: e.type as "todo" | "checklist",
       color: e.type === "todo" ? COLORS.todo : COLORS.checklist,
-      completed: e.completed,
-      status: e.status,
+      completed: e.completed, status: e.status,
     })),
     ...(googleData?.events ?? []).map((ge: GoogleApiEvent) => {
       const sd = ge.start.dateTime ? format(new Date(ge.start.dateTime), "yyyy-MM-dd") : ge.start.date ?? "";
@@ -111,19 +104,15 @@ export default function CalendarPage() {
         ? format(addDays(new Date(ge.end.date), -1), "yyyy-MM-dd")
         : ge.end?.dateTime ? format(new Date(ge.end.dateTime), "yyyy-MM-dd") : sd;
       return {
-        id: ge.id,
-        title: ge.summary || "(No title)",
-        startDate: sd,
+        id: ge.id, title: ge.summary || "(No title)", startDate: sd,
         endDate: adjustedEnd !== sd ? adjustedEnd : undefined,
         time: ge.start.dateTime ? format(new Date(ge.start.dateTime), "HH:mm") : undefined,
         endTime: ge.end?.dateTime ? format(new Date(ge.end.dateTime), "HH:mm") : undefined,
-        type: "google" as const,
-        color: COLORS.google,
+        type: "google" as const, color: COLORS.google,
       };
     }),
   ];
 
-  // Group by date (expand multi-day)
   const eventsByDate = new Map<string, CalendarEvent[]>();
   for (const ev of allEvents) {
     if (ev.endDate && ev.endDate > ev.startDate) {
@@ -143,7 +132,6 @@ export default function CalendarPage() {
   }
 
   const multiDayEvents = allEvents.filter((e) => e.endDate && e.endDate > e.startDate);
-
   function getEvents(dateStr: string) { return eventsByDate.get(dateStr) ?? []; }
 
   const selectedEvents = selectedDate
@@ -155,13 +143,24 @@ export default function CalendarPage() {
       })
     : [];
 
-  // Grid days
   const calStart = startOfWeek(startOfMonth(currentMonth));
   const calEnd = endOfWeek(endOfMonth(currentMonth));
   const days: Date[] = [];
   { let d = calStart; while (d <= calEnd) { days.push(d); d = addDays(d, 1); } }
 
+  const panelOpen = !!selectedDate;
+
   // ─── Handlers ─────────────────────────────────────────────────────────────
+
+  function toggleDate(dateStr: string) {
+    if (selectedDate === dateStr) {
+      setSelectedDate(null);
+      setShowQuickAdd(false);
+    } else {
+      setSelectedDate(dateStr);
+      setShowQuickAdd(false);
+    }
+  }
 
   function goToday() {
     setCurrentMonth(new Date());
@@ -195,8 +194,7 @@ export default function CalendarPage() {
   }
 
   async function handleEventDrop(e: React.DragEvent, targetDate: string) {
-    e.preventDefault();
-    setDragOverDate(null);
+    e.preventDefault(); setDragOverDate(null);
     try {
       const data = JSON.parse(e.dataTransfer.getData("application/json"));
       if (data.originalDate === targetDate) return;
@@ -222,54 +220,48 @@ export default function CalendarPage() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="-m-4 lg:-m-6 flex flex-col lg:flex-row h-[calc(100vh-4rem)] overflow-hidden">
-      {/* Left: Calendar grid */}
-      <div className="flex-1 flex items-start justify-center overflow-y-auto py-6">
-        <div className="w-full max-w-[640px] px-4">
+    <div className="-m-4 lg:-m-6 flex h-[calc(100vh-4rem)] overflow-hidden">
+      {/* ── Left: Calendar grid (animated width) ── */}
+      <div
+        className="flex-1 flex items-start justify-center overflow-y-auto py-6"
+        style={{ transition: `all 400ms ${EASE}` }}
+      >
+        <div
+          className="w-full px-4"
+          style={{ maxWidth: panelOpen ? 600 : 720, transition: `max-width 400ms ${EASE}` }}
+        >
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full press-effect" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
-                <ChevronLeft className="h-4 w-4" />
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full press-effect" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+                <ChevronLeft className="h-5 w-5" />
               </Button>
-              <h1 className="text-xl font-semibold min-w-[160px] text-center">
+              <h1 className="text-2xl font-bold min-w-[180px] text-center tracking-tight">
                 {format(currentMonth, "MMMM yyyy")}
               </h1>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full press-effect" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
-                <ChevronRight className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full press-effect" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+                <ChevronRight className="h-5 w-5" />
               </Button>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground">
-                {googleConnected && (
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full" style={{ background: COLORS.google }} />Events
-                  </span>
-                )}
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full" style={{ background: COLORS.todo }} />Todos
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full" style={{ background: COLORS.checklist }} />Checklists
-                </span>
+            <div className="flex items-center gap-4">
+              <div className="hidden md:flex items-center gap-4 text-xs text-muted-foreground">
+                {googleConnected && <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS.google }} />Events</span>}
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS.todo }} />Todos</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS.checklist }} />Checklists</span>
               </div>
-              <Button variant="outline" size="sm" className="h-7 text-xs press-effect" onClick={goToday}>
-                Today
-              </Button>
+              <Button variant="outline" size="sm" className="h-8 text-xs font-medium press-effect" onClick={goToday}>Today</Button>
             </div>
           </div>
 
           {/* Weekday headers */}
-          <div className="grid grid-cols-7 text-center mb-1">
+          <div className="grid grid-cols-7 mb-1">
             {WEEKDAYS.map((w) => (
-              <div key={w} className="py-2 text-[11px] font-medium text-muted-foreground tracking-wide uppercase">
-                {w}
-              </div>
+              <div key={w} className="py-2 text-center text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest">{w}</div>
             ))}
           </div>
 
           {/* Day grid */}
-          <div className="grid grid-cols-7 border-t border-l">
+          <div className="grid grid-cols-7 rounded-lg border border-border/30 overflow-hidden">
             {days.map((day) => {
               const dateStr = format(day, "yyyy-MM-dd");
               const dayEvs = getEvents(dateStr);
@@ -279,19 +271,11 @@ export default function CalendarPage() {
               const isSelected = selectedDate === dateStr;
               const isDragOver = dragOverDate === dateStr;
 
-              // Unique dots by type
-              const seen = new Set<string>();
-              const dots: string[] = [];
-              for (const ev of singleDay) {
-                if (!seen.has(ev.type)) { seen.add(ev.type); dots.push(ev.color); }
-                if (dots.length >= 4) break;
-              }
-              const overflow = singleDay.length > 4 ? singleDay.length - 4 : 0;
+              const dots = singleDay.slice(0, 5).map((e) => e.color);
+              const overflow = singleDay.length > 5 ? singleDay.length - 5 : 0;
 
-              // Multi-day bars
               const bars = multiDayEvents.filter((e) => {
-                const s = new Date(e.startDate);
-                const end = new Date(e.endDate!);
+                const s = new Date(e.startDate); const end = new Date(e.endDate!);
                 return day >= s && day <= end;
               });
 
@@ -300,67 +284,60 @@ export default function CalendarPage() {
                   key={dateStr}
                   type="button"
                   className={cn(
-                    "relative flex flex-col min-h-[80px] p-2 text-left border-b border-r transition-colors group",
-                    inMonth ? "bg-card" : "bg-card opacity-40",
-                    today && "bg-primary/5",
-                    isSelected && "bg-primary/5 ring-1 ring-primary ring-inset",
-                    !isSelected && inMonth && "hover:bg-muted/30",
-                    isDragOver && "ring-2 ring-primary ring-inset bg-primary/5",
+                    "relative flex flex-col min-h-[85px] p-2 text-left border-b border-r border-border/30 transition-all duration-200 group",
+                    inMonth ? "bg-card" : "bg-card opacity-30",
+                    today && "bg-primary/[0.03]",
+                    isSelected && "bg-primary/[0.06] ring-1 ring-primary/40 ring-inset z-10",
+                    !isSelected && inMonth && "hover:bg-muted/40",
+                    isDragOver && "ring-2 ring-primary bg-primary/5 z-10",
                   )}
-                  onClick={() => setSelectedDate(isSelected ? null : dateStr)}
+                  onClick={() => toggleDate(dateStr)}
                   onDragOver={(e) => { e.preventDefault(); setDragOverDate(dateStr); }}
                   onDragLeave={() => setDragOverDate(null)}
                   onDrop={(e) => handleEventDrop(e, dateStr)}
                 >
-                  {/* Date number */}
-                  <span className={cn(
-                    "text-xs inline-flex items-center justify-center leading-none",
-                    today
-                      ? "bg-primary text-primary-foreground w-6 h-6 rounded-full font-medium"
-                      : "text-muted-foreground",
-                  )}>
-                    {format(day, "d")}
-                  </span>
+                  {/* Date + hover plus */}
+                  <div className="flex items-center justify-between">
+                    <span className={cn(
+                      "text-sm inline-flex items-center justify-center transition-all",
+                      today ? "bg-primary text-primary-foreground w-7 h-7 rounded-full font-semibold text-xs" : "",
+                      !today && inMonth && "font-medium text-foreground/70",
+                      !inMonth && "text-muted-foreground/40",
+                    )}>
+                      {format(day, "d")}
+                    </span>
+                    <span className="opacity-0 group-hover:opacity-60 transition-opacity">
+                      <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                    </span>
+                  </div>
 
                   {/* Dots */}
                   {dots.length > 0 && (
-                    <div className="flex gap-1 mt-1.5 flex-wrap">
+                    <div className="flex gap-1.5 mt-2 flex-wrap">
                       {dots.map((c, i) => (
-                        <span key={i} className="w-[6px] h-[6px] rounded-full" style={{ background: c }} />
+                        <span key={i} className="w-2 h-2 rounded-full transition-transform group-hover:scale-110" style={{ background: c }} />
                       ))}
-                      {overflow > 0 && <span className="text-[9px] text-muted-foreground leading-none">+{overflow}</span>}
+                      {overflow > 0 && <span className="text-[10px] text-muted-foreground font-medium">+{overflow}</span>}
                     </div>
                   )}
 
-                  {/* Multi-day bars at bottom */}
+                  {/* Multi-day bars */}
                   {bars.length > 0 && (
-                    <div className="absolute bottom-0 left-0 right-0 space-y-[2px] px-0.5 pb-0.5">
-                      {bars.slice(0, 3).map((ev) => {
+                    <div className="absolute bottom-1 left-1 right-1 space-y-[2px]">
+                      {bars.slice(0, 2).map((ev) => {
                         const isFirst = dateStr === ev.startDate;
                         const isLast = dateStr === ev.endDate;
                         return (
                           <div
                             key={ev.id}
-                            className={cn(
-                              "h-[3px]",
-                              isFirst && "rounded-l-sm ml-0",
-                              isLast && "rounded-r-sm mr-0",
-                              !isFirst && "-ml-0.5",
-                              !isLast && "-mr-0.5",
-                            )}
+                            className={cn("h-[3px]", isFirst && "rounded-l-full", isLast && "rounded-r-full", !isFirst && "ml-[-1px]", !isLast && "mr-[-1px]")}
                             style={{ background: ev.color }}
                             title={ev.title}
                           />
                         );
                       })}
-                      {bars.length > 3 && <span className="text-[8px] text-muted-foreground pl-0.5">+{bars.length - 3}</span>}
                     </div>
                   )}
-
-                  {/* Hover + icon */}
-                  <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Plus className="h-3 w-3 text-muted-foreground" />
-                  </div>
                 </button>
               );
             })}
@@ -368,38 +345,51 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* Right: Detail panel — always visible on desktop */}
-      <div className="hidden lg:block w-[340px] flex-shrink-0 border-l bg-card overflow-y-auto">
-        <div className="p-5">
-          {selectedDate ? (
-            <>
-              {/* Day header */}
-              <div className="flex items-center justify-between mb-5">
+      {/* ── Right: Side panel (desktop, animated slide) ── */}
+      <div
+        className={cn("hidden lg:block flex-shrink-0 bg-card overflow-y-auto", panelOpen && "border-l")}
+        style={{ width: panelOpen ? 340 : 0, opacity: panelOpen ? 1 : 0, transition: `all 400ms ${EASE}` }}
+      >
+        <div className="w-[340px] p-5">
+          {selectedDate && (
+            <div className="animate-tab-enter">
+              {/* Date header */}
+              <div className="flex items-center justify-between mb-6">
                 <div>
-                  <p className="text-sm font-semibold">{format(new Date(selectedDate + "T00:00:00"), "EEEE")}</p>
-                  <p className="text-2xl font-bold">{format(new Date(selectedDate + "T00:00:00"), "d")}</p>
-                  <p className="text-xs text-muted-foreground">{format(new Date(selectedDate + "T00:00:00"), "MMMM yyyy")}</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    {format(new Date(selectedDate + "T00:00:00"), "EEEE")}
+                  </p>
+                  <p className="text-4xl font-bold tracking-tight mt-1">
+                    {format(new Date(selectedDate + "T00:00:00"), "d")}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {format(new Date(selectedDate + "T00:00:00"), "MMMM yyyy")}
+                  </p>
                 </div>
-                <Button variant="outline" size="icon" className="h-8 w-8 rounded-full press-effect" onClick={() => setShowQuickAdd(!showQuickAdd)}>
-                  <Plus className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="icon" className="h-8 w-8 rounded-full press-effect" onClick={() => setShowQuickAdd(!showQuickAdd)}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full press-effect" onClick={() => { setSelectedDate(null); setShowQuickAdd(false); }}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
+
+              <div className="h-px bg-border/50 mb-4" />
 
               {/* Quick add */}
               {showQuickAdd && (
-                <div className="animate-center-scale-in mb-4 rounded-lg border p-3 space-y-2">
-                  <Input
-                    placeholder="Add event or todo..."
-                    value={quickTitle}
+                <div className="animate-center-scale-in mb-4 rounded-xl border p-3 space-y-2.5 bg-muted/20">
+                  <Input placeholder="Add event or todo..." autoFocus value={quickTitle}
                     onChange={(e) => setQuickTitle(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") handleQuickAdd(); }}
-                    className="h-8 text-sm"
-                    autoFocus
+                    onKeyDown={(e) => { if (e.key === "Enter" && quickTitle.trim()) handleQuickAdd(); if (e.key === "Escape") setShowQuickAdd(false); }}
+                    className="h-9 text-sm"
                   />
                   <div className="flex gap-2">
-                    <Input type="time" value={quickTime} onChange={(e) => setQuickTime(e.target.value)} className="w-28 h-8 text-xs" />
+                    <Input type="time" value={quickTime} onChange={(e) => setQuickTime(e.target.value)} className="w-28 h-9 text-xs" />
                     <Select value={quickType} onValueChange={(v) => setQuickType(v as "todo" | "google")}>
-                      <SelectTrigger className="flex-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="flex-1 h-9 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="todo">Todo</SelectItem>
                         {googleConnected && <SelectItem value="google">Event</SelectItem>}
@@ -413,85 +403,86 @@ export default function CalendarPage() {
                 </div>
               )}
 
-              {/* Event list */}
+              {/* Events */}
               {selectedEvents.length === 0 && !showQuickAdd ? (
-                <div className="text-center py-8">
-                  <CalendarDays className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
+                <div className="text-center py-12">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-muted/30 flex items-center justify-center mb-3">
+                    <CalendarDays className="h-5 w-5 text-muted-foreground/40" />
+                  </div>
                   <p className="text-sm text-muted-foreground">No events</p>
-                  <p className="text-xs text-muted-foreground mt-1">Click + to add one</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">Click + to add one</p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {selectedEvents.map((ev) => (
-                    <EventCard key={ev.id} event={ev} />
+                  {selectedEvents.map((ev, i) => (
+                    <EventCard key={ev.id} event={ev} index={i} />
                   ))}
                 </div>
               )}
 
               {/* Google hint */}
               {!googleConnected && (
-                <div className="mt-6 rounded-lg bg-muted/30 p-3 text-center">
+                <div className="mt-8 rounded-xl bg-muted/20 p-3.5 text-center">
                   <p className="text-[11px] text-muted-foreground">
-                    Connect Google Calendar in{" "}
-                    <Link href="/dashboard/settings" className="underline underline-offset-2 hover:text-foreground">Settings</Link>
-                    {" "}to sync events
+                    Connect Google Calendar in <a href="/dashboard/settings" className="text-primary hover:underline">Settings</a> to sync events
                   </p>
                 </div>
               )}
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full py-20">
-              <CalendarDays className="h-12 w-12 text-muted-foreground/20 mb-3" />
-              <p className="text-sm text-muted-foreground">Select a date</p>
-              <p className="text-xs text-muted-foreground mt-1">to view events and todos</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Mobile: bottom panel */}
+      {/* ── Mobile: bottom sheet ── */}
       {selectedDate && (
-        <div className="lg:hidden border-t bg-card overflow-y-auto max-h-[50vh] animate-slide-up p-4">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-semibold">
-              {format(new Date(selectedDate + "T00:00:00"), "EEEE, MMMM d")}
-            </p>
-            <div className="flex gap-1">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowQuickAdd(!showQuickAdd)}>
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSelectedDate(null); setShowQuickAdd(false); }}>
-                <span className="text-xs">✕</span>
-              </Button>
-            </div>
-          </div>
-          {showQuickAdd && (
-            <div className="animate-center-scale-in mb-3 rounded-lg border p-3 space-y-2">
-              <Input placeholder="Add event or todo..." value={quickTitle} onChange={(e) => setQuickTitle(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleQuickAdd(); }} className="h-8 text-sm" autoFocus />
+        <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 max-h-[60vh] overflow-y-auto rounded-t-2xl border-t bg-card shadow-lg animate-slide-up">
+          <div className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  {format(new Date(selectedDate + "T00:00:00"), "EEEE")}
+                </p>
+                <p className="text-2xl font-bold">{format(new Date(selectedDate + "T00:00:00"), "d MMMM")}</p>
+              </div>
               <div className="flex gap-2">
-                <Input type="time" value={quickTime} onChange={(e) => setQuickTime(e.target.value)} className="w-28 h-8 text-xs" />
-                <Select value={quickType} onValueChange={(v) => setQuickType(v as "todo" | "google")}>
-                  <SelectTrigger className="flex-1 h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todo">Todo</SelectItem>
-                    {googleConnected && <SelectItem value="google">Event</SelectItem>}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowQuickAdd(false)}>Cancel</Button>
-                <Button size="sm" className="h-7 text-xs press-effect" onClick={handleQuickAdd} disabled={!quickTitle.trim()}>Add</Button>
+                <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => setShowQuickAdd(!showQuickAdd)}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => { setSelectedDate(null); setShowQuickAdd(false); }}>
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-          )}
-          {selectedEvents.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">No events for this day</p>
-          ) : (
-            <div className="space-y-2">
-              {selectedEvents.map((ev) => <EventCard key={ev.id} event={ev} />)}
-            </div>
-          )}
+
+            {showQuickAdd && (
+              <div className="animate-center-scale-in mb-4 rounded-xl border p-3 space-y-2.5 bg-muted/20">
+                <Input placeholder="Add event or todo..." autoFocus value={quickTitle} onChange={(e) => setQuickTitle(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && quickTitle.trim()) handleQuickAdd(); }} className="h-9 text-sm" />
+                <div className="flex gap-2">
+                  <Input type="time" value={quickTime} onChange={(e) => setQuickTime(e.target.value)} className="w-28 h-9 text-xs" />
+                  <Select value={quickType} onValueChange={(v) => setQuickType(v as "todo" | "google")}>
+                    <SelectTrigger className="flex-1 h-9 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todo">Todo</SelectItem>
+                      {googleConnected && <SelectItem value="google">Event</SelectItem>}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowQuickAdd(false)}>Cancel</Button>
+                  <Button size="sm" className="h-7 text-xs press-effect" onClick={handleQuickAdd} disabled={!quickTitle.trim()}>Add</Button>
+                </div>
+              </div>
+            )}
+
+            {selectedEvents.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">No events for this day</p>
+            ) : (
+              <div className="space-y-2">
+                {selectedEvents.map((ev, i) => <EventCard key={ev.id} event={ev} index={i} />)}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -500,30 +491,32 @@ export default function CalendarPage() {
 
 // ─── Event Card ─────────────────────────────────────────────────────────────
 
-function EventCard({ event: ev }: { event: CalendarEvent }) {
+function EventCard({ event: ev, index }: { event: CalendarEvent; index: number }) {
+  const isDraggable = ev.type !== "checklist";
   return (
     <div
-      draggable
+      draggable={isDraggable}
       onDragStart={(e) => {
+        if (!isDraggable) { e.preventDefault(); return; }
         e.dataTransfer.setData("application/json", JSON.stringify({
           eventId: ev.id, eventType: ev.type, originalDate: ev.startDate,
         }));
         e.dataTransfer.effectAllowed = "move";
       }}
       className={cn(
-        "flex items-stretch gap-2.5 rounded-lg border px-3 py-2.5 text-sm transition-all hover:bg-muted/30 cursor-grab active:cursor-grabbing",
-        (ev.completed || ev.status === "completed") && "opacity-40",
+        "flex items-start gap-3 rounded-xl border border-border/40 px-3.5 py-3 text-sm transition-all animate-stagger-in",
+        "hover:bg-muted/30 hover:border-border/60",
+        isDraggable ? "cursor-grab active:cursor-grabbing" : "cursor-default",
+        (ev.completed || ev.status === "completed") && "opacity-35",
       )}
+      style={{ animationDelay: `${index * 40}ms` }}
     >
-      <div className="w-[3px] self-stretch rounded-full shrink-0" style={{ background: ev.color }} />
+      <div className="w-[3px] self-stretch rounded-full shrink-0 mt-0.5" style={{ background: ev.color }} />
       <div className="flex-1 min-w-0">
-        <p className={cn(
-          "font-medium text-[13px] truncate",
-          (ev.completed || ev.status === "completed") && "line-through",
-        )}>
+        <p className={cn("font-medium text-[13px] leading-snug", (ev.completed || ev.status === "completed") && "line-through")}>
           {ev.title}
         </p>
-        <p className="text-[11px] text-muted-foreground mt-0.5">
+        <p className="text-[11px] text-muted-foreground mt-1">
           {ev.time ? `${ev.time}${ev.endTime ? ` – ${ev.endTime}` : ""}` : "All day"}
           {" · "}
           {ev.type === "google" ? "Google Calendar" : ev.type === "todo" ? "Todo" : "Checklist"}

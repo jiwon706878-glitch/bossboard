@@ -41,7 +41,6 @@ export function DashboardPrefetcher() {
       "/dashboard/checklists",
       "/dashboard/todos",
       "/dashboard/calendar",
-      "/dashboard/journal",
       "/dashboard/board",
       "/dashboard/team",
       "/dashboard/settings",
@@ -89,19 +88,6 @@ export function DashboardPrefetcher() {
               .eq("user_id", userId)
               .eq("completed", false)
               .order("created_at", { ascending: false });
-            return data ?? [];
-          },
-          staleTime: 2 * 60 * 1000,
-        }),
-        queryClient.prefetchQuery({
-          queryKey: ["journal", businessId],
-          queryFn: async () => {
-            const { data } = await supabase
-              .from("journal_entries")
-              .select("id, title, content, mood, created_at")
-              .eq("business_id", businessId)
-              .order("created_at", { ascending: false })
-              .limit(20);
             return data ?? [];
           },
           staleTime: 2 * 60 * 1000,

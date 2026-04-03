@@ -1,55 +1,153 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isToday } from "date-fns";
 import { useBusinessStore } from "@/hooks/use-business";
-import { fetchCurrentUser, fetchCalendarEvents, userKeys, calendarKeys } from "@/lib/queries";
+import { fetchCurrentUser, fetchProfile, fetchCalendarEvents, userKeys, calendarKeys } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, CheckSquare, ListTodo, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, CheckSquare, ListTodo, CalendarDays, Plus, X, Settings } from "lucide-react";
+import { toast } from "sonner";
+import Link from "next/link";
 
 interface CalendarEvent {
   id: string;
   title: string;
   date: string; // yyyy-MM-dd
-  type: "checklist" | "todo";
-  status?: string;
+  time?: string; // HH:mm (for sorting)
+  endTime?: string;
+  type: "google" | "todo" | "checklist";
+  color: string;
   completed?: boolean;
+  status?: string;
+}
+
+interface GoogleApiEvent {
+  id: string;
+  summary: string;
+  description?: string;
+  start: { dateTime?: string; date?: string };
+  end: { dateTime?: string; date?: string };
 }
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function getDotColor(dayEvents: CalendarEvent[]): string {
-  const allCompleted = dayEvents.every((e) => e.completed || e.status === "completed");
-  if (allCompleted) return "bg-emerald-400";
-  const allTodos = dayEvents.every((e) => e.type === "todo");
-  if (allTodos) return "bg-amber-400";
-  const allChecklists = dayEvents.every((e) => e.type === "checklist");
-  if (allChecklists) return "bg-primary";
-  return "bg-primary";
-}
+const EVENT_COLORS: Record<CalendarEvent["type"], string> = {
+  google: "bg-blue-400",
+  todo: "bg-amber-400",
+  checklist: "bg-primary",
+};
 
 export default function CalendarPage() {
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
   const businessId = currentBusiness?.id;
+  const queryClient = useQueryClient();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [quickAddTitle, setQuickAddTitle] = useState("");
 
   const { data: user } = useQuery({ queryKey: userKeys.current, queryFn: fetchCurrentUser, retry: false });
   const userId = user?.id;
+
+  const { data: profile } = useQuery({
+    queryKey: userKeys.profile(userId ?? ""),
+    queryFn: () => fetchProfile(userId!),
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const googleConnected = !!profile?.google_calendar_tokens;
 
   const monthStr = format(currentMonth, "yyyy-MM");
   const mStart = format(startOfMonth(currentMonth), "yyyy-MM-dd");
   const mEnd = format(endOfMonth(currentMonth), "yyyy-MM-dd");
 
-  const { data: events = [], isLoading: loading } = useQuery({
+  // Fetch local events (todos + checklists)
+  const { data: localEvents = [], isLoading: localLoading } = useQuery({
     queryKey: calendarKeys.events(businessId ?? "", monthStr),
     queryFn: () => fetchCalendarEvents(businessId!, userId!, mStart, mEnd),
     enabled: !!businessId && !!userId,
+  });
+
+  // Fetch Google Calendar events
+  const googleQueryKey = ["google-calendar", monthStr];
+  const { data: googleData } = useQuery({
+    queryKey: googleQueryKey,
+    queryFn: async () => {
+      const res = await fetch(`/api/calendar/google?timeMin=${mStart}&timeMax=${mEnd}`);
+      if (!res.ok) return { events: [], connected: false };
+      return res.json();
+    },
+    enabled: googleConnected,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const googleEvents: GoogleApiEvent[] = googleData?.events ?? [];
+
+  // Map all events to unified format
+  const allEvents: CalendarEvent[] = [
+    ...localEvents.map((e) => ({
+      id: e.id,
+      title: e.title,
+      date: e.date,
+      type: e.type as "todo" | "checklist",
+      color: e.type === "todo" ? "bg-amber-400" : "bg-primary",
+      completed: e.completed,
+      status: e.status,
+    })),
+    ...googleEvents.map((ge) => {
+      const startDate = ge.start.dateTime
+        ? format(new Date(ge.start.dateTime), "yyyy-MM-dd")
+        : ge.start.date ?? "";
+      const startTime = ge.start.dateTime
+        ? format(new Date(ge.start.dateTime), "HH:mm")
+        : undefined;
+      const endTime = ge.end.dateTime
+        ? format(new Date(ge.end.dateTime), "HH:mm")
+        : undefined;
+
+      return {
+        id: ge.id,
+        title: ge.summary || "(No title)",
+        date: startDate,
+        time: startTime,
+        endTime,
+        type: "google" as const,
+        color: "bg-blue-400",
+      };
+    }),
+  ];
+
+  // Quick add mutation
+  const quickAddMutation = useMutation({
+    mutationFn: async (payload: { summary: string; date: string }) => {
+      const res = await fetch("/api/calendar/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          summary: payload.summary,
+          start: payload.date,
+          end: payload.date,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to create event");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Event created");
+      setQuickAddTitle("");
+      setShowQuickAdd(false);
+      queryClient.invalidateQueries({ queryKey: googleQueryKey });
+    },
+    onError: () => {
+      toast.error("Failed to create event");
+    },
   });
 
   // Build calendar grid
@@ -67,20 +165,27 @@ export default function CalendarPage() {
 
   function eventsForDate(date: Date): CalendarEvent[] {
     const dateStr = format(date, "yyyy-MM-dd");
-    return events.filter((e) => e.date === dateStr);
+    return allEvents.filter((e) => e.date === dateStr);
   }
 
   const selectedEvents = selectedDate
-    ? events.filter((e) => e.date === selectedDate)
+    ? allEvents
+        .filter((e) => e.date === selectedDate)
+        .sort((a, b) => (a.time ?? "99:99").localeCompare(b.time ?? "99:99"))
     : [];
 
   const panelOpen = selectedDate !== null;
+
+  function handleQuickAdd() {
+    if (!quickAddTitle.trim() || !selectedDate) return;
+    quickAddMutation.mutate({ summary: quickAddTitle.trim(), date: selectedDate });
+  }
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Calendar</h1>
-        <p className="text-muted-foreground">Checklists and todos by date</p>
+        <p className="text-muted-foreground">Checklists, todos, and Google Calendar events</p>
       </div>
 
       {/* Desktop: side-by-side layout */}
@@ -110,7 +215,7 @@ export default function CalendarPage() {
                 eventsForDate={eventsForDate}
                 onSelectDate={(dateStr) => setSelectedDate(selectedDate === dateStr ? null : dateStr)}
               />
-              <Legend />
+              <Legend googleConnected={googleConnected} />
             </CardContent>
           </Card>
         </div>
@@ -129,19 +234,49 @@ export default function CalendarPage() {
                   <CardTitle className="text-base">
                     {format(new Date(selectedDate + "T00:00:00"), "EEEE, MMMM d, yyyy")}
                   </CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0 shrink-0"
-                    onClick={() => setSelectedDate(null)}
-                    aria-label="Close panel"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    {googleConnected && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 shrink-0"
+                        onClick={() => setShowQuickAdd((v) => !v)}
+                        aria-label="Add event"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 shrink-0"
+                      onClick={() => { setSelectedDate(null); setShowQuickAdd(false); }}
+                      aria-label="Close panel"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
+                {showQuickAdd && googleConnected && (
+                  <div className="flex gap-2 mb-3">
+                    <Input
+                      placeholder="New event title..."
+                      value={quickAddTitle}
+                      onChange={(e) => setQuickAddTitle(e.target.value)}
+                      className="h-8 text-sm"
+                      onKeyDown={(e) => { if (e.key === "Enter") handleQuickAdd(); }}
+                    />
+                    <Button size="sm" className="h-8 press-effect" onClick={handleQuickAdd} disabled={quickAddMutation.isPending || !quickAddTitle.trim()}>
+                      {quickAddMutation.isPending ? "..." : "Add"}
+                    </Button>
+                  </div>
+                )}
                 <EventList events={selectedEvents} />
+                {!googleConnected && (
+                  <GoogleHint />
+                )}
               </CardContent>
             </Card>
           )}
@@ -170,7 +305,7 @@ export default function CalendarPage() {
               eventsForDate={eventsForDate}
               onSelectDate={(dateStr) => setSelectedDate(selectedDate === dateStr ? null : dateStr)}
             />
-            <Legend />
+            <Legend googleConnected={googleConnected} />
           </CardContent>
         </Card>
 
@@ -181,19 +316,49 @@ export default function CalendarPage() {
                 <CardTitle className="text-base">
                   {format(new Date(selectedDate + "T00:00:00"), "EEEE, MMMM d, yyyy")}
                 </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 shrink-0"
-                  onClick={() => setSelectedDate(null)}
-                  aria-label="Close panel"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  {googleConnected && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 shrink-0"
+                      onClick={() => setShowQuickAdd((v) => !v)}
+                      aria-label="Add event"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 shrink-0"
+                    onClick={() => { setSelectedDate(null); setShowQuickAdd(false); }}
+                    aria-label="Close panel"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
+              {showQuickAdd && googleConnected && (
+                <div className="flex gap-2 mb-3">
+                  <Input
+                    placeholder="New event title..."
+                    value={quickAddTitle}
+                    onChange={(e) => setQuickAddTitle(e.target.value)}
+                    className="h-8 text-sm"
+                    onKeyDown={(e) => { if (e.key === "Enter") handleQuickAdd(); }}
+                  />
+                  <Button size="sm" className="h-8 press-effect" onClick={handleQuickAdd} disabled={quickAddMutation.isPending || !quickAddTitle.trim()}>
+                    {quickAddMutation.isPending ? "..." : "Add"}
+                  </Button>
+                </div>
+              )}
               <EventList events={selectedEvents} />
+              {!googleConnected && (
+                <GoogleHint />
+              )}
             </CardContent>
           </Card>
         )}
@@ -235,6 +400,11 @@ function CalendarGrid({
           const today = isToday(d);
           const isSelected = selectedDate === dateStr;
 
+          // Group dots by type, max 3 visible + overflow
+          const typeSet = new Set(dayEvents.map((e) => e.type));
+          const dotTypes = Array.from(typeSet).slice(0, 3);
+          const overflow = dayEvents.length > 3 ? dayEvents.length - 3 : 0;
+
           return (
             <button
               key={dateStr}
@@ -254,13 +424,15 @@ function CalendarGrid({
               )}>
                 {format(d, "d")}
               </span>
-              {/* Event count badge */}
+              {/* Colored dots by type */}
               {dayEvents.length > 0 && (
                 <div className="flex items-center gap-0.5 justify-center">
-                  <span className={cn("h-1.5 w-1.5 rounded-full", getDotColor(dayEvents))} />
-                  {dayEvents.length > 1 && (
+                  {dotTypes.map((type) => (
+                    <span key={type} className={cn("h-1.5 w-1.5 rounded-full", EVENT_COLORS[type])} />
+                  ))}
+                  {overflow > 0 && (
                     <span className="text-[10px] text-muted-foreground font-mono">
-                      &times;{dayEvents.length}
+                      +{overflow}
                     </span>
                   )}
                 </div>
@@ -281,19 +453,32 @@ function EventList({ events }: { events: CalendarEvent[] }) {
     <div className="space-y-2">
       {events.map((ev) => (
         <div key={ev.id} className="flex items-center gap-3 rounded-md border px-3 py-2">
-          {ev.type === "checklist" ? (
+          {ev.type === "google" ? (
+            <CalendarDays className="h-4 w-4 shrink-0 text-blue-400" />
+          ) : ev.type === "checklist" ? (
             <CheckSquare className="h-4 w-4 shrink-0 text-primary" />
           ) : (
             <ListTodo className="h-4 w-4 shrink-0 text-amber-400" />
           )}
-          <span className={cn(
-            "text-sm flex-1 truncate",
-            (ev.completed || ev.status === "completed") && "line-through text-muted-foreground"
-          )}>
-            {ev.title}
-          </span>
+          <div className="flex-1 min-w-0">
+            <span className={cn(
+              "text-sm truncate block",
+              (ev.completed || ev.status === "completed") && "line-through text-muted-foreground"
+            )}>
+              {ev.title}
+            </span>
+            {ev.time && (
+              <span className="text-[11px] text-muted-foreground font-mono">
+                {ev.time}{ev.endTime ? ` - ${ev.endTime}` : ""}
+              </span>
+            )}
+          </div>
           <Badge variant="secondary" className="text-[10px] shrink-0">
-            {ev.type === "checklist" ? ev.status || "pending" : ev.completed ? "done" : "pending"}
+            {ev.type === "google"
+              ? "google"
+              : ev.type === "checklist"
+                ? (ev.status || "pending")
+                : ev.completed ? "done" : "pending"}
           </Badge>
         </div>
       ))}
@@ -301,12 +486,30 @@ function EventList({ events }: { events: CalendarEvent[] }) {
   );
 }
 
-function Legend() {
+function Legend({ googleConnected }: { googleConnected: boolean }) {
   return (
     <div className="flex items-center gap-4 pt-3 text-xs text-muted-foreground">
+      {googleConnected && (
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-400" /> Google</span>
+      )}
       <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-primary" /> Checklist</span>
       <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400" /> Todo</span>
       <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-400" /> Completed</span>
+    </div>
+  );
+}
+
+function GoogleHint() {
+  return (
+    <div className="mt-3 rounded-md border border-dashed px-3 py-2">
+      <p className="text-xs text-muted-foreground">
+        <CalendarDays className="inline h-3 w-3 mr-1 -translate-y-px" />
+        Connect Google Calendar in{" "}
+        <Link href="/dashboard/settings" className="underline underline-offset-2 hover:text-foreground">
+          Settings
+        </Link>{" "}
+        to see your events here.
+      </p>
     </div>
   );
 }

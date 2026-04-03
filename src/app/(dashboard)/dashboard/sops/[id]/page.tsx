@@ -14,7 +14,6 @@ import { useBusinessStore } from "@/hooks/use-business";
 import { SOPDetailHeader } from "@/components/sops/sop-detail-header";
 import { SOPDetailActions } from "@/components/sops/sop-detail-actions";
 import { VersionHistoryModal } from "@/components/sops/version-history-modal";
-import { ReadTracking } from "@/components/sops/read-tracking";
 
 const SOPEditor = dynamic(
   () => import("@/components/sops/sop-editor").then((m) => ({ default: m.SOPEditor })),
@@ -28,9 +27,8 @@ export default function SOPDetailPage() {
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
   const {
     sop, loading, deleteOpen, setDeleteOpen, deleting, creatingChecklist,
-    signedOff, signingOff, readBy, teamSize,
     historyOpen, setHistoryOpen, versions, previewVersion, setPreviewVersion,
-    handleDelete, handleCreateChecklist, handleSignOff, handleTogglePin,
+    handleDelete, handleCreateChecklist, handleTogglePin,
     loadHistory, restoreVersion,
   } = useSopDetail(sopId);
 
@@ -221,8 +219,6 @@ export default function SOPDetailPage() {
           )}
         </CardContent>
       </Card>
-
-      <ReadTracking readBy={readBy} teamSize={teamSize} signedOff={signedOff} signingOff={signingOff} onSignOff={handleSignOff} />
 
       {footnotes.length > 0 && (
         <div className="border-t pt-4">

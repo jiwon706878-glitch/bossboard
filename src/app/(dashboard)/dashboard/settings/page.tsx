@@ -22,7 +22,8 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Lock } from "lucide-react";
+import { Lock, CalendarDays } from "lucide-react";
+import { getGoogleAuthUrl } from "@/lib/google-calendar";
 import { ApiKeysSection } from "@/components/settings/api-keys-section";
 import { ExternalApiKeysSection } from "@/components/settings/external-api-keys-section";
 import { ProfileCard } from "@/components/settings/profile-card";
@@ -100,6 +101,23 @@ export default function SettingsPage() {
   // Developer mode local state
   const [developerMode, setDeveloperMode] = useState<boolean | null>(null);
   const [savingDevMode, setSavingDevMode] = useState(false);
+
+  // Google Calendar
+  const [disconnectingGoogle, setDisconnectingGoogle] = useState(false);
+  const googleAuthUrl = getGoogleAuthUrl();
+
+  async function handleDisconnectGoogle() {
+    if (!userId) return;
+    setDisconnectingGoogle(true);
+    const { error } = await supabase.from("profiles").update({ google_calendar_tokens: null }).eq("id", userId);
+    if (error) {
+      toast.error("Failed to disconnect Google Calendar.");
+    } else {
+      toast.success("Google Calendar disconnected");
+      queryClient.setQueryData(userKeys.profile(userId), (old: any) => ({ ...old, google_calendar_tokens: null }));
+    }
+    setDisconnectingGoogle(false);
+  }
 
   // Sticky note (localStorage only)
   const [stickyHidden, setStickyHidden] = useState(false);
@@ -357,8 +375,54 @@ export default function SettingsPage() {
         </CardContent>
       </Card></div>
 
+      {/* Card 5b: Google Calendar — admin only */}
+      {(!roleLoaded || isAdmin()) && (
+        <div className="animate-stagger-in" style={{ animationDelay: "330ms" }}><Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <CardTitle>Google Calendar</CardTitle>
+                <CardDescription>Sync your Google Calendar events to the BossBoard calendar.</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {profile?.google_calendar_tokens ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                  <span className="text-sm font-medium">Connected</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="press-effect"
+                  onClick={handleDisconnectGoogle}
+                  disabled={disconnectingGoogle}
+                >
+                  {disconnectingGoogle ? "Disconnecting..." : "Disconnect"}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {googleAuthUrl ? (
+                  <Button asChild className="press-effect">
+                    <a href={googleAuthUrl}>Connect Google Calendar</a>
+                  </Button>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Google Calendar integration is not configured. Set NEXT_PUBLIC_GOOGLE_CLIENT_ID in your environment.
+                  </p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card></div>
+      )}
+
       {/* Card 6: Theme Color */}
-      <div className="animate-stagger-in" style={{ animationDelay: "360ms" }}><Card>
+      <div className="animate-stagger-in" style={{ animationDelay: "390ms" }}><Card>
         <CardHeader><CardTitle>Theme</CardTitle></CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -406,7 +470,7 @@ export default function SettingsPage() {
 
       {/* Card 7: Developer Mode — admin only */}
       {(!roleLoaded || isAdmin()) && (
-        <div className="animate-stagger-in" style={{ animationDelay: "420ms" }}><Card>
+        <div className="animate-stagger-in" style={{ animationDelay: "450ms" }}><Card>
           <CardHeader><CardTitle>Developer Mode</CardTitle></CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
@@ -421,10 +485,10 @@ export default function SettingsPage() {
       )}
 
       {/* Card 8: External API Keys (developer mode + admin only) */}
-      {(!roleLoaded || isAdmin()) && displayDevMode && <div className="animate-stagger-in" style={{ animationDelay: "480ms" }}><ExternalApiKeysSection /></div>}
+      {(!roleLoaded || isAdmin()) && displayDevMode && <div className="animate-stagger-in" style={{ animationDelay: "510ms" }}><ExternalApiKeysSection /></div>}
 
       {/* Card 9: BossBoard API Keys (developer mode + admin only) */}
-      {(!roleLoaded || isAdmin()) && displayDevMode && <div className="animate-stagger-in" style={{ animationDelay: "540ms" }}><ApiKeysSection /></div>}
+      {(!roleLoaded || isAdmin()) && displayDevMode && <div className="animate-stagger-in" style={{ animationDelay: "570ms" }}><ApiKeysSection /></div>}
     </div>
   );
 }

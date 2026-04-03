@@ -12,7 +12,6 @@ const SOPsPage = lazy(() => import("@/app/(dashboard)/dashboard/sops/page"));
 const ChecklistsPage = lazy(() => import("@/app/(dashboard)/dashboard/checklists/page"));
 const TodosPage = lazy(() => import("@/app/(dashboard)/dashboard/todos/page"));
 const CalendarPage = lazy(() => import("@/app/(dashboard)/dashboard/calendar/page"));
-const JournalPage = lazy(() => import("@/app/(dashboard)/dashboard/journal/page"));
 const BoardPage = lazy(() => import("@/app/(dashboard)/dashboard/board/page"));
 const TeamPage = lazy(() => import("@/app/(dashboard)/dashboard/team/page"));
 const SettingsPage = lazy(() => import("@/app/(dashboard)/dashboard/settings/page"));
@@ -34,7 +33,6 @@ const TABS: TabDef[] = [
   { id: "checklists", path: "/dashboard/checklists", Component: ChecklistsPage },
   { id: "todos", path: "/dashboard/todos", Component: TodosPage },
   { id: "calendar", path: "/dashboard/calendar", Component: CalendarPage },
-  { id: "journal", path: "/dashboard/journal", Component: JournalPage },
   { id: "board", path: "/dashboard/board", Component: BoardPage },
   { id: "team", path: "/dashboard/team", Component: TeamPage },
   { id: "settings", path: "/dashboard/settings", Component: SettingsPage },
@@ -151,7 +149,6 @@ export function TabShell({ children }: { children: React.ReactNode }) {
     import("@/app/(dashboard)/dashboard/checklists/page");
     import("@/app/(dashboard)/dashboard/todos/page");
     import("@/app/(dashboard)/dashboard/calendar/page");
-    import("@/app/(dashboard)/dashboard/journal/page");
     import("@/app/(dashboard)/dashboard/board/page");
     import("@/app/(dashboard)/dashboard/team/page");
     import("@/app/(dashboard)/dashboard/settings/page");

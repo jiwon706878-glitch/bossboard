@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import {
   ChevronLeft, ChevronRight, Plus, X, CalendarDays,
-  Clock, CheckCircle2, ArrowRight, Trash2, ExternalLink,
+  Clock, Check, Trash2, ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -40,12 +40,14 @@ interface GoogleApiEvent {
   summary: string;
   start: { dateTime?: string; date?: string };
   end: { dateTime?: string; date?: string };
-  htmlLink?: string;
 }
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const COLORS = { google: "#378ADD", todo: "#1D9E75", checklist: "#EF9F27" } as const;
 const EASE = "cubic-bezier(0.16,1,0.3,1)";
+const CELL_W = 90;
+const CELL_H = 72;
+const GRID_W = CELL_W * 7; // 630px
 
 // ─── Page ───────────────────────────────────────────────────────────────────
 
@@ -58,24 +60,27 @@ export default function CalendarPage() {
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickTitle, setQuickTitle] = useState("");
   const [quickTime, setQuickTime] = useState("");
   const [quickType, setQuickType] = useState<"todo" | "google">("todo");
-
-  // Month animation
   const [monthAnimating, setMonthAnimating] = useState(false);
   const [animDir, setAnimDir] = useState<"left" | "right">("right");
 
+  // Selection
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [lastDeleted, setLastDeleted] = useState<CalendarEvent | null>(null);
+
   // Context menus
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; date: string } | null>(null);
-  const [evtCtxMenu, setEvtCtxMenu] = useState<{ x: number; y: number; event: CalendarEvent } | null>(null);
 
-  // Close context menus on Escape/scroll
+  // Clear selection on date change
+  useEffect(() => { setSelected(new Set()); }, [selectedDate]);
+
+  // Escape/scroll closes menus
   useEffect(() => {
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") { setCtxMenu(null); setEvtCtxMenu(null); } }
-    function onScroll() { setCtxMenu(null); setEvtCtxMenu(null); }
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setCtxMenu(null); }
+    function onScroll() { setCtxMenu(null); }
     window.addEventListener("keydown", onKey);
     window.addEventListener("scroll", onScroll, true);
     return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("scroll", onScroll, true); };
@@ -149,7 +154,7 @@ export default function CalendarPage() {
   const multiDayEvents = allEvents.filter((e) => e.endDate && e.endDate > e.startDate);
   function getEvents(dateStr: string) { return eventsByDate.get(dateStr) ?? []; }
 
-  const selectedEvents = selectedDate
+  const dayEvents = selectedDate
     ? getEvents(selectedDate).sort((a, b) => {
         if (a.time && !b.time) return -1; if (!a.time && b.time) return 1;
         if (a.time && b.time) return a.time.localeCompare(b.time); return 0;
@@ -167,23 +172,11 @@ export default function CalendarPage() {
 
   function toggleDate(dateStr: string) { setSelectedDate(selectedDate === dateStr ? null : dateStr); setShowQuickAdd(false); }
 
-  function goNextMonth() {
-    setAnimDir("right"); setMonthAnimating(true);
-    setTimeout(() => { setCurrentMonth(addMonths(currentMonth, 1)); setMonthAnimating(false); }, 150);
-  }
-  function goPrevMonth() {
-    setAnimDir("left"); setMonthAnimating(true);
-    setTimeout(() => { setCurrentMonth(subMonths(currentMonth, 1)); setMonthAnimating(false); }, 150);
-  }
-  function goToday() {
-    setAnimDir("right"); setMonthAnimating(true);
-    setTimeout(() => { setCurrentMonth(new Date()); setSelectedDate(format(new Date(), "yyyy-MM-dd")); setMonthAnimating(false); }, 150);
-  }
+  function goNextMonth() { setAnimDir("right"); setMonthAnimating(true); setTimeout(() => { setCurrentMonth(addMonths(currentMonth, 1)); setMonthAnimating(false); }, 150); }
+  function goPrevMonth() { setAnimDir("left"); setMonthAnimating(true); setTimeout(() => { setCurrentMonth(subMonths(currentMonth, 1)); setMonthAnimating(false); }, 150); }
+  function goToday() { setAnimDir("right"); setMonthAnimating(true); setTimeout(() => { setCurrentMonth(new Date()); setSelectedDate(format(new Date(), "yyyy-MM-dd")); setMonthAnimating(false); }, 150); }
 
-  function invalidateCal() {
-    queryClient.invalidateQueries({ queryKey: ["calendar"] });
-    queryClient.invalidateQueries({ queryKey: ["google-calendar"] });
-  }
+  function invalidateCal() { queryClient.invalidateQueries({ queryKey: ["calendar"] }); queryClient.invalidateQueries({ queryKey: ["google-calendar"] }); }
 
   async function handleQuickAdd() {
     if (!quickTitle.trim() || !selectedDate) return;
@@ -202,40 +195,81 @@ export default function CalendarPage() {
     setQuickTitle(""); setQuickTime(""); setShowQuickAdd(false); invalidateCal();
   }
 
-  async function handleEventDrop(e: React.DragEvent, targetDate: string) {
-    e.preventDefault(); setDragOverDate(null);
-    try {
-      const data = JSON.parse(e.dataTransfer.getData("application/json"));
-      if (data.originalDate === targetDate) return;
-      if (data.eventType === "todo") { await supabase.from("todos").update({ due_date: targetDate }).eq("id", data.eventId); toast.success("Todo moved"); }
-      else if (data.eventType === "google") { const res = await fetch("/api/calendar/google", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId: data.eventId, date: targetDate }) }); if (!res.ok) throw new Error(); toast.success("Event moved"); }
-      else if (data.eventType === "checklist") { await supabase.from("checklists").update({ due_date: targetDate }).eq("id", data.eventId); toast.success("Checklist moved"); }
-      invalidateCal();
-    } catch { toast.error("Failed to move event"); }
+  // Event actions
+  async function handleCompleteTodo(id: string, completed: boolean) {
+    await supabase.from("todos").update({ completed }).eq("id", id);
+    toast.success(completed ? "Completed" : "Reopened");
+    invalidateCal();
   }
 
-  // Context menu actions
-  async function handleToggleTodo(ev: CalendarEvent) {
-    await supabase.from("todos").update({ completed: !ev.completed }).eq("id", ev.id);
-    toast.success(ev.completed ? "Marked incomplete" : "Marked complete");
-    invalidateCal(); setEvtCtxMenu(null);
-  }
-  async function handleMoveTomorrow(ev: CalendarEvent) {
-    const tomorrow = format(addDays(new Date(ev.startDate), 1), "yyyy-MM-dd");
-    await supabase.from("todos").update({ due_date: tomorrow }).eq("id", ev.id);
-    toast.success("Moved to tomorrow"); invalidateCal(); setEvtCtxMenu(null);
-  }
-  async function handleDeleteTodo(ev: CalendarEvent) {
-    await supabase.from("todos").delete().eq("id", ev.id);
-    toast.success("Todo deleted"); invalidateCal(); setEvtCtxMenu(null);
+  const handleDeleteEvent = useCallback(async (ev: CalendarEvent) => {
+    setLastDeleted(ev);
+    if (ev.type === "todo") await supabase.from("todos").delete().eq("id", ev.id);
+    toast.success("Deleted", {
+      action: {
+        label: "Undo",
+        onClick: async () => {
+          if (ev.type === "todo") {
+            await supabase.from("todos").insert({ text: ev.title, due_date: ev.startDate, user_id: userId, completed: false });
+            toast.success("Restored");
+            invalidateCal();
+          }
+        },
+      },
+    });
+    invalidateCal();
+  }, [supabase, userId]);
+
+  // Bulk actions
+  async function handleBulkComplete() {
+    const ids = [...selected].filter((id) => dayEvents.find((e) => e.id === id && e.type === "todo"));
+    if (ids.length === 0) return;
+    await supabase.from("todos").update({ completed: true }).in("id", ids);
+    toast.success(`${ids.length} completed`);
+    setSelected(new Set()); invalidateCal();
   }
 
-  // ─── Quick add form (shared) ──────────────────────────────────────────────
+  async function handleBulkDelete() {
+    const ids = [...selected].filter((id) => dayEvents.find((e) => e.id === id && e.type === "todo"));
+    if (ids.length === 0) return;
+    await supabase.from("todos").delete().in("id", ids);
+    toast.success(`${ids.length} deleted`);
+    setSelected(new Set()); invalidateCal();
+  }
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.key === "Delete" || e.key === "Backspace") && selected.size > 0 && !(e.target as HTMLElement).closest("input,textarea")) {
+        e.preventDefault(); handleBulkDelete();
+      }
+      if (e.key === "Escape") {
+        if (selected.size > 0) setSelected(new Set());
+        else if (showQuickAdd) setShowQuickAdd(false);
+        else if (selectedDate) { setSelectedDate(null); setShowQuickAdd(false); }
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === "a" && selectedDate && !(e.target as HTMLElement).closest("input,textarea")) {
+        e.preventDefault(); setSelected(new Set(dayEvents.map((e) => e.id)));
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  function toggleSelect(id: string, shift: boolean) {
+    if (shift) {
+      setSelected((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+    } else {
+      setSelected(new Set([id]));
+    }
+  }
+
+  // ─── Quick Add Form ───────────────────────────────────────────────────────
 
   function QuickAddForm() {
     if (!showQuickAdd) return null;
     return (
-      <div data-quick-add className="animate-center-scale-in mb-4 rounded-xl border border-border/70 p-4 space-y-3 bg-card">
+      <div className="animate-center-scale-in mb-4 rounded-xl border border-border/70 p-4 space-y-3 bg-card">
         <Input placeholder="Add event or todo..." autoFocus value={quickTitle}
           onChange={(e) => setQuickTitle(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && quickTitle.trim()) handleQuickAdd(); if (e.key === "Escape") setShowQuickAdd(false); }}
@@ -258,111 +292,213 @@ export default function CalendarPage() {
     );
   }
 
+  // ─── Side Panel Content ───────────────────────────────────────────────────
+
+  function PanelContent() {
+    if (!selectedDate) return null;
+    const sd = new Date(selectedDate + "T00:00:00");
+    return (
+      <div className="animate-tab-enter">
+        <div className="flex items-center justify-between mb-6"
+          onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, date: selectedDate }); }}>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{format(sd, "EEEE")}</p>
+            <p className="text-4xl font-bold tracking-tight text-foreground mt-1">{format(sd, "d")}</p>
+            <p className="text-sm text-muted-foreground mt-0.5">{format(sd, "MMMM yyyy")}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="icon" className="h-8 w-8 rounded-full press-effect" onClick={() => setShowQuickAdd(!showQuickAdd)}><Plus className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full press-effect" onClick={() => { setSelectedDate(null); setShowQuickAdd(false); }}><X className="h-4 w-4" /></Button>
+          </div>
+        </div>
+        <div className="h-px bg-border/70 mb-4" />
+        <QuickAddForm />
+
+        {dayEvents.length === 0 && !showQuickAdd ? (
+          <div className="text-center py-12">
+            <div className="w-12 h-12 mx-auto rounded-full bg-muted/30 flex items-center justify-center mb-3"><CalendarDays className="h-5 w-5 text-muted-foreground/40" /></div>
+            <p className="text-sm text-muted-foreground">No events</p>
+            <p className="text-xs text-muted-foreground mt-1">Click + to add one</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {dayEvents.map((ev, i) => (
+              <div
+                key={ev.id}
+                onClick={(e) => toggleSelect(ev.id, e.shiftKey)}
+                onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, date: selectedDate }); }}
+                className={cn(
+                  "group flex items-start gap-3 rounded-xl border px-3.5 py-3 text-sm transition-all animate-stagger-in cursor-pointer",
+                  "hover:bg-muted/40",
+                  selected.has(ev.id) ? "bg-primary/[0.08] border-primary/30" : "border-border/70 hover:border-border",
+                  (ev.completed || ev.status === "completed") && "opacity-35",
+                )}
+                style={{ animationDelay: `${i * 50}ms`, animationFillMode: "both" }}
+              >
+                <div className="w-[3px] self-stretch rounded-full shrink-0 mt-0.5" style={{ background: ev.color }} />
+                <div className="flex-1 min-w-0">
+                  <p className={cn("font-medium text-[13px] leading-snug", (ev.completed || ev.status === "completed") && "line-through")}>{ev.title}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    {ev.time ? `${ev.time}${ev.endTime ? ` – ${ev.endTime}` : ""}` : "All day"}
+                    {" · "}{ev.type === "google" ? "Google Calendar" : ev.type === "todo" ? "Todo" : "Checklist"}
+                  </p>
+                </div>
+                {/* Action buttons — hover only */}
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  {ev.type === "todo" && (
+                    <>
+                      <button onClick={(e) => { e.stopPropagation(); handleCompleteTodo(ev.id, !ev.completed); }}
+                        className="h-6 w-6 rounded-full flex items-center justify-center hover:bg-muted transition-colors" title={ev.completed ? "Reopen" : "Complete"}>
+                        <Check className="h-3 w-3" />
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDeleteEvent(ev); }}
+                        className="h-6 w-6 rounded-full flex items-center justify-center hover:bg-destructive/10 hover:text-destructive transition-colors" title="Delete">
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </>
+                  )}
+                  {ev.type === "checklist" && (
+                    <button onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/checklists/${ev.id}`); }}
+                      className="h-6 w-6 rounded-full flex items-center justify-center hover:bg-muted transition-colors" title="Open">
+                      <ExternalLink className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Bulk action bar */}
+        {selected.size > 1 && (
+          <div className="sticky bottom-0 mt-4 p-3 bg-card border-t rounded-b-xl animate-slide-up">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">{selected.size} selected</span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="h-7 text-xs press-effect" onClick={handleBulkComplete}>
+                  <Check className="h-3 w-3 mr-1" /> Complete
+                </Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs text-destructive press-effect" onClick={handleBulkDelete}>
+                  <Trash2 className="h-3 w-3 mr-1" /> Delete
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!googleConnected && (
+          <div className="mt-8 rounded-2xl bg-muted/20 p-3.5 text-center animate-stagger-in" style={{ animationDelay: "400ms" }}>
+            <p className="text-[11px] text-muted-foreground">Connect Google Calendar in <a href="/dashboard/settings" className="text-primary hover:underline">Settings</a> to sync events</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
     <div className="-m-4 lg:-m-6 flex h-[calc(100vh-4rem)] overflow-hidden">
-      {/* ── Left: Calendar grid ── */}
-      <div className="flex-1 flex items-start justify-center overflow-hidden py-4" style={{ transition: `all 400ms ${EASE}` }}>
-        <div className="w-full px-4 flex flex-col h-full" style={{ maxWidth: panelOpen ? 600 : 720, transition: `max-width 400ms ${EASE}` }}>
-
+      {/* ── Left: Calendar ── */}
+      <div className={cn(
+        "flex-1 flex items-start overflow-y-auto py-4 transition-all duration-[400ms]",
+        panelOpen ? "justify-start pl-8" : "justify-center",
+      )} style={{ transitionTimingFunction: EASE }}>
+        <div>
           {/* Header */}
-          <div className="flex items-center justify-between mb-5 flex-shrink-0">
+          <div style={{ width: GRID_W }} className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full press-effect active:translate-x-[-2px]" onClick={goPrevMonth}>
                 <ChevronLeft className="h-5 w-5" />
               </Button>
-              <h1 className="text-2xl font-bold min-w-[180px] text-center tracking-tight">{format(currentMonth, "MMMM yyyy")}</h1>
+              <h1 className="text-2xl font-bold min-w-[160px] text-center tracking-tight">{format(currentMonth, "MMMM yyyy")}</h1>
               <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full press-effect active:translate-x-[2px]" onClick={goNextMonth}>
                 <ChevronRight className="h-5 w-5" />
               </Button>
             </div>
             <div className="flex items-center gap-4">
               <div className="hidden md:flex items-center gap-4 text-xs text-muted-foreground">
-                {googleConnected && <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full hover:scale-125 transition-transform" style={{ background: COLORS.google }} />Events</span>}
-                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full hover:scale-125 transition-transform" style={{ background: COLORS.todo }} />Todos</span>
-                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full hover:scale-125 transition-transform" style={{ background: COLORS.checklist }} />Checklists</span>
+                {googleConnected && <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS.google }} />Events</span>}
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS.todo }} />Todos</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS.checklist }} />Checklists</span>
               </div>
               <Button variant="outline" size="sm" className="h-8 text-xs font-medium press-effect rounded-lg" onClick={goToday}>Today</Button>
             </div>
           </div>
 
           {/* Weekday headers */}
-          <div className="grid grid-cols-7 mb-1 border-b border-border/70 flex-shrink-0">
+          <div style={{ width: GRID_W }} className="grid grid-cols-7 mb-1 border-b border-border/70">
             {WEEKDAYS.map((w) => (
               <div key={w} className="py-2 text-center text-[11px] font-medium text-muted-foreground uppercase tracking-widest">{w}</div>
             ))}
           </div>
 
-          {/* Day grid — fixed height fills available space, cells auto-distribute */}
-          <div className="flex-1 min-h-0">
-            <div className={cn(
-              "grid grid-cols-7 h-full rounded-xl border border-border/70 overflow-hidden transition-all duration-200",
+          {/* Grid — fixed cell size */}
+          <div
+            style={{ width: GRID_W }}
+            className={cn(
+              "grid grid-cols-7 rounded-xl border border-border/70 overflow-hidden transition-all duration-200",
               monthAnimating && animDir === "right" && "opacity-0 -translate-x-3",
               monthAnimating && animDir === "left" && "opacity-0 translate-x-3",
               !monthAnimating && "opacity-100 translate-x-0",
-            )}>
-              {days.map((day) => {
-                const dateStr = format(day, "yyyy-MM-dd");
-                const dayEvs = getEvents(dateStr);
-                const singleDay = dayEvs.filter((e) => !e.endDate || e.endDate === e.startDate);
-                const inMonth = isSameMonth(day, currentMonth);
-                const today = isToday(day);
-                const isSelected = selectedDate === dateStr;
-                const isDragOver = dragOverDate === dateStr;
+            )}
+          >
+            {days.map((day) => {
+              const dateStr = format(day, "yyyy-MM-dd");
+              const dayEvs = getEvents(dateStr);
+              const singleDay = dayEvs.filter((e) => !e.endDate || e.endDate === e.startDate);
+              const inMonth = isSameMonth(day, currentMonth);
+              const today = isToday(day);
+              const isSelected = selectedDate === dateStr;
 
-                const dots = singleDay.slice(0, 5).map((e) => e.color);
-                const overflow = singleDay.length > 5 ? singleDay.length - 5 : 0;
-                const bars = multiDayEvents.filter((e) => { const s = new Date(e.startDate); const end = new Date(e.endDate!); return day >= s && day <= end; });
+              const dots = singleDay.slice(0, 5).map((e) => e.color);
+              const overflow = singleDay.length > 5 ? singleDay.length - 5 : 0;
+              const bars = multiDayEvents.filter((e) => { const s = new Date(e.startDate); const end = new Date(e.endDate!); return day >= s && day <= end; });
 
-                return (
-                  <button
-                    key={dateStr}
-                    type="button"
-                    className={cn(
-                      "relative flex flex-col p-2 text-left border-b border-r border-border/70 transition-all duration-200 group active:scale-[0.97]",
-                      inMonth ? "bg-card" : "bg-card opacity-50",
-                      isSelected && "bg-primary/[0.08]",
-                      !isSelected && inMonth && "hover:bg-muted/40",
-                      isDragOver && "bg-primary/[0.12] z-10",
-                    )}
-                    onClick={() => toggleDate(dateStr)}
-                    onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, date: dateStr }); }}
-                    onDragOver={(e) => { e.preventDefault(); setDragOverDate(dateStr); }}
-                    onDragLeave={() => setDragOverDate(null)}
-                    onDrop={(e) => handleEventDrop(e, dateStr)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className={cn(
-                        "text-sm inline-flex items-center justify-center transition-all",
-                        today && "bg-primary text-primary-foreground w-7 h-7 rounded-full font-semibold text-xs",
-                        !today && inMonth && "font-medium text-foreground/80",
-                        !inMonth && "text-muted-foreground",
-                      )}>
-                        {format(day, "d")}
-                      </span>
-                      <span className="opacity-0 group-hover:opacity-60 transition-opacity">
-                        <Plus className="h-3.5 w-3.5 text-muted-foreground" />
-                      </span>
+              return (
+                <button
+                  key={dateStr}
+                  type="button"
+                  style={{ width: CELL_W, height: CELL_H }}
+                  className={cn(
+                    "relative flex flex-col p-1.5 text-left border-b border-r border-border/70 transition-all duration-200 group active:scale-[0.97]",
+                    inMonth ? "bg-card" : "bg-card opacity-50",
+                    isSelected && "bg-primary/[0.08]",
+                    !isSelected && inMonth && "hover:bg-muted/40",
+                  )}
+                  onClick={() => toggleDate(dateStr)}
+                  onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, date: dateStr }); }}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className={cn(
+                      "text-xs inline-flex items-center justify-center",
+                      today && "bg-primary text-primary-foreground w-6 h-6 rounded-full font-semibold text-[10px]",
+                      !today && inMonth && "font-medium text-foreground/80",
+                      !inMonth && "text-muted-foreground",
+                    )}>
+                      {format(day, "d")}
+                    </span>
+                    <span className="opacity-0 group-hover:opacity-60 transition-opacity">
+                      <Plus className="h-3 w-3 text-muted-foreground" />
+                    </span>
+                  </div>
+                  {dots.length > 0 && (
+                    <div className="flex gap-1 mt-1 flex-wrap">
+                      {dots.map((c, i) => <span key={i} className="w-[6px] h-[6px] rounded-full" style={{ background: c }} />)}
+                      {overflow > 0 && <span className="text-[8px] text-muted-foreground">+{overflow}</span>}
                     </div>
-                    {dots.length > 0 && (
-                      <div className="flex gap-1.5 mt-2 flex-wrap">
-                        {dots.map((c, i) => <span key={i} className="w-2 h-2 rounded-full transition-transform group-hover:scale-125" style={{ background: c }} />)}
-                        {overflow > 0 && <span className="text-[10px] text-muted-foreground font-medium">+{overflow}</span>}
-                      </div>
-                    )}
-                    {bars.length > 0 && (
-                      <div className="absolute bottom-1 left-1 right-1 space-y-[2px]">
-                        {bars.slice(0, 2).map((ev) => {
-                          const isFirst = dateStr === ev.startDate; const isLast = dateStr === ev.endDate;
-                          return <div key={ev.id} className={cn("h-[3px]", isFirst && "rounded-l-full", isLast && "rounded-r-full", !isFirst && "ml-[-1px]", !isLast && "mr-[-1px]")} style={{ background: ev.color }} title={ev.title} />;
-                        })}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+                  )}
+                  {bars.length > 0 && (
+                    <div className="absolute bottom-0.5 left-0.5 right-0.5 space-y-[2px]">
+                      {bars.slice(0, 2).map((ev) => {
+                        const isFirst = dateStr === ev.startDate; const isLast = dateStr === ev.endDate;
+                        return <div key={ev.id} className={cn("h-[3px]", isFirst && "rounded-l-full", isLast && "rounded-r-full", !isFirst && "ml-[-1px]", !isLast && "mr-[-1px]")} style={{ background: ev.color }} title={ev.title} />;
+                      })}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -373,72 +509,18 @@ export default function CalendarPage() {
         style={{ width: panelOpen ? 340 : 0, opacity: panelOpen ? 1 : 0, transition: `all 400ms ${EASE}` }}
       >
         <div className="p-5 min-w-[340px]">
-          {selectedDate && (
-            <div className="animate-tab-enter">
-              <div
-                className="flex items-center justify-between mb-6"
-                onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, date: selectedDate! }); }}
-              >
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{format(new Date(selectedDate + "T00:00:00"), "EEEE")}</p>
-                  <p className="text-4xl font-bold tracking-tight text-foreground mt-1">{format(new Date(selectedDate + "T00:00:00"), "d")}</p>
-                  <p className="text-sm text-muted-foreground mt-0.5">{format(new Date(selectedDate + "T00:00:00"), "MMMM yyyy")}</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="icon" className="h-8 w-8 rounded-full press-effect" onClick={() => setShowQuickAdd(!showQuickAdd)}><Plus className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full press-effect" onClick={() => { setSelectedDate(null); setShowQuickAdd(false); }}><X className="h-4 w-4" /></Button>
-                </div>
-              </div>
-              <div className="h-px bg-border/70 mb-4" />
-              <QuickAddForm />
-              {selectedEvents.length === 0 && !showQuickAdd ? (
-                <div className="text-center py-12">
-                  <div className="w-12 h-12 mx-auto rounded-full bg-muted/30 flex items-center justify-center mb-3"><CalendarDays className="h-5 w-5 text-muted-foreground/40" /></div>
-                  <p className="text-sm text-muted-foreground">No events</p>
-                  <p className="text-xs text-muted-foreground mt-1">Click + to add one</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {selectedEvents.map((ev, i) => <EventCard key={ev.id} event={ev} index={i} onContextMenu={(e) => { e.preventDefault(); setEvtCtxMenu({ x: e.clientX, y: e.clientY, event: ev }); }} />)}
-                </div>
-              )}
-              {!googleConnected && (
-                <div className="mt-8 rounded-2xl bg-muted/20 p-3.5 text-center animate-stagger-in" style={{ animationDelay: "400ms" }}>
-                  <p className="text-[11px] text-muted-foreground">Connect Google Calendar in <a href="/dashboard/settings" className="text-primary hover:underline">Settings</a> to sync events</p>
-                </div>
-              )}
-            </div>
-          )}
+          <PanelContent />
         </div>
       </div>
 
       {/* ── Mobile: bottom sheet ── */}
       {selectedDate && (
-        <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 max-h-[60vh] overflow-y-auto scroll-smooth rounded-t-2xl border-t bg-card shadow-lg animate-slide-up">
-          <div className="p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{format(new Date(selectedDate + "T00:00:00"), "EEEE")}</p>
-                <p className="text-2xl font-bold">{format(new Date(selectedDate + "T00:00:00"), "d MMMM")}</p>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="icon" className="h-8 w-8 rounded-full press-effect" onClick={() => setShowQuickAdd(!showQuickAdd)}><Plus className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full press-effect" onClick={() => { setSelectedDate(null); setShowQuickAdd(false); }}><X className="h-4 w-4" /></Button>
-              </div>
-            </div>
-            <QuickAddForm />
-            {selectedEvents.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">No events for this day</p>
-            ) : (
-              <div className="space-y-2">
-                {selectedEvents.map((ev, i) => <EventCard key={ev.id} event={ev} index={i} onContextMenu={(e) => { e.preventDefault(); setEvtCtxMenu({ x: e.clientX, y: e.clientY, event: ev }); }} />)}
-              </div>
-            )}
-          </div>
+        <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 max-h-[60vh] overflow-y-auto scroll-smooth rounded-t-2xl border-t bg-card shadow-lg animate-slide-up p-5">
+          <PanelContent />
         </div>
       )}
 
-      {/* ── Date context menu ── */}
+      {/* ── Context menu ── */}
       {ctxMenu && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setCtxMenu(null)} />
@@ -456,7 +538,7 @@ export default function CalendarPage() {
               onClick={() => { goToday(); setCtxMenu(null); }}>
               <Clock className="h-3.5 w-3.5" /> Go to today
             </button>
-            {selectedDate && (
+            {panelOpen && (
               <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
                 onClick={() => { setSelectedDate(null); setShowQuickAdd(false); setCtxMenu(null); }}>
                 <X className="h-3.5 w-3.5" /> Close panel
@@ -465,86 +547,6 @@ export default function CalendarPage() {
           </div>
         </>
       )}
-
-      {/* ── Event context menu ── */}
-      {evtCtxMenu && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setEvtCtxMenu(null)} />
-          <div className="fixed z-50 w-48 rounded-xl border border-border/70 bg-card shadow-lg p-1 animate-center-scale-in"
-            style={{ left: Math.min(evtCtxMenu.x, typeof window !== "undefined" ? window.innerWidth - 210 : 999), top: Math.min(evtCtxMenu.y, typeof window !== "undefined" ? window.innerHeight - 200 : 999) }}>
-            {evtCtxMenu.event.type === "todo" && (
-              <>
-                <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/50 transition-colors" onClick={() => handleToggleTodo(evtCtxMenu.event)}>
-                  <CheckCircle2 className="h-3.5 w-3.5" /> {evtCtxMenu.event.completed ? "Mark incomplete" : "Mark complete"}
-                </button>
-                <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/50 transition-colors" onClick={() => handleMoveTomorrow(evtCtxMenu.event)}>
-                  <ArrowRight className="h-3.5 w-3.5" /> Move to tomorrow
-                </button>
-                <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/50 transition-colors text-destructive" onClick={() => handleDeleteTodo(evtCtxMenu.event)}>
-                  <Trash2 className="h-3.5 w-3.5" /> Delete
-                </button>
-              </>
-            )}
-            {evtCtxMenu.event.type === "checklist" && (
-              <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-                onClick={() => { router.push(`/dashboard/checklists/${evtCtxMenu.event.id}`); setEvtCtxMenu(null); }}>
-                <ExternalLink className="h-3.5 w-3.5" /> Open checklist
-              </button>
-            )}
-            {evtCtxMenu.event.type === "google" && (
-              <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-                onClick={() => { window.open(`https://calendar.google.com`, "_blank"); setEvtCtxMenu(null); }}>
-                <ExternalLink className="h-3.5 w-3.5" /> Open in Google Calendar
-              </button>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-// ─── Event Card ─────────────────────────────────────────────────────────────
-
-function EventCard({ event: ev, index, onContextMenu }: { event: CalendarEvent; index: number; onContextMenu: (e: React.MouseEvent) => void }) {
-  const isDraggable = ev.type !== "checklist";
-  return (
-    <div
-      draggable={isDraggable}
-      onDragStart={(e) => {
-        if (!isDraggable) { e.preventDefault(); return; }
-        // Custom ghost card
-        const ghost = document.createElement("div");
-        ghost.className = "rounded-lg border bg-card shadow-lg px-3 py-2 text-xs font-medium";
-        ghost.style.cssText = "position:absolute;top:-1000px;width:160px;pointer-events:none;";
-        ghost.innerHTML = `<div style="display:flex;align-items:center;gap:6px"><div style="width:3px;height:16px;border-radius:2px;background:${ev.color}"></div>${ev.title}</div>`;
-        document.body.appendChild(ghost);
-        e.dataTransfer.setDragImage(ghost, 80, 16);
-        e.dataTransfer.setData("application/json", JSON.stringify({ eventId: ev.id, eventType: ev.type, originalDate: ev.startDate }));
-        e.dataTransfer.effectAllowed = "move";
-        requestAnimationFrame(() => { try { document.body.removeChild(ghost); } catch {} });
-        const card = e.currentTarget as HTMLElement;
-        setTimeout(() => { card.style.opacity = "0.3"; card.style.transform = "scale(0.95)"; }, 0);
-      }}
-      onDragEnd={(e) => { const card = e.currentTarget as HTMLElement; card.style.opacity = "1"; card.style.transform = "scale(1)"; }}
-      onContextMenu={onContextMenu}
-      className={cn(
-        "flex items-start gap-3 rounded-xl border border-border/70 px-3.5 py-3 text-sm transition-all animate-stagger-in",
-        "hover:bg-muted/40 hover:border-border",
-        isDraggable ? "cursor-grab active:cursor-grabbing" : "cursor-default",
-        (ev.completed || ev.status === "completed") && "opacity-35",
-      )}
-      style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}
-    >
-      <div className="w-[3px] self-stretch rounded-full shrink-0 mt-0.5" style={{ background: ev.color }} />
-      <div className="flex-1 min-w-0">
-        <p className={cn("font-medium text-[13px] leading-snug", (ev.completed || ev.status === "completed") && "line-through")}>{ev.title}</p>
-        <p className="text-[11px] text-muted-foreground mt-1">
-          {ev.time ? `${ev.time}${ev.endTime ? ` – ${ev.endTime}` : ""}` : "All day"}
-          {" · "}
-          {ev.type === "google" ? "Google Calendar" : ev.type === "todo" ? "Todo" : "Checklist"}
-        </p>
-      </div>
     </div>
   );
 }

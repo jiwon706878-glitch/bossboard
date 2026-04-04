@@ -10,7 +10,6 @@ import { useBusinessStore } from "@/hooks/use-business";
 import { fetchCurrentUser, fetchProfile, fetchCalendarEvents, userKeys, calendarKeys } from "@/lib/queries";
 import { pushUndo } from "@/components/dashboard/global-shortcuts";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -96,14 +95,15 @@ export default function CalendarPage() {
     return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("scroll", onScroll, true); };
   }, []);
 
-  // Drag position tracking
+  // Drag position tracking — use document dragover for reliable coords
   useEffect(() => {
     if (!draggedEvent) return;
-    function onDrag(e: DragEvent) { if (e.clientX || e.clientY) setDragPos({ x: e.clientX, y: e.clientY }); }
-    function onDragOver(e: DragEvent) { e.preventDefault(); }
-    window.addEventListener("drag", onDrag);
-    window.addEventListener("dragover", onDragOver);
-    return () => { window.removeEventListener("drag", onDrag); window.removeEventListener("dragover", onDragOver); };
+    function handleDragOver(e: DragEvent) {
+      e.preventDefault();
+      setDragPos({ x: e.clientX, y: e.clientY });
+    }
+    document.addEventListener("dragover", handleDragOver);
+    return () => document.removeEventListener("dragover", handleDragOver);
   }, [draggedEvent]);
 
   // ─── Queries ──────────────────────────────────────────────────────────────
@@ -191,18 +191,23 @@ export default function CalendarPage() {
   // ─── Handlers ─────────────────────────────────────────────────────────────
 
   function toggleDate(dateStr: string) { setSelectedDate(selectedDate === dateStr ? null : dateStr); setShowQuickAdd(false); }
-  function goNextMonth() { setAnimDir("right"); setMonthAnimating(true); setTimeout(() => { setCurrentMonth(addMonths(currentMonth, 1)); setMonthAnimating(false); }, 150); }
-  function goPrevMonth() { setAnimDir("left"); setMonthAnimating(true); setTimeout(() => { setCurrentMonth(subMonths(currentMonth, 1)); setMonthAnimating(false); }, 150); }
+  function goNextMonth() { setSelectedDate(null); setSelected(new Set()); setCtxMenu(null); setAnimDir("right"); setMonthAnimating(true); setTimeout(() => { setCurrentMonth(addMonths(currentMonth, 1)); setMonthAnimating(false); }, 150); }
+  function goPrevMonth() { setSelectedDate(null); setSelected(new Set()); setCtxMenu(null); setAnimDir("left"); setMonthAnimating(true); setTimeout(() => { setCurrentMonth(subMonths(currentMonth, 1)); setMonthAnimating(false); }, 150); }
   function goToday() { setAnimDir("right"); setMonthAnimating(true); setTimeout(() => { setCurrentMonth(new Date()); setSelectedDate(format(new Date(), "yyyy-MM-dd")); setMonthAnimating(false); }, 150); }
 
   function invalidateCal() { queryClient.invalidateQueries({ queryKey: ["calendar"] }); queryClient.invalidateQueries({ queryKey: ["google-calendar"] }); }
 
-  async function handleQuickAdd() {
-    if (!quickTitle.trim() || !selectedDate) return;
-    const { error } = await supabase.from("todos").insert({ user_id: userId, text: quickTitle.trim(), due_date: selectedDate, completed: false });
+  const quickAddRef = useRef<HTMLInputElement>(null);
+
+  async function handleQuickAdd(titleOverride?: string) {
+    const title = titleOverride || quickTitle;
+    if (!title.trim() || !selectedDate || !userId) return;
+    const { error } = await supabase.from("todos").insert({ user_id: userId, text: title.trim(), due_date: selectedDate, completed: false });
     if (error) { toast.error("Failed to create todo"); return; }
-    toast.success("Todo created");
-    setQuickTitle(""); setQuickTime(""); setShowQuickAdd(false); invalidateCal();
+    toast.success("Todo added");
+    setQuickTitle(""); setQuickTime(""); setShowQuickAdd(false);
+    if (quickAddRef.current) quickAddRef.current.value = "";
+    invalidateCal();
   }
 
   async function handleCompleteTodo(id: string, completed: boolean) {
@@ -263,14 +268,14 @@ export default function CalendarPage() {
     const emptyImg = new Image();
     emptyImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=";
     e.dataTransfer.setDragImage(emptyImg, 0, 0);
-    e.dataTransfer.setData("application/json", JSON.stringify({ eventId: ev.id, eventType: ev.type, originalDate: ev.startDate }));
+    e.dataTransfer.setData("text/plain", JSON.stringify({ eventId: ev.id, eventType: ev.type, originalDate: ev.startDate }));
     setDraggedEvent(ev);
   }
 
   async function handleEventDrop(e: React.DragEvent, targetDate: string) {
     e.preventDefault(); setDragOverDate(null); setDraggedEvent(null);
     try {
-      const data = JSON.parse(e.dataTransfer.getData("application/json"));
+      const data = JSON.parse(e.dataTransfer.getData("text/plain"));
       if (data.originalDate === targetDate) return;
       if (data.eventType === "todo") { await supabase.from("todos").update({ due_date: targetDate }).eq("id", data.eventId); toast.success("Todo moved"); }
       else if (data.eventType === "google") {
@@ -321,22 +326,35 @@ export default function CalendarPage() {
   function QuickAddForm() {
     if (!showQuickAdd) return null;
     return (
-      <div className="animate-center-scale-in mb-4 rounded-xl border border-border/70 p-3 space-y-2 bg-card">
-        <Input
+      <div onClick={(e) => e.stopPropagation()} className="animate-center-scale-in mb-4 rounded-xl border border-border/70 p-3 space-y-2 bg-card">
+        <input
+          ref={quickAddRef}
+          type="text"
+          className="flex h-9 w-full rounded-lg border border-border/70 bg-transparent px-3 py-1 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           placeholder="Add todo..."
           autoFocus
-          value={quickTitle}
           onCompositionStart={() => setIsComposing(true)}
           onCompositionEnd={(e) => { setIsComposing(false); setQuickTitle((e.target as HTMLInputElement).value); }}
           onChange={(e) => { if (!isComposing) setQuickTitle(e.target.value); }}
-          onKeyDown={(e) => { if (e.key === "Enter" && !isComposing && quickTitle.trim()) handleQuickAdd(); if (e.key === "Escape") setShowQuickAdd(false); }}
-          className="h-9 text-sm rounded-lg"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !isComposing) {
+              const val = (e.target as HTMLInputElement).value.trim();
+              if (val) handleQuickAdd(val);
+            }
+            if (e.key === "Escape") setShowQuickAdd(false);
+          }}
         />
         <div className="flex items-center justify-between">
-          <Input type="time" value={quickTime} onChange={(e) => setQuickTime(e.target.value)} className="w-28 h-8 text-xs rounded-lg" />
+          <input
+            type="text"
+            className="flex h-8 w-28 rounded-lg border border-border/70 bg-transparent px-3 py-1 text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            placeholder="14:00"
+            value={quickTime}
+            onChange={(e) => setQuickTime(e.target.value)}
+          />
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowQuickAdd(false)}>Cancel</Button>
-            <Button size="sm" className="h-7 text-xs press-effect" onClick={handleQuickAdd} disabled={!quickTitle.trim()}>Add</Button>
+            <Button size="sm" className="h-7 text-xs press-effect" onClick={() => handleQuickAdd()}>Add</Button>
           </div>
         </div>
       </div>
@@ -380,14 +398,13 @@ export default function CalendarPage() {
                 draggable={ev.type !== "checklist"}
                 onDragStart={(e) => handleDragStart(e, ev)}
                 onDragEnd={() => setDraggedEvent(null)}
-                onClick={(e) => handleEventClick(e, ev, i)}
+                onClick={(e) => { e.stopPropagation(); handleEventClick(e, ev, i); }}
                 className={cn(
                   "group flex items-start gap-3 rounded-xl border px-3.5 py-3 text-sm transition-all",
-                  "hover:bg-muted/40",
                   ev.type !== "checklist" ? "cursor-grab active:cursor-grabbing" : "cursor-default",
-                  selected.has(ev.id) ? "bg-primary/[0.08] border-primary/30" : "border-border/70 hover:border-border",
+                  selected.has(ev.id) ? "bg-primary/[0.08] border-primary/30 hover:bg-primary/[0.12]" : "border-border/70 hover:bg-muted/30 hover:border-border",
                   (ev.completed || ev.status === "completed") && "opacity-35",
-                  draggedEvent?.id === ev.id && "opacity-0 h-0 overflow-hidden py-0 my-0 border-0",
+                  draggedEvent?.id === ev.id && "opacity-30 pointer-events-none",
                 )}
               >
                 <div className="w-[3px] self-stretch rounded-full shrink-0 mt-0.5" style={{ background: ev.color }} />
@@ -494,7 +511,7 @@ export default function CalendarPage() {
                     isDragOver && "bg-primary/[0.12]",
                   )}
                   onClick={() => toggleDate(dateStr)}
-                  onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, date: dateStr }); }}
+                  onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, date: dateStr }); }}
                   onDragOver={(e) => { e.preventDefault(); setDragOverDate(dateStr); }}
                   onDragLeave={() => setDragOverDate(null)}
                   onDrop={(e) => handleEventDrop(e, dateStr)}

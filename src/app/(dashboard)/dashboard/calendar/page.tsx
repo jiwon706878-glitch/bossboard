@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
@@ -11,11 +11,10 @@ import { fetchCurrentUser, fetchProfile, fetchCalendarEvents, userKeys, calendar
 import { pushUndo } from "@/components/dashboard/global-shortcuts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import {
-  ChevronLeft, ChevronRight, Plus, X, CalendarDays, Clock, Check, Trash2,
+  ChevronLeft, ChevronRight, Plus, X, CalendarDays, Check, Trash2, Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -61,7 +60,6 @@ export default function CalendarPage() {
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickTitle, setQuickTitle] = useState("");
   const [quickTime, setQuickTime] = useState("");
-  const [quickType, setQuickType] = useState<"todo" | "google">("todo");
   const [monthAnimating, setMonthAnimating] = useState(false);
   const [animDir, setAnimDir] = useState<"left" | "right">("right");
 
@@ -76,6 +74,15 @@ export default function CalendarPage() {
 
   // Context menu
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; date: string } | null>(null);
+
+  // Panel animation control — only animate on date change, not every re-render
+  const panelFirstRender = useRef(true);
+  useEffect(() => {
+    if (selectedDate) { panelFirstRender.current = true; requestAnimationFrame(() => { panelFirstRender.current = false; }); }
+  }, [selectedDate]);
+
+  // IME composition state for Korean input
+  const [isComposing, setIsComposing] = useState(false);
 
   // Clear selection on date change
   useEffect(() => { setSelected(new Set()); setAnchor(null); }, [selectedDate]);
@@ -192,18 +199,9 @@ export default function CalendarPage() {
 
   async function handleQuickAdd() {
     if (!quickTitle.trim() || !selectedDate) return;
-    if (quickType === "todo") {
-      const { error } = await supabase.from("todos").insert({ user_id: userId, text: quickTitle.trim(), due_date: selectedDate, completed: false });
-      if (error) { toast.error("Failed to create todo"); return; }
-      toast.success("Todo created");
-    } else {
-      if (!googleConnected) { toast.error("Connect Google Calendar in Settings first"); return; }
-      const start = quickTime ? { dateTime: `${selectedDate}T${quickTime}:00` } : { date: selectedDate };
-      const end = quickTime ? { dateTime: `${selectedDate}T${addHour(quickTime)}:00` } : { date: format(addDays(new Date(selectedDate), 1), "yyyy-MM-dd") };
-      const res = await fetch("/api/calendar/google", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ summary: quickTitle.trim(), start, end }) });
-      if (!res.ok) { toast.error("Failed to create event"); return; }
-      toast.success("Event created");
-    }
+    const { error } = await supabase.from("todos").insert({ user_id: userId, text: quickTitle.trim(), due_date: selectedDate, completed: false });
+    if (error) { toast.error("Failed to create todo"); return; }
+    toast.success("Todo created");
     setQuickTitle(""); setQuickTime(""); setShowQuickAdd(false); invalidateCal();
   }
 
@@ -323,24 +321,23 @@ export default function CalendarPage() {
   function QuickAddForm() {
     if (!showQuickAdd) return null;
     return (
-      <div className="animate-center-scale-in mb-4 rounded-xl border border-border/70 p-4 space-y-3 bg-card">
-        <Input placeholder="Add event or todo..." autoFocus value={quickTitle}
-          onChange={(e) => setQuickTitle(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && quickTitle.trim()) handleQuickAdd(); if (e.key === "Escape") setShowQuickAdd(false); }}
-          className="h-9 text-sm rounded-lg" />
-        <div className="flex gap-2">
-          <Input type="time" value={quickTime} onChange={(e) => setQuickTime(e.target.value)} className="w-28 h-9 text-xs rounded-lg" />
-          <Select value={quickType} onValueChange={(v) => setQuickType(v as "todo" | "google")}>
-            <SelectTrigger className="flex-1 h-9 text-xs rounded-lg"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todo">Todo</SelectItem>
-              {googleConnected && <SelectItem value="google">Event</SelectItem>}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" size="sm" className="h-7 text-xs rounded-lg" onClick={() => setShowQuickAdd(false)}>Cancel</Button>
-          <Button size="sm" className="h-7 text-xs press-effect rounded-lg" onClick={handleQuickAdd} disabled={!quickTitle.trim()}>Add</Button>
+      <div className="animate-center-scale-in mb-4 rounded-xl border border-border/70 p-3 space-y-2 bg-card">
+        <Input
+          placeholder="Add todo..."
+          autoFocus
+          value={quickTitle}
+          onCompositionStart={() => setIsComposing(true)}
+          onCompositionEnd={(e) => { setIsComposing(false); setQuickTitle((e.target as HTMLInputElement).value); }}
+          onChange={(e) => { if (!isComposing) setQuickTitle(e.target.value); }}
+          onKeyDown={(e) => { if (e.key === "Enter" && !isComposing && quickTitle.trim()) handleQuickAdd(); if (e.key === "Escape") setShowQuickAdd(false); }}
+          className="h-9 text-sm rounded-lg"
+        />
+        <div className="flex items-center justify-between">
+          <Input type="time" value={quickTime} onChange={(e) => setQuickTime(e.target.value)} className="w-28 h-8 text-xs rounded-lg" />
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowQuickAdd(false)}>Cancel</Button>
+            <Button size="sm" className="h-7 text-xs press-effect" onClick={handleQuickAdd} disabled={!quickTitle.trim()}>Add</Button>
+          </div>
         </div>
       </div>
     );
@@ -351,8 +348,9 @@ export default function CalendarPage() {
   function PanelContent() {
     if (!selectedDate) return null;
     const sd = new Date(selectedDate + "T00:00:00");
+    const isFirstRender = panelFirstRender.current;
     return (
-      <div className="animate-tab-enter">
+      <div className={isFirstRender ? "animate-tab-enter" : ""}>
         <div className="flex items-center justify-between mb-6"
           onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, date: selectedDate }); }}>
           <div>
@@ -384,14 +382,13 @@ export default function CalendarPage() {
                 onDragEnd={() => setDraggedEvent(null)}
                 onClick={(e) => handleEventClick(e, ev, i)}
                 className={cn(
-                  "group flex items-start gap-3 rounded-xl border px-3.5 py-3 text-sm transition-all animate-stagger-in",
+                  "group flex items-start gap-3 rounded-xl border px-3.5 py-3 text-sm transition-all",
                   "hover:bg-muted/40",
                   ev.type !== "checklist" ? "cursor-grab active:cursor-grabbing" : "cursor-default",
                   selected.has(ev.id) ? "bg-primary/[0.08] border-primary/30" : "border-border/70 hover:border-border",
                   (ev.completed || ev.status === "completed") && "opacity-35",
                   draggedEvent?.id === ev.id && "opacity-0 h-0 overflow-hidden py-0 my-0 border-0",
                 )}
-                style={{ animationDelay: `${i * 50}ms`, animationFillMode: "both" }}
               >
                 <div className="w-[3px] self-stretch rounded-full shrink-0 mt-0.5" style={{ background: ev.color }} />
                 <div className="flex-1 min-w-0">
@@ -404,12 +401,9 @@ export default function CalendarPage() {
                 {ev.type === "todo" && (
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                     <button onClick={(e) => { e.stopPropagation(); handleCompleteTodo(ev.id, !ev.completed); }}
-                      className="h-6 w-6 rounded-full flex items-center justify-center hover:bg-muted transition-colors" title={ev.completed ? "Reopen" : "Complete"}>
+                      className={cn("h-6 w-6 rounded-full flex items-center justify-center transition-colors", ev.completed ? "bg-primary/20 text-primary" : "hover:bg-muted")}
+                      title={ev.completed ? "Mark incomplete" : "Mark complete"}>
                       <Check className="h-3 w-3" />
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDeleteEvent(ev); }}
-                      className="h-6 w-6 rounded-full flex items-center justify-center hover:bg-destructive/10 hover:text-destructive transition-colors" title="Delete">
-                      <Trash2 className="h-3 w-3" />
                     </button>
                   </div>
                 )}
@@ -419,7 +413,7 @@ export default function CalendarPage() {
         )}
 
         {selected.size > 1 && (
-          <div className="sticky bottom-0 mt-4 p-3 bg-card border-t rounded-b-xl animate-slide-up">
+          <div className="sticky bottom-0 mt-4 p-3 bg-card border-t rounded-b-xl">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">{selected.size} selected</span>
               <div className="flex gap-2">
@@ -431,7 +425,7 @@ export default function CalendarPage() {
         )}
 
         {!googleConnected && (
-          <div className="mt-8 rounded-2xl bg-muted/20 p-3.5 text-center animate-stagger-in" style={{ animationDelay: "400ms" }}>
+          <div className="mt-8 rounded-2xl bg-muted/20 p-3.5 text-center">
             <p className="text-[11px] text-muted-foreground">Connect Google Calendar in <a href="/dashboard/settings" className="text-primary hover:underline">Settings</a> to sync events</p>
           </div>
         )}
@@ -444,10 +438,10 @@ export default function CalendarPage() {
   return (
     <div className="-m-4 lg:-m-6 flex h-[calc(100vh-4rem)] overflow-hidden">
       {/* ── Left: Calendar ── */}
-      <div className="flex-1 flex items-start justify-center overflow-y-auto py-4">
+      <div className="flex-1 flex overflow-y-auto py-4">
         <div
-          className="transition-transform duration-[400ms]"
-          style={{ transform: panelOpen ? "translateX(-170px)" : "translateX(0)", transitionTimingFunction: EASE }}
+          className="transition-all duration-[400ms]"
+          style={{ width: GRID_W, flexShrink: 0, marginLeft: panelOpen ? "32px" : "auto", marginRight: "auto", transitionTimingFunction: EASE }}
         >
           {/* Header */}
           <div style={{ width: GRID_W }} className="flex items-center justify-between mb-5">

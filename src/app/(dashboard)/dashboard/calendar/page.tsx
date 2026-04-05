@@ -86,14 +86,20 @@ export default function CalendarPage() {
   // Clear selection on date change
   useEffect(() => { setSelected(new Set()); setAnchor(null); }, [selectedDate]);
 
-  // Close context menus
+  // Close context menus on Escape, scroll, or click outside
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") setCtxMenu(null); }
     function onScroll() { setCtxMenu(null); }
+    function onMouseDown(e: MouseEvent) {
+      // Close context menu if clicking outside it
+      const target = e.target as HTMLElement;
+      if (ctxMenu && !target.closest("[data-ctx-menu]")) setCtxMenu(null);
+    }
     window.addEventListener("keydown", onKey);
     window.addEventListener("scroll", onScroll, true);
-    return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("scroll", onScroll, true); };
-  }, []);
+    document.addEventListener("mousedown", onMouseDown);
+    return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("scroll", onScroll, true); document.removeEventListener("mousedown", onMouseDown); };
+  }, [ctxMenu]);
 
   // Drag position tracking — use document dragover for reliable coords
   useEffect(() => {
@@ -513,7 +519,7 @@ export default function CalendarPage() {
                   onClick={() => toggleDate(dateStr)}
                   onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, date: dateStr }); }}
                   onDragOver={(e) => { e.preventDefault(); setDragOverDate(dateStr); }}
-                  onDragLeave={() => setDragOverDate(null)}
+                  onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverDate(null); }}
                   onDrop={(e) => handleEventDrop(e, dateStr)}
                 >
                   <div className="flex items-center justify-between">
@@ -571,9 +577,7 @@ export default function CalendarPage() {
 
       {/* ── Context menu ── */}
       {ctxMenu && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setCtxMenu(null)} />
-          <div className="fixed z-50 w-48 rounded-xl border border-border/70 bg-card shadow-lg p-1 animate-center-scale-in"
+          <div data-ctx-menu className="fixed z-50 w-48 rounded-xl border border-border/70 bg-card shadow-lg p-1 animate-center-scale-in"
             style={{ left: Math.min(ctxMenu.x, typeof window !== "undefined" ? window.innerWidth - 210 : 999), top: Math.min(ctxMenu.y, typeof window !== "undefined" ? window.innerHeight - 160 : 999) }}>
             <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
               onClick={() => { setSelectedDate(ctxMenu.date); setShowQuickAdd(true); setCtxMenu(null); }}><Plus className="h-3.5 w-3.5" /> Add event</button>
@@ -584,7 +588,6 @@ export default function CalendarPage() {
             {panelOpen && <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
               onClick={() => { setSelectedDate(null); setShowQuickAdd(false); setCtxMenu(null); }}><X className="h-3.5 w-3.5" /> Close panel</button>}
           </div>
-        </>
       )}
     </div>
   );

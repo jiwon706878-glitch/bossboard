@@ -261,7 +261,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Card 3: Business — admin only (show while role loading) */}
-      {(!roleLoaded || isAdmin()) && <div className="animate-stagger-in" style={{ animationDelay: "120ms" }}><BusinessCard userId={userId!} initialName={String(currentBusiness?.name ?? "")} /></div>}
+      {(!roleLoaded || isAdmin()) && <div className="animate-stagger-in" style={{ animationDelay: "120ms" }}><BusinessCard userId={userId!} initialName={currentBusiness?.name ?? ""} /></div>}
 
       {/* Card 4: Language & Region — admin only */}
       {(!roleLoaded || isAdmin()) && <div className="animate-stagger-in" style={{ animationDelay: "180ms" }}><Card>

@@ -867,7 +867,7 @@ export default function BoardPage() {
                       <div className="space-y-2">
                         {replyingTo && (
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>Replying to {comments.find((c) => c.id === replyingTo)?.is_anonymous ? "Anonymous" : comments.find((c) => c.id === replyingTo)?.author_name || "User"}</span>
+                            <span>Replying to {(() => { const rc = comments.find((c) => c.id === replyingTo); return rc?.is_anonymous ? "Anonymous" : rc?.author_name || "User"; })()}</span>
                             <button
                               type="button"
                               className="text-xs text-muted-foreground hover:text-foreground transition-colors"

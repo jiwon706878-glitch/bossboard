@@ -590,7 +590,3 @@ export default function CalendarPage() {
   );
 }
 
-function addHour(time: string): string {
-  const [h, m] = time.split(":").map(Number);
-  return `${String((h + 1) % 24).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-}

@@ -33,12 +33,14 @@ export async function GET(req: NextRequest) {
     // Fallback: if RPC doesn't exist, do simple ILIKE search
     let searchResults = results;
     if (error) {
+      // Sanitize query to prevent PostgREST filter injection via special chars
+      const sanitized = query.replace(/[%_\\(),."']/g, "");
       const { data: fallback } = await supabase
         .from("sops")
         .select("id, title, summary, doc_type, status, updated_at")
         .eq("business_id", businessId)
         .is("deleted_at", null)
-        .or(`title.ilike.%${query}%,summary.ilike.%${query}%`)
+        .or(`title.ilike.%${sanitized}%,summary.ilike.%${sanitized}%`)
         .order("updated_at", { ascending: false })
         .limit(20);
       searchResults = fallback;

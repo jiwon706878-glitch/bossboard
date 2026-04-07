@@ -230,7 +230,8 @@ async function handleToolCall(
 
       let searchResults = results;
       if (error) {
-        const { data: fallback } = await admin.from("sops").select("id, title, summary, doc_type, status, updated_at").eq("business_id", auth.businessId).is("deleted_at", null).or(`title.ilike.%${query}%,summary.ilike.%${query}%`).order("updated_at", { ascending: false }).limit(20);
+        const sanitized = query.replace(/[%_\\(),."']/g, "");
+        const { data: fallback } = await admin.from("sops").select("id, title, summary, doc_type, status, updated_at").eq("business_id", auth.businessId).is("deleted_at", null).or(`title.ilike.%${sanitized}%,summary.ilike.%${sanitized}%`).order("updated_at", { ascending: false }).limit(20);
         searchResults = fallback;
       }
 

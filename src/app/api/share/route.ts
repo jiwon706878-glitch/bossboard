@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     const { sopId, password, expiresInDays, allowDownload } = await req.json();
     if (!sopId) return NextResponse.json({ error: "sopId required" }, { status: 400 });
 
-    // Verify the SOP exists and user owns the business
+    // Verify the SOP exists and user has access to the business
     const { data: sop } = await supabase
       .from("sops")
       .select("id, business_id")
@@ -19,6 +19,15 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (!sop) return NextResponse.json({ error: "SOP not found" }, { status: 404 });
+
+    // Authorization: verify user owns or is a member of the business
+    const [{ data: ownedBiz }, { data: membership }] = await Promise.all([
+      supabase.from("businesses").select("id").eq("id", sop.business_id).eq("user_id", user.id).maybeSingle(),
+      supabase.from("business_members").select("user_id").eq("business_id", sop.business_id).eq("user_id", user.id).maybeSingle(),
+    ]);
+    if (!ownedBiz && !membership) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const token = crypto.randomUUID();
     let passwordHash: string | null = null;

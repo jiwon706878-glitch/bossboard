@@ -38,7 +38,10 @@ interface TodoRow {
 export type { ChecklistRow, TodoRow };
 
 const supabase = createClient();
-const todayStr = format(new Date(), "yyyy-MM-dd");
+
+function getTodayStr() {
+  return format(new Date(), "yyyy-MM-dd");
+}
 
 // ─── Fetch functions (dashboard-specific) ─────────
 
@@ -107,7 +110,7 @@ async function generateRecurringChecklists(businessId: string) {
         title: tmpl.title,
         items: tmpl.items,
         status: "pending",
-        due_date: todayStr,
+        due_date: getTodayStr(),
         created_by: tmpl.created_by,
       });
       await supabase.from("checklists").update({ last_generated_at: new Date().toISOString() }).eq("id", tmpl.id);
@@ -191,19 +194,19 @@ export function useDashboard() {
   const unlimitedCredits = creditsLimit === -1;
 
   const overdueChecklists = useMemo(
-    () => checklists.filter((cl: any) => cl.due_date && cl.due_date < todayStr),
+    () => checklists.filter((cl: any) => cl.due_date && cl.due_date < getTodayStr()),
     [checklists]
   );
   const todayChecklists = useMemo(
-    () => checklists.filter((cl: any) => !cl.due_date || cl.due_date >= todayStr),
+    () => checklists.filter((cl: any) => !cl.due_date || cl.due_date >= getTodayStr()),
     [checklists]
   );
   const overdueTodos = useMemo(
-    () => todos.filter((t: any) => t.due_date && t.due_date < todayStr),
+    () => todos.filter((t: any) => t.due_date && t.due_date < getTodayStr()),
     [todos]
   );
   const todayTodos = useMemo(
-    () => todos.filter((t: any) => !t.due_date || t.due_date >= todayStr),
+    () => todos.filter((t: any) => !t.due_date || t.due_date >= getTodayStr()),
     [todos]
   );
 
@@ -219,7 +222,7 @@ export function useDashboard() {
           business_id: businessId,
           user_id: userId,
           text: text.trim(),
-          due_date: todayStr,
+          due_date: getTodayStr(),
           priority: "normal",
           sort_order: todayTodos.length,
         })
@@ -233,7 +236,7 @@ export function useDashboard() {
       const previous = queryClient.getQueryData(dashboardKeys.todos(userId!));
       queryClient.setQueryData(dashboardKeys.todos(userId!), (old: any[]) => [
         ...(old ?? []),
-        { id: `temp-${Date.now()}`, text: text.trim(), completed: false, completed_at: null, due_date: todayStr, priority: "normal", created_at: new Date().toISOString() },
+        { id: `temp-${Date.now()}`, text: text.trim(), completed: false, completed_at: null, due_date: getTodayStr(), priority: "normal", created_at: new Date().toISOString() },
       ]);
       return { previous };
     },

@@ -142,27 +142,24 @@ export function TabShell({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, activeTab, setActivePath]);
 
-  // Pre-load ALL component JS bundles immediately (not just mount)
-  // This downloads the code so lazy() resolves instantly when tab is clicked
+  // Pre-load core tab JS bundles so lazy() resolves instantly when clicked
+  // Less-used tabs (agent-activity, api-docs, mcp-guide) load on demand
   useEffect(() => {
     import("@/app/(dashboard)/dashboard/sops/page");
-    import("@/app/(dashboard)/dashboard/checklists/page");
     import("@/app/(dashboard)/dashboard/todos/page");
     import("@/app/(dashboard)/dashboard/calendar/page");
     import("@/app/(dashboard)/dashboard/board/page");
-    import("@/app/(dashboard)/dashboard/team/page");
     import("@/app/(dashboard)/dashboard/settings/page");
-    import("@/app/(dashboard)/dashboard/agent-activity/page");
-    import("@/app/(dashboard)/dashboard/api-docs/page");
-    import("@/app/(dashboard)/dashboard/mcp-guide/page");
   }, []);
 
-  // Pre-mount core tabs after short delay (renders them hidden)
+  // Pre-mount only the most commonly used tabs after a short delay
+  // Other tabs mount on first visit via switchTab()
   useEffect(() => {
+    const CORE_TABS = ["sops", "todos", "calendar", "board", "settings"];
     const timer = setTimeout(() => {
       setMountedTabs((prev) => {
         const next = new Set(prev);
-        TABS.forEach((t) => next.add(t.id)); // Mount ALL tabs, not just 5
+        CORE_TABS.forEach((id) => next.add(id));
         return next;
       });
     }, 1500);

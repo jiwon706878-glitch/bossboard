@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Search, ArrowUpDown, ChevronDown, ChevronUp, Trash2, Download } from "lucide-react";
-import * as XLSX from "xlsx";
+// XLSX is dynamically imported in handleExport to avoid bundling ~700KB upfront
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
@@ -104,7 +104,7 @@ export function FeedbackTable({ items: initialItems }: { items: FeedbackItem[] }
     });
   }
 
-  function handleExport() {
+  async function handleExport() {
     const exportData = filtered.map((f) => ({
       "Date": new Date(f.created_at).toLocaleString("en-US", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }),
       "User": f.user_name,
@@ -115,6 +115,7 @@ export function FeedbackTable({ items: initialItems }: { items: FeedbackItem[] }
       "Read": f.read ? "Yes" : "No",
     }));
 
+    const XLSX = await import("xlsx");
     const ws = XLSX.utils.json_to_sheet(exportData);
     ws["!cols"] = [{ wch: 18 }, { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 60 }, { wch: 6 }];
 

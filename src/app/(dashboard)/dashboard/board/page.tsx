@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { useRoleStore } from "@/hooks/use-role";
-import { boardKeys } from "@/lib/queries";
+import { boardKeys, userKeys, fetchCurrentUser } from "@/lib/queries";
 import { FilePreview } from "@/components/dashboard/file-preview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,7 +87,9 @@ export default function BoardPage() {
   const businessId = currentBusiness?.id;
   const { isAdmin } = useRoleStore();
 
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  // Use shared user query instead of calling getUser() in every board query
+  const { data: currentUser } = useQuery({ queryKey: userKeys.current, queryFn: fetchCurrentUser, retry: false });
+  const currentUserId = currentUser?.id ?? null;
 
   // Create form — two-step mount/visible for smooth CSS transition
   const [formMounted, setFormMounted] = useState(false);
@@ -127,10 +129,7 @@ export default function BoardPage() {
   const { data: posts = [], isLoading: loading } = useQuery({
     queryKey: boardKeys.all(businessId ?? ""),
     queryFn: async (): Promise<Post[]> => {
-      if (!businessId) return [];
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) setCurrentUserId(user.id);
+      if (!businessId || !currentUserId) return [];
 
       const { data: postsData } = await supabase
         .from("board_posts")
@@ -153,7 +152,7 @@ export default function BoardPage() {
         supabase.from("board_post_reads").select("post_id").in("post_id", postIds),
         supabase.from("profiles").select("id, full_name").in("id", [...new Set(postsData.map((p: any) => p.user_id))]),
         supabase.from("poll_options").select("id, post_id, option_text, sort_order").in("post_id", postIds).order("sort_order"),
-        user ? supabase.from("poll_votes").select("option_id, user_id").eq("user_id", user.id) : Promise.resolve({ data: [] }),
+        supabase.from("poll_votes").select("option_id, user_id").eq("user_id", currentUserId),
       ]);
 
       const optionIds = (pollOptions ?? []).map((o: any) => o.id);
@@ -193,19 +192,17 @@ export default function BoardPage() {
       });
 
       // Mark notices as read (fire-and-forget)
-      if (user) {
-        const notices = enriched.filter((p) => p.type === "notice");
-        for (const n of notices) {
-          supabase.from("board_post_reads").upsert(
-            { post_id: n.id, user_id: user.id },
-            { onConflict: "post_id,user_id" }
-          ).then(() => {});
-        }
+      const notices = enriched.filter((p) => p.type === "notice");
+      for (const n of notices) {
+        supabase.from("board_post_reads").upsert(
+          { post_id: n.id, user_id: currentUserId },
+          { onConflict: "post_id,user_id" }
+        ).then(() => {});
       }
 
       return enriched;
     },
-    enabled: !!businessId,
+    enabled: !!businessId && !!currentUserId,
   });
 
   function invalidateBoard() {
@@ -219,8 +216,7 @@ export default function BoardPage() {
     if (!formTitle.trim() || !currentBusiness?.id) return;
     setSubmitting(true);
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { toast.error("Not logged in"); setSubmitting(false); return; }
+    if (!currentUserId) { toast.error("Not logged in"); setSubmitting(false); return; }
 
     // Upload attachments — use UUID path to avoid special character issues
     const uploadedFiles: Attachment[] = [];
@@ -231,7 +227,6 @@ export default function BoardPage() {
       for (const file of formAttachments) {
         const fileExt = file.name.split(".").pop() || "bin";
         const storagePath = `${currentBusiness.id}/board/${crypto.randomUUID()}.${fileExt}`;
-        console.log("Uploading:", file.name, "→", storagePath, "size:", file.size, "type:", file.type);
         const { data, error: uploadErr } = await supabase.storage
           .from("attachments")
           .upload(storagePath, file, { contentType: file.type });
@@ -251,7 +246,7 @@ export default function BoardPage() {
       .from("board_posts")
       .insert({
         business_id: currentBusiness.id,
-        user_id: user.id,
+        user_id: currentUserId,
         type: formType,
         title: formTitle.trim(),
         content: formContent.trim() || null,

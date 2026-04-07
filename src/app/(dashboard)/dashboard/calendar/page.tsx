@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
@@ -145,7 +145,7 @@ export default function CalendarPage() {
 
   // ─── Map events ───────────────────────────────────────────────────────────
 
-  const allEvents: CalendarEvent[] = [
+  const allEvents = useMemo<CalendarEvent[]>(() => [
     ...localEvents.map((e) => ({
       id: e.id, title: e.title, startDate: e.date,
       type: e.type as "todo" | "checklist",
@@ -165,32 +165,37 @@ export default function CalendarPage() {
         type: "google" as const, color: COLORS.google,
       };
     }),
-  ];
+  ], [localEvents, googleData?.events]);
 
-  const eventsByDate = new Map<string, CalendarEvent[]>();
-  for (const ev of allEvents) {
-    if (ev.endDate && ev.endDate > ev.startDate) {
-      let d2 = new Date(ev.startDate); const end2 = new Date(ev.endDate);
-      while (d2 <= end2) { const key = format(d2, "yyyy-MM-dd"); if (!eventsByDate.has(key)) eventsByDate.set(key, []); eventsByDate.get(key)!.push(ev); d2 = addDays(d2, 1); }
-    } else {
-      const key = ev.startDate; if (!eventsByDate.has(key)) eventsByDate.set(key, []); eventsByDate.get(key)!.push(ev);
+  const { eventsByDate, multiDayEvents } = useMemo(() => {
+    const byDate = new Map<string, CalendarEvent[]>();
+    for (const ev of allEvents) {
+      if (ev.endDate && ev.endDate > ev.startDate) {
+        let d2 = new Date(ev.startDate); const end2 = new Date(ev.endDate);
+        while (d2 <= end2) { const key = format(d2, "yyyy-MM-dd"); if (!byDate.has(key)) byDate.set(key, []); byDate.get(key)!.push(ev); d2 = addDays(d2, 1); }
+      } else {
+        const key = ev.startDate; if (!byDate.has(key)) byDate.set(key, []); byDate.get(key)!.push(ev);
+      }
     }
-  }
+    return { eventsByDate: byDate, multiDayEvents: allEvents.filter((e) => e.endDate && e.endDate > e.startDate) };
+  }, [allEvents]);
 
-  const multiDayEvents = allEvents.filter((e) => e.endDate && e.endDate > e.startDate);
-  function getEvents(dateStr: string) { return eventsByDate.get(dateStr) ?? []; }
+  const getEvents = useCallback((dateStr: string) => eventsByDate.get(dateStr) ?? [], [eventsByDate]);
 
-  const dayEvents = selectedDate
+  const dayEvents = useMemo(() => selectedDate
     ? getEvents(selectedDate).sort((a, b) => {
         if (a.time && !b.time) return -1; if (!a.time && b.time) return 1;
         if (a.time && b.time) return a.time.localeCompare(b.time); return 0;
       })
-    : [];
+    : [], [selectedDate, getEvents]);
 
-  const calStart = startOfWeek(startOfMonth(currentMonth));
-  const calEnd = endOfWeek(endOfMonth(currentMonth));
-  const days: Date[] = [];
-  { let d = calStart; while (d <= calEnd) { days.push(d); d = addDays(d, 1); } }
+  const days = useMemo(() => {
+    const calStart = startOfWeek(startOfMonth(currentMonth));
+    const calEnd = endOfWeek(endOfMonth(currentMonth));
+    const result: Date[] = [];
+    let d = calStart; while (d <= calEnd) { result.push(d); d = addDays(d, 1); }
+    return result;
+  }, [currentMonth]);
 
   const panelOpen = !!selectedDate;
 
@@ -293,7 +298,18 @@ export default function CalendarPage() {
     } catch { toast.error("Failed to move event"); }
   }
 
-  // Global shortcut listeners
+  // Global shortcut listeners — use refs to avoid re-attaching on every render
+  const selectedRef = useRef(selected);
+  const dayEventsRef = useRef(dayEvents);
+  const selectedDateRef = useRef(selectedDate);
+  const showQuickAddRef = useRef(showQuickAdd);
+  const handleBulkDeleteRef = useRef(handleBulkDelete);
+  selectedRef.current = selected;
+  dayEventsRef.current = dayEvents;
+  selectedDateRef.current = selectedDate;
+  showQuickAddRef.current = showQuickAdd;
+  handleBulkDeleteRef.current = handleBulkDelete;
+
   useEffect(() => {
     function onUndo(e: Event) {
       const entry = (e as CustomEvent).detail;
@@ -307,12 +323,12 @@ export default function CalendarPage() {
         supabase.from("todos").update({ completed: entry.data.previousState }).eq("id", entry.data.id).then(() => invalidateCal());
       }
     }
-    function onDelete() { if (selected.size > 0) handleBulkDelete(); }
-    function onSelectAll() { if (selectedDate) setSelected(new Set(dayEvents.filter((e) => e.type === "todo").map((e) => e.id))); }
+    function onDelete() { if (selectedRef.current.size > 0) handleBulkDeleteRef.current(); }
+    function onSelectAll() { if (selectedDateRef.current) setSelected(new Set(dayEventsRef.current.filter((e) => e.type === "todo").map((e) => e.id))); }
     function onEscape() {
-      if (selected.size > 0) setSelected(new Set());
-      else if (showQuickAdd) setShowQuickAdd(false);
-      else if (selectedDate) setSelectedDate(null);
+      if (selectedRef.current.size > 0) setSelected(new Set());
+      else if (showQuickAddRef.current) setShowQuickAdd(false);
+      else if (selectedDateRef.current) setSelectedDate(null);
     }
 
     window.addEventListener("bossboard-undo", onUndo);
@@ -325,7 +341,8 @@ export default function CalendarPage() {
       window.removeEventListener("bossboard-select-all", onSelectAll);
       window.removeEventListener("bossboard-escape", onEscape);
     };
-  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ─── Quick Add Form (inlined to avoid remount on re-render) ────────────────
 

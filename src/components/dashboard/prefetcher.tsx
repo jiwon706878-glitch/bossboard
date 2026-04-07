@@ -77,17 +77,18 @@ export function DashboardPrefetcher() {
         }),
       ]);
 
-      // Batch 2: Lighter pages
+      // Batch 2: Lighter pages — use the same queryFn as the actual pages
+      // to ensure cache data shape matches what components expect
       await Promise.allSettled([
         queryClient.prefetchQuery({
           queryKey: todoKeys.active(userId),
           queryFn: async () => {
             const { data } = await supabase
               .from("todos")
-              .select("*")
+              .select("id, text, completed, completed_at, due_date, priority, sort_order, created_at")
               .eq("user_id", userId)
               .eq("completed", false)
-              .order("created_at", { ascending: false });
+              .order("sort_order");
             return data ?? [];
           },
           staleTime: 2 * 60 * 1000,

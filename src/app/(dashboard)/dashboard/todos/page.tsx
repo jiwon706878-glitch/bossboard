@@ -22,7 +22,7 @@ interface TodoRow {
 }
 
 const supabase = createClient();
-const todayStr = format(new Date(), "yyyy-MM-dd");
+function getTodayStr() { return format(new Date(), "yyyy-MM-dd"); }
 
 export default function TodosPage() {
   const queryClient = useQueryClient();
@@ -55,7 +55,7 @@ export default function TodosPage() {
     mutationFn: async (text: string) => {
       const { data, error } = await supabase
         .from("todos")
-        .insert({ business_id: currentBusiness?.id, user_id: userId, text: text.trim(), due_date: todayStr, priority: "normal", sort_order: todos.length })
+        .insert({ business_id: currentBusiness?.id, user_id: userId, text: text.trim(), due_date: getTodayStr(), priority: "normal", sort_order: todos.length })
         .select("id, text, completed, completed_at, due_date, priority, sort_order, created_at")
         .single();
       if (error) throw error;
@@ -66,7 +66,7 @@ export default function TodosPage() {
       const prev = queryClient.getQueryData<TodoRow[]>(todoKeys.active(userId!));
       queryClient.setQueryData<TodoRow[]>(todoKeys.active(userId!), (old) => [
         ...(old ?? []),
-        { id: `temp-${Date.now()}`, text: text.trim(), completed: false, completed_at: null, due_date: todayStr, priority: "normal", sort_order: (old?.length ?? 0), created_at: new Date().toISOString() },
+        { id: `temp-${Date.now()}`, text: text.trim(), completed: false, completed_at: null, due_date: getTodayStr(), priority: "normal", sort_order: (old?.length ?? 0), created_at: new Date().toISOString() },
       ]);
       return { prev };
     },
@@ -168,14 +168,14 @@ export default function TodosPage() {
   }
 
   function carriedFromLabel(todo: TodoRow): string | null {
-    if (!todo.due_date || todo.due_date >= todayStr) return null;
+    if (!todo.due_date || todo.due_date >= getTodayStr()) return null;
     const dueDate = new Date(todo.due_date + "T00:00:00");
     if (isYesterday(dueDate)) return "from yesterday";
     return `carried from ${format(dueDate, "MMM d")}`;
   }
 
-  const overdueTodos = todos.filter((t: TodoRow) => t.due_date && t.due_date < todayStr);
-  const todayTodos = todos.filter((t: TodoRow) => !t.due_date || t.due_date >= todayStr);
+  const overdueTodos = todos.filter((t: TodoRow) => t.due_date && t.due_date < getTodayStr());
+  const todayTodos = todos.filter((t: TodoRow) => !t.due_date || t.due_date >= getTodayStr());
   const loading = todosLoading || completedLoading;
 
   if (loading) {

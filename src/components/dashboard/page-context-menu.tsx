@@ -152,7 +152,7 @@ export function PageContextMenu() {
     entries.push({
       label: "Refresh",
       icon: RefreshCw,
-      action: () => { close(); queryClient.invalidateQueries(); },
+      action: () => { close(); queryClient.invalidateQueries({ queryKey: ["checklists"] }); },
     });
   } else if (pathname === "/dashboard") {
     entries.push({
@@ -178,7 +178,7 @@ export function PageContextMenu() {
     entries.push({
       label: "Refresh",
       icon: RefreshCw,
-      action: () => { close(); queryClient.invalidateQueries(); },
+      action: () => { close(); queryClient.invalidateQueries({ queryKey: ["dashboard"] }); queryClient.invalidateQueries({ queryKey: ["todos"] }); },
     });
   } else {
     entries.push({
@@ -195,7 +195,7 @@ export function PageContextMenu() {
     entries.push({
       label: "Refresh",
       icon: RefreshCw,
-      action: () => { close(); queryClient.invalidateQueries(); },
+      action: () => { close(); queryClient.invalidateQueries({ predicate: (q) => !q.queryKey.includes("user") }); },
     });
   }
 

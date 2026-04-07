@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState, useCallback } from "react";
 import { Menu, Search, MessageSquarePlus, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +17,7 @@ import { NotificationBell } from "./notification-bell";
 import { SearchDropdown } from "./search-dropdown";
 import { FeedbackCard } from "./feedback-card";
 
-export function DashboardTopbar() {
+export const DashboardTopbar = memo(function DashboardTopbar() {
   const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
@@ -124,4 +124,4 @@ export function DashboardTopbar() {
       <SearchDropdown open={searchOpen} onOpenChange={setSearchOpen} />
     </>
   );
-}
+});

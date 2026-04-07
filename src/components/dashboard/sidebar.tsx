@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, memo } from "react";
+import { useCallback, useMemo, memo } from "react";
 import { useRouter } from "next/navigation";
 import { useActiveTab } from "@/hooks/use-active-tab";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -33,6 +33,8 @@ import {
   LogOut,
 } from "lucide-react";
 import { toast } from "sonner";
+
+const supabase = createClient();
 
 const navLinks = [
   { key: "wiki", href: "/dashboard/sops", label: "Wiki", icon: FileText },
@@ -104,7 +106,7 @@ const NavLink = memo(function NavLink({
 export function DashboardSidebar({ className }: { className?: string }) {
   const pathname = useActiveTab((s) => s.activePath);
   const router = useRouter();
-  const supabase = createClient();
+  // supabase client hoisted to module level to avoid recreation per render
   const queryClient = useQueryClient();
 
   // Shared queries — same cache as dashboard page
@@ -132,9 +134,12 @@ export function DashboardSidebar({ className }: { className?: string }) {
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
   const bizId = currentBusiness?.id;
 
-  const prefetchMap: Record<string, () => void> = bizId ? {
-    "/dashboard/checklists": () => queryClient.prefetchQuery({ queryKey: checklistKeys.all(bizId), queryFn: () => fetchAllChecklists(bizId), staleTime: 2 * 60 * 1000 }),
-  } : {};
+  const prefetchMap = useMemo(() => {
+    if (!bizId) return {} as Record<string, () => void>;
+    return {
+      "/dashboard/checklists": () => queryClient.prefetchQuery({ queryKey: checklistKeys.all(bizId), queryFn: () => fetchAllChecklists(bizId), staleTime: 2 * 60 * 1000 }),
+    } as Record<string, () => void>;
+  }, [bizId, queryClient]);
 
   const profileLoaded = !!profile;
 
@@ -157,7 +162,7 @@ export function DashboardSidebar({ className }: { className?: string }) {
     await supabase.auth.signOut();
     toast.success("Logged out");
     router.push("/login");
-  }, [supabase, router, queryClient]);
+  }, [router, queryClient]);
 
   return (
     <aside

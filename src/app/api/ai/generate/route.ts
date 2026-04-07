@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Topic must be under 1000 characters" }, { status: 400 });
   }
 
-  // If no businessId provided, try to find the user's first business
+  // Resolve and verify business ownership
   let resolvedBusinessId = businessId;
   if (!resolvedBusinessId || typeof resolvedBusinessId !== "string") {
     const { data: userBusinesses } = await supabase
@@ -42,6 +42,15 @@ export async function POST(req: Request) {
         { error: "No business found. Please complete onboarding first." },
         { status: 400 }
       );
+    }
+  } else {
+    // Verify user has access to the provided businessId
+    const [{ data: ownedBiz }, { data: membership }] = await Promise.all([
+      supabase.from("businesses").select("id").eq("id", resolvedBusinessId).eq("user_id", user.id).maybeSingle(),
+      supabase.from("business_members").select("user_id").eq("business_id", resolvedBusinessId).eq("user_id", user.id).maybeSingle(),
+    ]);
+    if (!ownedBiz && !membership) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
   }
 

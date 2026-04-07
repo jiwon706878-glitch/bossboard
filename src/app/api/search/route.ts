@@ -18,6 +18,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "q and businessId required" }, { status: 400 });
     }
 
+    // Verify user has access to this business
+    const [{ data: ownedBiz }, { data: membership }] = await Promise.all([
+      supabase.from("businesses").select("id").eq("id", businessId).eq("user_id", user.id).maybeSingle(),
+      supabase.from("business_members").select("user_id").eq("business_id", businessId).eq("user_id", user.id).maybeSingle(),
+    ]);
+    if (!ownedBiz && !membership) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     // Full-text search using trigram similarity for partial matches + ts_rank for full-text
     const words = query.split(/\s+/).filter(Boolean);
     const tsQuery = words.map((w) => `${w}:*`).join(" & ");

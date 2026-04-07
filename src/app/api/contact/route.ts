@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       const resend = new Resend(apiKey);
       await resend.emails.send({
         from: "BossBoard <onboarding@resend.dev>",
-        to: "jiwon706878@gmail.com",
+        to: process.env.CONTACT_EMAIL || process.env.ADMIN_EMAIL || "jiwon706878@gmail.com",
         subject: subject || `New contact form submission from ${name}`,
         text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
         replyTo: email,

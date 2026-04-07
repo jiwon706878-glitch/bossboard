@@ -51,7 +51,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (isAdminPage) {
-    const ADMIN_EMAIL = "jiwon706878@gmail.com";
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "";
     if (!user || user.email !== ADMIN_EMAIL) {
       const url = request.nextUrl.clone();
       url.pathname = user ? "/dashboard" : "/";

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const ADMIN_EMAIL = "jiwon706878@gmail.com";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "";
 
 export async function PATCH(req: Request) {
   try {

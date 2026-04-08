@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useBusinessStore } from "@/hooks/use-business";
 import { useQuery } from "@tanstack/react-query";
@@ -17,11 +16,10 @@ import {
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * Invisible component that prefetches ALL dashboard page data and routes
- * on initial load. This makes tab switching feel instant.
+ * Invisible component that prefetches dashboard page data on initial load.
+ * Route JS bundles are pre-loaded by TabShell via dynamic import().
  */
 export function DashboardPrefetcher() {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
   const businessId = currentBusiness?.id;
@@ -32,24 +30,6 @@ export function DashboardPrefetcher() {
     retry: false,
   });
   const userId = user?.id;
-
-  // Prefetch all Next.js routes (JS bundles) on mount
-  useEffect(() => {
-    const routes = [
-      "/dashboard",
-      "/dashboard/sops",
-      "/dashboard/checklists",
-      "/dashboard/todos",
-      "/dashboard/calendar",
-      "/dashboard/board",
-      "/dashboard/team",
-      "/dashboard/settings",
-      "/dashboard/agent-activity",
-      "/dashboard/api-docs",
-      "/dashboard/mcp-guide",
-    ];
-    routes.forEach((route) => router.prefetch(route));
-  }, [router]);
 
   // Prefetch all page data in background
   useEffect(() => {

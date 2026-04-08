@@ -45,6 +45,9 @@ const TABS: TabDef[] = [
 
 const TAB_PATHS = new Set(TABS.map((t) => t.path));
 
+// Priority tabs — mounted eagerly on first idle frame
+const PRIORITY_IDS = new Set(["dashboard", "sops", "todos", "calendar", "board", "checklists", "settings"]);
+
 // Sub-routes that need normal Next.js routing (not tabs)
 function isSubRoute(pathname: string): boolean {
   if (TAB_PATHS.has(pathname)) return false;
@@ -53,10 +56,8 @@ function isSubRoute(pathname: string): boolean {
 }
 
 function findTabForPath(pathname: string): string | null {
-  // Exact match
   const exact = TABS.find((t) => t.path === pathname);
   if (exact) return exact.id;
-  // /dashboard exact
   if (pathname === "/dashboard") return "dashboard";
   return null;
 }
@@ -80,26 +81,30 @@ export function TabShell({ children }: { children: React.ReactNode }) {
     const initial = new Set<string>();
     const tab = findTabForPath(pathname);
     if (tab) initial.add(tab);
+    // Always mount dashboard
+    initial.add("dashboard");
     return initial;
   });
   const mainRef = useRef<HTMLDivElement>(null);
 
   const setActivePath = useActiveTab((s) => s.setActivePath);
 
-  // Switch tab — called from sidebar event or popstate
+  // Switch tab — pure synchronous state update + pushState
   const switchTab = useCallback((tabId: string, pushState = true) => {
     const tab = TABS.find((t) => t.id === tabId);
     if (!tab) return;
-    setActiveTab(tabId);
+    // Mount if needed
     setMountedTabs((prev) => {
       if (prev.has(tabId)) return prev;
       const next = new Set(prev);
       next.add(tabId);
       return next;
     });
+    // Synchronous URL update — no router navigation
     if (pushState && window.location.pathname !== tab.path) {
       window.history.pushState({ tabId }, "", tab.path);
     }
+    setActiveTab(tabId);
     setActivePath(tab.path);
     // Scroll to top
     mainRef.current?.scrollTo(0, 0);
@@ -142,28 +147,57 @@ export function TabShell({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, activeTab, setActivePath]);
 
-  // Pre-load core tab JS bundles so lazy() resolves instantly when clicked
-  // Less-used tabs (agent-activity, api-docs, mcp-guide) load on demand
+  // Pre-load core tab JS bundles immediately so lazy() resolves instantly
   useEffect(() => {
     import("@/app/(dashboard)/dashboard/sops/page");
     import("@/app/(dashboard)/dashboard/todos/page");
     import("@/app/(dashboard)/dashboard/calendar/page");
     import("@/app/(dashboard)/dashboard/board/page");
+    import("@/app/(dashboard)/dashboard/checklists/page");
     import("@/app/(dashboard)/dashboard/settings/page");
+    import("@/app/(dashboard)/dashboard/team/page");
   }, []);
 
-  // Pre-mount only the most commonly used tabs after a short delay
-  // Other tabs mount on first visit via switchTab()
+  // Mount priority tabs on first idle callback (not a fixed 1500ms delay)
   useEffect(() => {
-    const CORE_TABS = ["sops", "todos", "calendar", "board", "settings"];
-    const timer = setTimeout(() => {
+    const idle = typeof window !== "undefined" && "requestIdleCallback" in window
+      ? (window as unknown as { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback
+      : (cb: () => void) => setTimeout(cb, 100);
+
+    const handle = idle(() => {
       setMountedTabs((prev) => {
         const next = new Set(prev);
-        CORE_TABS.forEach((id) => next.add(id));
+        PRIORITY_IDS.forEach((id) => next.add(id));
         return next;
       });
-    }, 1500);
-    return () => clearTimeout(timer);
+    }, { timeout: 800 });
+
+    return () => {
+      if ("cancelIdleCallback" in window) {
+        (window as unknown as { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(handle as number);
+      }
+    };
+  }, []);
+
+  // Defer mounting remaining (non-priority) tabs until next idle
+  useEffect(() => {
+    const idle = typeof window !== "undefined" && "requestIdleCallback" in window
+      ? (window as unknown as { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback
+      : (cb: () => void) => setTimeout(cb, 300);
+
+    const handle = idle(() => {
+      setMountedTabs((prev) => {
+        const next = new Set(prev);
+        TABS.forEach((t) => next.add(t.id));
+        return next;
+      });
+    }, { timeout: 3000 });
+
+    return () => {
+      if ("cancelIdleCallback" in window) {
+        (window as unknown as { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(handle as number);
+      }
+    };
   }, []);
 
   const showingSubRoute = isSubRoute(pathname);
@@ -172,12 +206,12 @@ export function TabShell({ children }: { children: React.ReactNode }) {
     <div ref={mainRef} className="min-h-0 flex-1 overflow-y-auto">
       {/* Sub-route content (normal Next.js routing) */}
       {showingSubRoute && (
-        <div className="p-4 lg:p-6 animate-fade-in">
+        <div className="p-4 lg:p-6">
           {children}
         </div>
       )}
 
-      {/* Tab content — hidden when sub-route is active */}
+      {/* Tab content — display toggled, never unmounted once mounted */}
       {TABS.map((tab) => {
         if (!mountedTabs.has(tab.id)) return null;
         const isVisible = !showingSubRoute && activeTab === tab.id;
@@ -185,7 +219,7 @@ export function TabShell({ children }: { children: React.ReactNode }) {
           <div
             key={tab.id}
             style={{ display: isVisible ? "block" : "none" }}
-            className="p-4 lg:p-6 animate-tab-enter"
+            className="p-4 lg:p-6"
           >
             <Suspense fallback={<TabSkeleton />}>
               <tab.Component />

@@ -5,15 +5,15 @@ import { ArrowRight, FileUp, Sparkles, UsersRound } from "lucide-react";
 import {
   HeroMockup,
   FeatureMockAi,
-  FeatureMockSearch,
-  FeatureMockChecklist,
-  FeatureMockDocHub,
+  FeatureMockCalendar,
+  FeatureMockBoard,
+  FeatureMockApi,
 } from "@/components/marketing/hero-mockups";
 
 /* ─── Page ────────────────────────────────────────────────────────────────── */
 
 export default function HomePage() {
-  const featureMockups = [<FeatureMockAi key="ai" />, <FeatureMockSearch key="search" />, <FeatureMockChecklist key="cl" />, <FeatureMockDocHub key="doc" />];
+  const featureMockups = [<FeatureMockAi key="ai" />, <FeatureMockCalendar key="cal" />, <FeatureMockBoard key="board" />, <FeatureMockApi key="api" />];
 
   return (
     <>
@@ -35,7 +35,7 @@ export default function HomePage() {
                 Build structure.<br />Drive growth.
               </h1>
               <p className="mt-6 max-w-lg" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "18px", lineHeight: 1.7, color: "var(--foreground)", fontWeight: 400, opacity: 0.65 }}>
-                Stop explaining the same thing twice. BossBoard generates your manuals with AI, organizes every document in one place, and turns SOPs into daily checklists your team actually follows.
+                Stop explaining the same thing twice. BossBoard generates manuals with AI, syncs your calendar, runs a team board, and turns SOPs into daily checklists your team actually follows. Developers: connect via REST API or MCP.
               </p>
               <div className="mt-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                 <Link href="/signup" className="inline-flex items-center justify-center gap-2.5 rounded-lg px-6 py-4 sm:py-3 text-sm font-semibold transition-all duration-200 hover:brightness-110 w-full sm:w-auto" style={{ backgroundColor: "#4A6CF7", color: "#fff", fontFamily: "'A2Z', sans-serif" }}>
@@ -70,9 +70,9 @@ export default function HomePage() {
                       {[
                         { n: "Dashboard", a: false },
                         { n: "Wiki", a: true },
+                        { n: "Calendar", a: false },
+                        { n: "Board", a: false },
                         { n: "Checklists", a: false },
-                        { n: "Todos", a: false },
-                        { n: "Search", a: false },
                       ].map((item) => (
                         <div key={item.n} className="flex items-center gap-2 rounded-md px-2 py-1.5 mb-0.5" style={{ backgroundColor: item.a ? "rgba(74,108,247,0.1)" : "transparent" }}>
                           <div className="h-3 w-3 rounded" style={{ backgroundColor: item.a ? "#4A6CF7" : "#d4d4d8" }} />
@@ -150,7 +150,7 @@ export default function HomePage() {
         <div className="relative">
           <div className="trust-marquee flex gap-4 w-max">
             {[...Array(2)].map((_, setIdx) =>
-              ["Caf\u00e9", "Brewery", "Restaurant", "Office", "Factory", "Salon", "Clinic", "Warehouse"].map((name) => (
+              ["Caf\u00e9", "Brewery", "Restaurant", "Office", "Agency", "Salon", "Clinic", "Dev Studio"].map((name) => (
                 <div key={`${setIdx}-${name}`} className="flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-6 py-2.5 shrink-0">
                   <span className="text-sm font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap" style={{ fontFamily: "'A2Z', sans-serif" }}>{name}</span>
                 </div>
@@ -178,7 +178,7 @@ export default function HomePage() {
             <div>
               <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: "'A2Z', sans-serif", letterSpacing: "0.08em" }}>With BossBoard</p>
               <div className="mt-6 space-y-5">
-                {["AI writes your manual in 30 seconds.", "Every document in one searchable place.", "SOPs become daily checklists \u2014 automatically tracked."].map((s) => (
+                {["AI writes your manual in 30 seconds.", "Wiki, calendar, and board \u2014 all in one place.", "SOPs become daily checklists. Agents connect via API."].map((s) => (
                   <div key={s} className="flex gap-3">
                     <span style={{ color: "#34D399", fontSize: "14px", lineHeight: "1.6", flexShrink: 0 }}>&#10003;</span>
                     <p style={{ fontSize: "15px", color: "var(--foreground)", fontFamily: "'A2Z', sans-serif", lineHeight: 1.6 }}>{s}</p>
@@ -212,10 +212,10 @@ export default function HomePage() {
         </div>
         <div className="mt-24 space-y-24 lg:space-y-32">
           {[
-            { label: "AI Manual Generator", headline: "Describe any task.\nAI writes the manual.", body: "Type a topic or paste existing notes \u2014 BossBoard generates a structured procedure in 30 seconds. Upload PDFs, Word docs, or photos and AI converts them into clean, searchable documents.", accent: "#4A6CF7" },
-            { label: "Smart Search", headline: "Ask questions.\nGet instant answers.", body: "Search across every document instantly with Ctrl+K. Ask questions in plain English and AI finds the answer from your wiki \u2014 with source references.", accent: "#34D399" },
-            { label: "Checklists & Tracking", headline: "Convert knowledge\ninto daily action.", body: "Turn any SOP into a daily checklist that resets automatically. Track who completed what in real-time. Overdue items surface on every dashboard \u2014 nothing falls through the cracks.", accent: "#FBBF24" },
-            { label: "Document Hub", headline: "Upload anything.\nAI organizes it.", body: "Upload PDFs, Word docs, or photos of handwritten procedures. AI converts them into clean, structured documents \u2014 while keeping the originals safe.", accent: "#4A6CF7" },
+            { label: "AI Manual Generator", headline: "Describe any task.\nAI writes the manual.", body: "Type a topic or paste existing notes \u2014 BossBoard generates a structured procedure in 30 seconds. Upload PDFs, Word docs, or photos and AI converts them into clean, searchable documents. Every edit is tracked with full version history.", accent: "#4A6CF7" },
+            { label: "Calendar + Google Sync", headline: "One calendar.\nEvery deadline.", body: "See todos, checklists, and Google Calendar events in a single view. Drag to reschedule, right-click to add. Connect Google Calendar in one click \u2014 changes sync both ways.", accent: "#34D399" },
+            { label: "Team Board", headline: "Discuss, vote,\nstay aligned.", body: "Post notices, start discussions, or run polls \u2014 all with threaded comments and anonymous replies. Pin important updates so nothing gets buried in chat.", accent: "#FBBF24" },
+            { label: "REST API + MCP", headline: "Agent-friendly\nfrom day one.", body: "Full REST API for reading and writing SOPs, logging agent activity, and managing context. MCP support included from the $19 Starter plan \u2014 connect Claude, Cursor, or any MCP-compatible tool directly to your wiki.", accent: "#4A6CF7" },
           ].map((feature, i) => (
             <div key={feature.label} className={`flex flex-col gap-8 lg:flex-row lg:gap-16 lg:items-stretch rounded-2xl ${i % 2 === 1 ? "lg:flex-row-reverse" : ""} ${i % 2 === 0 ? "bg-gray-50/60 dark:bg-gray-900/20 p-6 lg:p-10 -mx-6 lg:-mx-10" : ""}`}>
               <div className="flex-1 lg:max-w-md flex flex-col justify-center">
@@ -241,19 +241,19 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
-                quote: "BossBoard replaced our entire training process. New hires are productive on day one instead of week three.",
+                quote: "BossBoard replaced our entire training process. The calendar sync means everyone sees deadlines, and the board keeps the team aligned without a separate chat tool.",
                 name: "Operations Manager",
                 title: "Food & Beverage",
               },
               {
-                quote: "We used to lose a full week training each new barista. Now they just open BossBoard and follow the guide.",
+                quote: "We used to lose a full week training each new barista. Now they open BossBoard and follow the guide. Version history saved us when someone accidentally overwrote a recipe.",
                 name: "Caf\u00e9 Owner",
                 title: "12 employees",
               },
               {
-                quote: "Finally, one place for all our SOPs. No more digging through group chats for that recipe we wrote last year.",
-                name: "Kitchen Manager",
-                title: "Restaurant Chain",
+                quote: "I connected my AI agent to BossBoard via MCP and it writes SOPs for me automatically. The REST API is clean and well-documented.",
+                name: "Solo Developer",
+                title: "Agency, vibe coder",
               },
             ].map((t) => (
               <div
@@ -288,9 +288,9 @@ export default function HomePage() {
           </div>
           <div className="mt-16 grid gap-0 divide-y" style={{ borderColor: "var(--border)" }}>
             {[
-              { step: "01", title: "Describe or upload", desc: "Type a task, paste notes, or upload a PDF, Word doc, or photo. AI handles any format.", Icon: FileUp },
-              { step: "02", title: "AI creates your manual", desc: "Get a structured SOP in 30 seconds — numbered steps, safety notes, and checklists.", Icon: Sparkles },
-              { step: "03", title: "Team follows, you track", desc: "Share with your team, convert to daily checklists, and track completion. One subscription covers everyone.", Icon: UsersRound },
+              { step: "01", title: "Describe or upload", desc: "Type a task, paste notes, or upload a PDF. AI handles any format and creates a versioned wiki page.", Icon: FileUp },
+              { step: "02", title: "AI creates your manual", desc: "Get a structured SOP in 30 seconds \u2014 numbered steps, safety notes, and checklists. Connect your calendar and board.", Icon: Sparkles },
+              { step: "03", title: "Team follows, agents connect", desc: "Share with your team, convert to daily checklists, and track completion. Developers connect via REST API or MCP.", Icon: UsersRound },
             ].map((item) => (
               <div key={item.step} className="flex items-center gap-8 py-10 sm:py-12">
                 <div className="shrink-0" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "13px", fontWeight: 500, color: "#4A6CF7", opacity: 0.6 }}>{item.step}</div>
@@ -328,7 +328,7 @@ export default function HomePage() {
           <h2 style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(1.75rem, 3vw, 2.5rem)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
             Your team is waiting for structure.
           </h2>
-          <p className="mt-5 mx-auto max-w-md text-sm" style={{ color: "var(--foreground)", opacity: 0.6, lineHeight: 1.7 }}>Join hundreds of small businesses that stopped losing knowledge and started growing with BossBoard.</p>
+          <p className="mt-5 mx-auto max-w-md text-sm" style={{ color: "var(--foreground)", opacity: 0.6, lineHeight: 1.7 }}>Join hundreds of small businesses and developers building structure and driving growth with BossBoard.</p>
           <div className="mt-10">
             <Link href="/signup" className="inline-flex items-center justify-center gap-2.5 rounded-lg px-7 py-4 sm:py-3.5 text-sm font-semibold transition-all duration-200 hover:brightness-110 w-full sm:w-auto max-w-xs mx-auto sm:max-w-none" style={{ backgroundColor: "#4A6CF7", color: "#fff", fontFamily: "'A2Z', sans-serif" }}>
               Get Started Free <ArrowRight className="h-4 w-4" />

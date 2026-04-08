@@ -108,7 +108,7 @@ export const plans: Record<PlanId, PlanConfig> = {
       "Unlimited team members",
       "Folder access control",
       "Onboarding paths",
-      "Real-time collaboration (coming soon)",
+      "Real-time wiki editing",
       "Dedicated support",
       "Custom integrations",
       "200 GB storage",

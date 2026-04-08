@@ -7,12 +7,12 @@ const faqs = [
   {
     question: "What is BossBoard?",
     answer:
-      "BossBoard is an AI-powered operations control tower for business owners. It helps you create standard operating procedures, manage your team, track who has read what, and get AI-driven insights into your operations -- all from one place.",
+      "BossBoard is an AI-powered operations wiki for business owners. It combines a document wiki with version history, a calendar with Google Calendar sync, a team board with threaded comments and polls, daily checklists, and an agent-friendly REST API with MCP support -- all in one place.",
   },
   {
     question: "How does the AI SOP generation work?",
     answer:
-      "Describe your topic -- for example, 'morning opening procedure for the cafe' -- and the AI generates a detailed, step-by-step SOP tailored to your industry. It includes purpose, scope, numbered procedures, safety notes, and an extractable checklist. You can edit everything in a rich text editor before publishing.",
+      "Describe your topic -- for example, 'morning opening procedure for the cafe' -- and the AI generates a detailed, step-by-step SOP tailored to your industry. It includes purpose, scope, numbered procedures, safety notes, and an extractable checklist. You can edit everything in a rich text editor, and every change is tracked with full version history.",
   },
   {
     question: "Can I try it for free?",
@@ -20,9 +20,19 @@ const faqs = [
       "Yes. The free plan includes 20 documents, 3 team members, and 5 AI generations per month. No credit card required to sign up.",
   },
   {
+    question: "How does Google Calendar sync work?",
+    answer:
+      "Connect your Google account in Settings and your calendar events appear alongside todos and checklists in one unified view. Drag events to reschedule, right-click to add new ones. Changes sync both ways.",
+  },
+  {
+    question: "What is the REST API and MCP support?",
+    answer:
+      "BossBoard provides a full REST API for reading and writing SOPs, logging agent activity, and managing context. MCP (Model Context Protocol) support is included from the $19 Starter plan -- connect Claude, Cursor, or any MCP-compatible AI tool directly to your wiki. Developers and vibe coders use this to automate SOP creation and let AI agents interact with their operations data.",
+  },
+  {
     question: "How does team management work?",
     answer:
-      "Invite team members by email, assign SOPs, and track who has read and signed off on each procedure. Build onboarding paths by chaining SOPs together, and auto-generate checklists from any SOP.",
+      "Invite team members by email, assign SOPs, and track who has read and signed off on each procedure. Use the team board for notices, discussions, and polls with threaded comments. Build onboarding paths by chaining SOPs together, and auto-generate checklists from any SOP.",
   },
   {
     question: "How do I cancel my subscription?",

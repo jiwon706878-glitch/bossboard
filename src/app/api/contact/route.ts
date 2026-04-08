@@ -1,4 +1,4 @@
-import { Resend } from "resend";
+import { sendEmail, contactEmailHtml } from "@/lib/email";
 
 // Simple in-memory rate limiter for contact form (per IP, 3 per minute)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -28,25 +28,14 @@ export async function POST(req: Request) {
     return new Response("Invalid email format", { status: 400 });
   }
 
-  const apiKey = process.env.RESEND_API_KEY;
+  const to = process.env.CONTACT_EMAIL || process.env.ADMIN_EMAIL || "jiwon706878@gmail.com";
 
-  if (apiKey) {
-    try {
-      const resend = new Resend(apiKey);
-      await resend.emails.send({
-        from: "BossBoard <onboarding@resend.dev>",
-        to: process.env.CONTACT_EMAIL || process.env.ADMIN_EMAIL || "jiwon706878@gmail.com",
-        subject: subject || `New contact form submission from ${name}`,
-        text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
-        replyTo: email,
-      });
-    } catch (error) {
-      console.error("Failed to send contact email:", error);
-    }
-  } else {
-    // No Resend key configured — log for manual follow-up
-    console.log("Contact submission (no email key):", { name, email, message });
-  }
+  await sendEmail({
+    to,
+    subject: subject || `New contact form submission from ${name}`,
+    html: contactEmailHtml({ name, email, message, subject }),
+    replyTo: email,
+  });
 
   return Response.json({ success: true });
 }

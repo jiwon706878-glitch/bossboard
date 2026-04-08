@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { plans, type PlanId } from "@/config/plans";
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { sendEmail, inviteEmailHtml } from "@/lib/email";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
@@ -134,31 +132,16 @@ export async function POST(req: NextRequest) {
     const inviteUrl = `${APP_URL}/invite/${token}`;
 
     // Send email if this is an email invite
-    if (email && process.env.RESEND_API_KEY) {
-      try {
-        await resend.emails.send({
-          from: "BossBoard <noreply@mybossboard.com>",
-          to: email,
-          subject: `You're invited to join ${business.name} on BossBoard`,
-          html: `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
-              <h2 style="color: #1A1D2B; margin-bottom: 8px;">You're invited!</h2>
-              <p style="color: #5E6478; font-size: 15px; line-height: 1.6;">
-                You've been invited to join <strong>${business.name}</strong> as a <strong>${role}</strong> on BossBoard.
-              </p>
-              <a href="${inviteUrl}" style="display: inline-block; background: #3366FF; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 500; margin: 24px 0;">
-                Accept Invite
-              </a>
-              <p style="color: #8B95B0; font-size: 13px; margin-top: 24px;">
-                This invite expires in 7 days. If you didn't expect this, you can ignore it.
-              </p>
-            </div>
-          `,
-        });
-      } catch (emailError) {
-        console.error("Failed to send invite email:", emailError);
-        // Don't fail the invite creation if email fails
-      }
+    if (email) {
+      await sendEmail({
+        to: email,
+        subject: `You're invited to join ${business.name} on BossBoard`,
+        html: inviteEmailHtml({
+          businessName: business.name,
+          role,
+          inviteUrl,
+        }),
+      });
     }
 
     return NextResponse.json({ invite, inviteUrl }, { status: 201 });

@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 
-const ADMIN_EMAIL = "jiwon706878@gmail.com";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "";
 
 export default async function AdminLayout({
   children,

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRawKey, logApiCall, type ApiKeyContext } from "@/lib/api/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { CREDIT_COSTS } from "@/lib/ai/credits";
+import { plans, type PlanId } from "@/config/plans";
 import type { JSONContent } from "@tiptap/react";
 
 // ─── MCP Tool Definitions ──────────────────────────────────────────────────
@@ -236,6 +238,41 @@ async function handleToolCall(
       }
 
       if (mode !== "ai") return { results: searchResults ?? [] };
+
+      // Credit check before AI generation
+      const { data: bizOwner } = await admin
+        .from("businesses")
+        .select("user_id")
+        .eq("id", auth.businessId)
+        .single();
+
+      if (!bizOwner) return { results: searchResults ?? [], aiAnswer: null, aiError: "Business not found" };
+
+      const { data: ownerProfile } = await admin
+        .from("profiles")
+        .select("plan_id")
+        .eq("id", bizOwner.user_id)
+        .single();
+
+      const ownerPlanId = (ownerProfile?.plan_id as PlanId) ?? "free";
+      const plan = plans[ownerPlanId];
+      const creditLimit = plan.limits.aiCredits;
+
+      if (creditLimit !== -1) {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const { data: usageRows } = await admin
+          .from("ai_usage")
+          .select("credits_used")
+          .eq("user_id", bizOwner.user_id)
+          .gte("created_at", startOfMonth.toISOString());
+
+        const totalUsed = usageRows?.reduce((sum, row) => sum + row.credits_used, 0) ?? 0;
+        const cost = CREDIT_COSTS.chat ?? 1;
+        if (totalUsed + cost > creditLimit) {
+          return { results: searchResults ?? [], aiAnswer: null, aiError: "AI credit limit reached. Please upgrade your plan." };
+        }
+      }
 
       // AI answer
       if (!searchResults || searchResults.length === 0) {

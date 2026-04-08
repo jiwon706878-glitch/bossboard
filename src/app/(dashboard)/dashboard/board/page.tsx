@@ -168,7 +168,7 @@ export default function BoardPage() {
           .from("attachments")
           .upload(storagePath, file, { contentType: file.type });
         if (uploadErr) {
-          console.error("UPLOAD ERROR:", JSON.stringify(uploadErr), "file:", file.name);
+          console.error("[board] File upload failed");
           toast.error(`Failed to upload ${file.name}`);
           continue;
         }

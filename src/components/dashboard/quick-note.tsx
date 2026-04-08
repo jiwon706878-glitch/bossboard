@@ -68,12 +68,9 @@ export function QuickNoteButton() {
 
     const bizId = currentBusiness?.id;
     if (!bizId) {
-      const { data } = await supabase.from("businesses").select("id").limit(1);
-      if (!data?.[0]?.id) {
-        toast.error("No business found");
-        setSaving(false);
-        return;
-      }
+      toast.error("No active workspace");
+      setSaving(false);
+      return;
     }
 
     const { data: { user } } = await supabase.auth.getUser();

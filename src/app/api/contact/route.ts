@@ -28,7 +28,11 @@ export async function POST(req: Request) {
     return new Response("Invalid email format", { status: 400 });
   }
 
-  const to = process.env.CONTACT_EMAIL || process.env.ADMIN_EMAIL || "jiwon706878@gmail.com";
+  const to = process.env.CONTACT_EMAIL || process.env.ADMIN_EMAIL;
+  if (!to) {
+    console.error("[contact] No CONTACT_EMAIL or ADMIN_EMAIL configured");
+    return Response.json({ success: true });
+  }
 
   try {
     await sendEmail({

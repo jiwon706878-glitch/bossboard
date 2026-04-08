@@ -58,7 +58,7 @@ export function ProfileCard({ userId, initialName, initialAvatarUrl, isFetching 
         .upload(path, file, { upsert: true, contentType: file.type });
 
       if (uploadError) {
-        console.error("Avatar upload error:", JSON.stringify(uploadError));
+        console.error("[avatar] Upload failed");
         toast.error("Upload failed. Please try a different image.");
         return;
       }
@@ -75,7 +75,7 @@ export function ProfileCard({ userId, initialName, initialAvatarUrl, isFetching 
         .eq("id", userId);
 
       if (updateError) {
-        console.error("Avatar URL save error:", updateError.message);
+        console.error("[avatar] Save failed");
         toast.error("Failed to save avatar. Please try again.");
         return;
       }

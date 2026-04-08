@@ -31,11 +31,13 @@ export async function POST(req: NextRequest) {
 
     const token = crypto.randomUUID();
     let passwordHash: string | null = null;
+    let passwordSalt: string | null = null;
 
     if (password) {
-      // Simple hash for password protection — use Web Crypto
+      // Hash password with a per-link salt to prevent rainbow table attacks
+      passwordSalt = crypto.randomUUID();
       const encoder = new TextEncoder();
-      const data = encoder.encode(password);
+      const data = encoder.encode(passwordSalt + password);
       const hashBuffer = await crypto.subtle.digest("SHA-256", data);
       passwordHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
     }
@@ -51,6 +53,7 @@ export async function POST(req: NextRequest) {
         business_id: sop.business_id,
         token,
         password_hash: passwordHash,
+        password_salt: passwordSalt,
         expires_at: expiresAt,
         allow_download: allowDownload ?? true,
         created_by: user.id,
@@ -81,7 +84,7 @@ export async function GET(req: NextRequest) {
 
     const { data: link } = await admin
       .from("shared_links")
-      .select("id, sop_id, business_id, password_hash, expires_at, allow_download, view_count")
+      .select("id, sop_id, business_id, password_hash, password_salt, expires_at, allow_download, view_count")
       .eq("token", token)
       .single();
 
@@ -98,7 +101,8 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ requiresPassword: true }, { status: 401 });
       }
       const encoder = new TextEncoder();
-      const data = encoder.encode(password);
+      const salt = link.password_salt ?? "";
+      const data = encoder.encode(salt + password);
       const hashBuffer = await crypto.subtle.digest("SHA-256", data);
       const hash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
       if (hash !== link.password_hash) {

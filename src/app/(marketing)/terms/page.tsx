@@ -53,7 +53,7 @@ export default function TermsPage() {
           Terms of Service
         </h1>
         <p style={{ color: "#5A6480", fontSize: "14px", marginTop: "8px", fontFamily: "'Source Sans 3', sans-serif" }}>
-          Last updated: March 14, 2026
+          Last updated: April 9, 2026
         </p>
 
         <div style={{ marginTop: "48px" }}>
@@ -194,7 +194,39 @@ export default function TermsPage() {
         </div>
 
         <div style={{ marginTop: "40px" }}>
-          <h2 style={heading2Style}>8. Limitation of Liability</h2>
+          <h2 style={heading2Style}>8. API and MCP Access</h2>
+          <p style={paragraphStyle}>
+            BossBoard provides a REST API and MCP (Model Context Protocol) server for programmatic access to
+            your workspace data. API keys are scoped to your business and must be kept confidential. You are
+            responsible for all actions performed using your API keys.
+          </p>
+          <ul style={listStyle}>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              API access is subject to rate limits and your plan&apos;s usage quotas
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Automated access must not interfere with the Service or other users
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              We may revoke API keys that are found to be abused or compromised
+            </li>
+          </ul>
+        </div>
+
+        <div style={{ marginTop: "48px" }}>
+          <h2 style={heading2Style}>9. Service Availability</h2>
+          <p style={paragraphStyle}>
+            We strive to keep BossBoard available at all times but do not guarantee uninterrupted service. The
+            free tier does not include any uptime commitment. Paid plans are provided on a commercially
+            reasonable effort basis. We may perform maintenance with reasonable advance notice.
+          </p>
+        </div>
+
+        <div style={{ marginTop: "40px" }}>
+          <h2 style={heading2Style}>10. Limitation of Liability</h2>
           <p style={paragraphStyle}>
             To the maximum extent permitted by law, BossBoard and its affiliates shall not be liable for any
             indirect, incidental, special, consequential, or punitive damages, including loss of profits,
@@ -207,7 +239,7 @@ export default function TermsPage() {
         </div>
 
         <div style={{ marginTop: "48px" }}>
-          <h2 style={heading2Style}>9. Termination</h2>
+          <h2 style={heading2Style}>11. Termination</h2>
           <p style={paragraphStyle}>
             You may terminate your account at any time through your account settings. Upon termination:
           </p>
@@ -232,7 +264,7 @@ export default function TermsPage() {
         </div>
 
         <div style={{ marginTop: "40px" }}>
-          <h2 style={heading2Style}>10. Changes to Terms</h2>
+          <h2 style={heading2Style}>12. Changes to Terms</h2>
           <p style={paragraphStyle}>
             We may revise these Terms of Service at any time. Material changes will be communicated via email
             or a prominent notice on the platform at least 30 days before taking effect. Your continued use
@@ -241,7 +273,7 @@ export default function TermsPage() {
         </div>
 
         <div style={{ marginTop: "48px" }}>
-          <h2 style={heading2Style}>11. Governing Law</h2>
+          <h2 style={heading2Style}>13. Governing Law</h2>
           <p style={paragraphStyle}>
             These terms shall be governed by and construed in accordance with the laws of the State of
             Delaware, United States, without regard to its conflict of law provisions. Any disputes arising
@@ -250,7 +282,7 @@ export default function TermsPage() {
         </div>
 
         <div style={{ marginTop: "40px" }}>
-          <h2 style={heading2Style}>12. Contact Us</h2>
+          <h2 style={heading2Style}>14. Contact Us</h2>
           <p style={paragraphStyle}>
             If you have questions about these Terms of Service, contact us at:
           </p>

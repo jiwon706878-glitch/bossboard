@@ -1,6 +1,7 @@
 import dynamic from "next/dynamic";
 import { MarketingNavbar } from "@/components/marketing/navbar";
 import { MarketingFooter } from "@/components/marketing/footer";
+import { CookieConsent } from "@/components/marketing/cookie-consent";
 
 const Chatbot = dynamic(
   () => import("@/components/marketing/chatbot").then((m) => ({ default: m.Chatbot }))
@@ -17,6 +18,7 @@ export default function MarketingLayout({
       <main className="flex-1">{children}</main>
       <MarketingFooter />
       <Chatbot />
+      <CookieConsent />
     </div>
   );
 }

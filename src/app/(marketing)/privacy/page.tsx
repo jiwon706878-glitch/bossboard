@@ -53,7 +53,7 @@ export default function PrivacyPage() {
           Privacy Policy
         </h1>
         <p style={{ color: "#5A6480", fontSize: "14px", marginTop: "8px", fontFamily: "'Source Sans 3', sans-serif" }}>
-          Last updated: March 14, 2026
+          Last updated: April 9, 2026
         </p>
 
         <div style={{ marginTop: "48px" }}>
@@ -152,6 +152,19 @@ export default function PrivacyPage() {
               <span style={bulletStyle}>&bull;</span>
               <strong style={{ color: "#E8ECF4" }}>Resend</strong> — Transactional email delivery
             </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              <strong style={{ color: "#E8ECF4" }}>Vercel</strong> — Application hosting and edge delivery
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              <strong style={{ color: "#E8ECF4" }}>Google</strong> — Calendar integration (only if you connect
+              your Google Calendar)
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              <strong style={{ color: "#E8ECF4" }}>Sentry</strong> — Error monitoring and performance tracking
+            </li>
           </ul>
           <p style={paragraphStyle}>
             We do not sell your personal information to any third party. Data shared with these providers is
@@ -237,7 +250,27 @@ export default function PrivacyPage() {
         </div>
 
         <div style={{ marginTop: "48px" }}>
-          <h2 style={heading2Style}>8. Changes to This Policy</h2>
+          <h2 style={heading2Style}>8. International Users (GDPR)</h2>
+          <p style={paragraphStyle}>
+            If you are located in the European Economic Area (EEA), United Kingdom, or other regions with data
+            protection laws, you have additional rights including the right to access, rectify, port, and erase
+            your personal data, and to restrict or object to certain processing. We process your data based on
+            your consent and our legitimate interest in providing the service. To exercise these rights, contact
+            us at the address below.
+          </p>
+        </div>
+
+        <div style={{ marginTop: "40px" }}>
+          <h2 style={heading2Style}>9. Children&apos;s Privacy</h2>
+          <p style={paragraphStyle}>
+            BossBoard is not intended for use by anyone under the age of 13. We do not knowingly collect
+            personal information from children under 13. If we learn that we have collected personal data from a
+            child under 13, we will take steps to delete that information promptly.
+          </p>
+        </div>
+
+        <div style={{ marginTop: "48px" }}>
+          <h2 style={heading2Style}>10. Changes to This Policy</h2>
           <p style={paragraphStyle}>
             We may update this Privacy Policy from time to time. We will notify you of any material changes
             by posting the new policy on this page and updating the &quot;Last updated&quot; date. Your
@@ -247,7 +280,7 @@ export default function PrivacyPage() {
         </div>
 
         <div style={{ marginTop: "40px" }}>
-          <h2 style={heading2Style}>9. Contact Us</h2>
+          <h2 style={heading2Style}>11. Contact Us</h2>
           <p style={paragraphStyle}>
             If you have questions about this Privacy Policy or your personal data, contact us at:
           </p>

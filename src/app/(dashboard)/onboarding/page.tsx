@@ -5,34 +5,12 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Sparkles, Loader2, ArrowRight } from "lucide-react";
-
-const industries = [
-  { value: "cafe-restaurant", label: "Cafe / Restaurant" },
-  { value: "office-team", label: "Office / Team" },
-  { value: "factory-workshop", label: "Factory / Workshop" },
-  { value: "brewery-distillery", label: "Brewery / Distillery" },
-  { value: "retail-shop", label: "Retail / Shop" },
-  { value: "other", label: "Other" },
-];
+import { StepAboutYou } from "@/components/onboarding/step-about-you";
+import { StepIndustry } from "@/components/onboarding/step-industry";
+import { StepGenerateSOPs } from "@/components/onboarding/step-generate-sops";
 
 const sopSuggestions: Record<string, string[]> = {
   "cafe-restaurant": ["Opening Checklist — morning prep, equipment check, register setup", "Closing Checklist — cleaning, cash reconciliation, lockup", "New Barista Training Guide — espresso basics, drink recipes, POS operation"],
@@ -77,6 +55,7 @@ export default function OnboardingPage() {
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [genProgress, setGenProgress] = useState(0);
 
   useEffect(() => {
     async function prefill() {
@@ -101,7 +80,6 @@ export default function OnboardingPage() {
       return false;
     }
 
-    // Save profile
     const { error: profileError } = await supabase
       .from("profiles")
       .upsert({
@@ -116,7 +94,6 @@ export default function OnboardingPage() {
       return false;
     }
 
-    // Create business
     const { data, error: bizError } = await supabase
       .from("businesses")
       .insert({
@@ -189,8 +166,6 @@ export default function OnboardingPage() {
     if (step > 1) setStep(step - 1);
   }
 
-  const [genProgress, setGenProgress] = useState(0);
-
   async function handleGenerateAllSOPs() {
     setIsGenerating(true);
     setGeneratingComplete(false);
@@ -220,7 +195,7 @@ export default function OnboardingPage() {
         if (!data.text?.trim()) continue;
 
         const text = data.text;
-        let title = topic.split(" — ")[0]; // Use part before em dash
+        let title = topic.split(" — ")[0];
         const firstLine = text.split("\n").find((l: string) => l.trim());
         if (firstLine) {
           const cleaned = firstLine.replace(/^\d+\.\s*/, "").replace(/^Title:\s*/i, "").trim();
@@ -242,7 +217,6 @@ export default function OnboardingPage() {
       }
     }
 
-    // Create BossBoard Guide folder and documents
     await createGuideDocuments(user.id, currentBusiness.id);
 
     setGenProgress(topics.length);
@@ -252,7 +226,6 @@ export default function OnboardingPage() {
   }
 
   async function createGuideDocuments(userId: string, businessId: string) {
-    // Create guide folder
     const { data: folder } = await supabase
       .from("folders")
       .insert({ business_id: businessId, name: "BossBoard Guide", sort_order: 999, created_by: userId })
@@ -368,153 +341,34 @@ Documents not updated in 90+ days show an amber "90+ days" badge in the Wiki lis
         </div>
 
         <Card className="w-full border bg-card">
-          {/* Step 1: About You */}
           {step === 1 && (
-            <>
-              <CardHeader className="text-center pb-4">
-                <CardTitle className="text-2xl font-bold text-foreground">About You</CardTitle>
-                <CardDescription className="text-muted-foreground">
-                  Let us know who you are so we can personalize your experience.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName" className="text-foreground">Full name</Label>
-                  <Input
-                    id="fullName"
-                    placeholder="Jane Smith"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="bg-background border"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="businessName" className="text-foreground">Company name</Label>
-                  <Input
-                    id="businessName"
-                    placeholder="Acme Coffee Shop"
-                    value={businessName}
-                    onChange={(e) => setBusinessName(e.target.value)}
-                    className="bg-background border"
-                    required
-                  />
-                </div>
-              </CardContent>
-            </>
+            <StepAboutYou
+              fullName={fullName}
+              onFullNameChange={setFullName}
+              businessName={businessName}
+              onBusinessNameChange={setBusinessName}
+            />
           )}
 
-          {/* Step 2: Your Industry */}
           {step === 2 && (
-            <>
-              <CardHeader className="text-center pb-4">
-                <CardTitle className="text-2xl font-bold text-foreground">Your Industry</CardTitle>
-                <CardDescription className="text-muted-foreground">
-                  Tell us about your industry so we can tailor the AI to your needs.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="industry" className="text-foreground">Industry</Label>
-                  <Select value={industry} onValueChange={setIndustry}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your industry" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {industries.map((ind) => (
-                        <SelectItem key={ind.value} value={ind.value}>
-                          {ind.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="address" className="text-foreground">Address (optional)</Label>
-                  <Input
-                    id="address"
-                    placeholder="123 Main St, City, State"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="bg-background border"
-                  />
-                </div>
-              </CardContent>
-            </>
+            <StepIndustry
+              industry={industry}
+              onIndustryChange={setIndustry}
+              address={address}
+              onAddressChange={setAddress}
+            />
           )}
 
-          {/* Step 3: Generate Sample SOPs */}
           {step === 3 && (
-            <>
-              <CardHeader className="text-center pb-4">
-                <CardTitle className="text-2xl font-bold text-foreground">
-                  {generatingComplete ? "Your wiki is ready!" : "Let AI create sample SOPs"}
-                </CardTitle>
-                <CardDescription className="text-muted-foreground">
-                  {generatingComplete
-                    ? "We've created sample SOPs and a Getting Started guide in your wiki."
-                    : `Based on your ${industries.find((i) => i.value === industry)?.label || "business"} type, we'll generate ${suggestions.length} sample SOPs for you.`}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {!isGenerating && !generatingComplete && (
-                  <>
-                    <div className="space-y-2">
-                      {suggestions.map((topic) => (
-                        <div
-                          key={topic}
-                          className="flex items-center gap-3 rounded-md border px-4 py-3 text-sm"
-                          style={{ borderColor: "var(--border)" }}
-                        >
-                          <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" />
-                          <span className="text-foreground">{topic.split(" — ")[0]}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <Button
-                      onClick={handleGenerateAllSOPs}
-                      className="w-full transition-colors duration-150"
-                    >
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Generate {suggestions.length} Sample SOPs
-                    </Button>
-                  </>
-                )}
-
-                {isGenerating && (
-                  <div className="flex flex-col items-center justify-center py-8 space-y-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <p className="text-sm text-muted-foreground">
-                      Creating SOP {genProgress + 1} of {suggestions.length}...
-                    </p>
-                    <div className="w-full h-1.5 rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-primary transition-all duration-500"
-                        style={{ width: `${((genProgress + 0.5) / suggestions.length) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {generatingComplete && !isGenerating && (
-                  <div className="flex flex-col items-center justify-center py-6 space-y-4">
-                    <div className="rounded-full bg-primary/10 p-3">
-                      <Sparkles className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="text-center space-y-1">
-                      <p className="text-sm font-medium text-foreground">Your wiki is set up</p>
-                      <p className="text-xs text-muted-foreground">
-                        Check the sidebar: Wiki has your SOPs, &quot;BossBoard Guide&quot; folder has tips.
-                      </p>
-                    </div>
-                    <Button onClick={handleGoToDashboard} className="w-full transition-colors duration-150">
-                      Go to Dashboard
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </>
+            <StepGenerateSOPs
+              industry={industry}
+              suggestions={suggestions}
+              isGenerating={isGenerating}
+              generatingComplete={generatingComplete}
+              genProgress={genProgress}
+              onGenerateAll={handleGenerateAllSOPs}
+              onGoToDashboard={handleGoToDashboard}
+            />
           )}
 
           {/* Navigation buttons */}

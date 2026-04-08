@@ -180,15 +180,15 @@ export async function fetchTeamMembers(businessId: string) {
   }
 
   // Get profile names for all members
-  const userIds = members.map((m: any) => m.user_id);
+  const userIds = members.map((m: { user_id: string }) => m.user_id);
   const { data: profiles } = await supabase
     .from("profiles")
     .select("id, full_name")
     .in("id", userIds);
 
-  const profileMap = new Map<string, any>((profiles ?? []).map((p: any) => [p.id, p]));
+  const profileMap = new Map<string, { id: string; full_name: string | null }>((profiles ?? []).map((p: { id: string; full_name: string | null }) => [p.id, p]));
 
-  return members.map((m: any) => {
+  return members.map((m: { user_id: string; role: string; email: string | null; joined_at: string | null }) => {
     const profile = profileMap.get(m.user_id);
     return {
       id: m.user_id,
@@ -249,8 +249,8 @@ export async function fetchJournalEntriesWithNames(businessId: string, limit = 5
   if (entries.length === 0) return [];
 
   const userIds = [...new Set([
-    ...entries.map((e: any) => e.user_id),
-    ...entries.filter((e: any) => e.manager_id).map((e: any) => e.manager_id),
+    ...entries.map((e: { user_id: string; manager_id: string | null; [key: string]: unknown }) => e.user_id),
+    ...entries.filter((e: { user_id: string; manager_id: string | null; [key: string]: unknown }) => e.manager_id).map((e: { user_id: string; manager_id: string | null; [key: string]: unknown }) => e.manager_id),
   ])];
 
   const { data: profiles } = await supabase
@@ -258,9 +258,9 @@ export async function fetchJournalEntriesWithNames(businessId: string, limit = 5
     .select("id, full_name")
     .in("id", userIds);
 
-  const nameMap = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
+  const nameMap = new Map((profiles ?? []).map((p: { id: string; full_name: string | null }) => [p.id, p.full_name]));
 
-  return entries.map((e: any) => ({
+  return entries.map((e: { user_id: string; manager_id: string | null; [key: string]: unknown }) => ({
     ...e,
     author_name: nameMap.get(e.user_id) ?? null,
     manager_name: e.manager_id ? nameMap.get(e.manager_id) ?? null : null,
@@ -301,12 +301,12 @@ export async function fetchUserBusinesses(userId: string) {
       .eq("user_id", userId),
   ]);
 
-  const ownedIds = new Set((ownedBiz ?? []).map((b: any) => b.id));
+  const ownedIds = new Set((ownedBiz ?? []).map((b: { id: string }) => b.id));
   const memberBizIds = (memberships ?? [])
-    .map((m: any) => m.business_id)
+    .map((m: { business_id: string }) => m.business_id)
     .filter((id: string) => !ownedIds.has(id));
 
-  let memberBiz: any[] = [];
+  let memberBiz: Array<Record<string, unknown>> = [];
   if (memberBizIds.length > 0) {
     const { data } = await supabase
       .from("businesses")
@@ -335,14 +335,14 @@ export async function fetchRecentBoardPosts(businessId: string) {
   if (error) throw error;
   if (!data || data.length === 0) return [];
 
-  const userIds = [...new Set(data.map((p: any) => p.user_id))];
+  const userIds = [...new Set(data.map((p: { id: string; user_id: string; [key: string]: unknown }) => p.user_id))];
   const { data: profiles } = await supabase
     .from("profiles")
     .select("id, full_name")
     .in("id", userIds);
-  const nameMap = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
+  const nameMap = new Map((profiles ?? []).map((p: { id: string; full_name: string | null }) => [p.id, p.full_name]));
 
-  return data.map((p: any) => ({
+  return data.map((p: { id: string; user_id: string; [key: string]: unknown }) => ({
     ...p,
     author_name: nameMap.get(p.user_id) ?? "Unknown",
   }));

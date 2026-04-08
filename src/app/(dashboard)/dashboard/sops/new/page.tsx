@@ -7,57 +7,19 @@ import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { sopKeys, recentDocKeys } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Sparkles, Loader2, Save, ArrowLeft, Upload, FileUp, ExternalLink, Send, ChevronDown } from "lucide-react";
+import { Sparkles, Loader2, Save, ArrowLeft, Upload, ExternalLink, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { JSONContent } from "@tiptap/react";
 import Link from "next/link";
-import { TagInput } from "@/components/sops/tag-input";
 import { markdownToTipTap } from "@/lib/markdown-to-tiptap";
+import { AiGenerateDialog } from "@/components/sops/ai-generate-dialog";
+import { GenerationWarningDialog } from "@/components/sops/generation-warning-dialog";
+import { DocumentSettingsBar } from "@/components/sops/document-settings-bar";
 
 const SOPEditor = lazy(() =>
   import("@/components/sops/sop-editor").then((m) => ({ default: m.SOPEditor }))
 );
-
-const CATEGORIES = [
-  { value: "onboarding", label: "Onboarding" },
-  { value: "operations", label: "Operations" },
-  { value: "safety", label: "Safety" },
-  { value: "customer-service", label: "Customer Service" },
-  { value: "inventory", label: "Inventory" },
-  { value: "hr", label: "HR" },
-  { value: "marketing", label: "Marketing" },
-  { value: "finance", label: "Finance" },
-  { value: "other", label: "Other" },
-];
-
-const TEMPLATES = [
-  { label: "Employee Onboarding Checklist", topic: "Employee Onboarding Checklist — steps for welcoming a new hire, paperwork, training schedule, first-week tasks" },
-  { label: "Customer Complaint Handling", topic: "Customer Complaint Handling — how to receive, log, investigate, resolve, and follow up on customer complaints" },
-  { label: "Opening/Closing Procedures", topic: "Opening and Closing Procedures — daily tasks for opening the business in the morning and closing at the end of the day" },
-  { label: "Food Safety & Hygiene", topic: "Food Safety and Hygiene — handwashing, temperature control, cross-contamination prevention, cleaning schedules" },
-  { label: "Cash Register Operations", topic: "Cash Register Operations — opening the register, processing transactions, handling returns, end-of-day reconciliation" },
-  { label: "Inventory Management", topic: "Inventory Management — receiving stock, counting inventory, reorder thresholds, storage procedures" },
-];
 
 function textToTipTapJSON(text: string): JSONContent {
   const lines = text.split("\n");
@@ -152,14 +114,12 @@ export default function NewSOPPage() {
     const lines = text.split("\n").filter((l: string) => l.trim());
     if (lines.length === 0) return "Untitled";
 
-    // Check first line — if it's just "1. Title" or "Title", the actual title is on the next line
     const firstLine = lines[0].trim();
     const cleaned = firstLine
       .replace(/^\d+\.\s*/, "")
       .replace(/^Title:\s*/i, "")
       .trim();
 
-    // If after cleaning we get just "Title" or empty, use the next line
     if (!cleaned || /^title$/i.test(cleaned)) {
       if (lines.length > 1) {
         const secondLine = lines[1].trim();
@@ -200,9 +160,7 @@ export default function NewSOPPage() {
       .select("id")
       .single();
 
-    if (error) {
-      return;
-    }
+    if (error) return;
 
     setSavedSopId(data.id);
     toast.success("Document saved as draft. Edit and publish when ready.");
@@ -214,7 +172,6 @@ export default function NewSOPPage() {
     setEditorContent(json);
 
     const extracted = extractTitle(text);
-    // Use the AI-extracted title if it looks meaningful, otherwise fall back to the user's topic
     const generic = ["untitled sop", "제목", "title", "sop"];
     const titleText =
       extracted && !generic.includes(extracted.toLowerCase())
@@ -222,10 +179,8 @@ export default function NewSOPPage() {
         : topic.trim() || extracted;
     setTitle(titleText);
 
-    // Auto-save as draft
     autoSaveDraft(titleText, json, text);
 
-    // Auto-scroll to result
     setTimeout(() => {
       resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
@@ -253,7 +208,6 @@ export default function NewSOPPage() {
   }
 
   async function handleGenerate() {
-
     setGenerating(true);
     setGeneratedText("");
     setEditorContent(null);
@@ -359,7 +313,6 @@ export default function NewSOPPage() {
     }
 
     try {
-      // Images and PDFs: upload + AI convert in one step
       if (imageExts.includes(ext) || ext === "pdf") {
         await handleFileConvert(file);
         return;
@@ -434,15 +387,6 @@ export default function NewSOPPage() {
     }
   }
 
-  function handleTemplateClick(templateTopic: string) {
-    setTopic(templateTopic);
-    // Trigger generate after state update
-    setTimeout(() => {
-      const btn = document.getElementById("generate-btn");
-      if (btn) btn.click();
-    }, 50);
-  }
-
   async function handlePublish() {
     if (!title.trim()) {
       toast.error("Please enter a title");
@@ -456,7 +400,6 @@ export default function NewSOPPage() {
     setPublishing(true);
 
     if (savedSopId) {
-      // Update the auto-saved draft to published
       const { error } = await supabase
         .from("sops")
         .update({
@@ -486,7 +429,6 @@ export default function NewSOPPage() {
         queryClient.invalidateQueries({ queryKey: recentDocKeys.latest(currentBusiness.id) });
       }
     } else {
-      // Manual tab — no auto-save happened, insert as published
       const bizId = await getBusinessId();
       if (!bizId) {
         toast.error("No business found. Please complete onboarding first.");
@@ -656,155 +598,43 @@ export default function NewSOPPage() {
       </div>
 
       {/* Bottom metadata bar */}
-      <div className="border-t shrink-0">
-        <Collapsible open={metaOpen} onOpenChange={setMetaOpen}>
-          <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-2 text-xs text-muted-foreground hover:bg-muted/30">
-            <span>Document settings</span>
-            <ChevronDown className={cn("h-3 w-3 transition-transform", metaOpen && "rotate-180")} />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="px-4 pb-3">
-            <div className="flex flex-wrap gap-4 text-sm">
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Type</Label>
-                <Select value={docType} onValueChange={setDocType}>
-                  <SelectTrigger className="h-8 w-[120px] text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sop">SOP</SelectItem>
-                    <SelectItem value="note">Note</SelectItem>
-                    <SelectItem value="policy">Policy</SelectItem>
-                    <SelectItem value="meeting">Meeting</SelectItem>
-                    <SelectItem value="log">Log</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Category</Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue placeholder="Optional" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {CATEGORIES.map((c) => (
-                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Folder</Label>
-                <Select value={folderId || "none"} onValueChange={(v) => setFolderId(v === "none" ? "" : v)}>
-                  <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue placeholder="Unfiled" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Unfiled</SelectItem>
-                    {availableFolders.map((f) => (
-                      <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1 flex-1 min-w-[200px]">
-                <Label className="text-xs text-muted-foreground">Tags</Label>
-                <TagInput tags={tags} onChange={setTags} />
-              </div>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-      </div>
+      <DocumentSettingsBar
+        metaOpen={metaOpen}
+        onMetaOpenChange={setMetaOpen}
+        docType={docType}
+        onDocTypeChange={setDocType}
+        category={category}
+        onCategoryChange={setCategory}
+        folderId={folderId}
+        onFolderIdChange={setFolderId}
+        availableFolders={availableFolders}
+        tags={tags}
+        onTagsChange={setTags}
+      />
 
       {/* AI Generate Dialog */}
-      <Dialog open={showAiDialog} onOpenChange={setShowAiDialog}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>AI Generate</DialogTitle>
-            <DialogDescription>Describe what you want to create and AI will write it.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Topic / Task</Label>
-              <Textarea
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder="e.g., Opening procedures for the morning shift..."
-                rows={3}
-              />
-            </div>
-
-            {/* Upload section */}
-            <div className="space-y-2">
-              <Label>Or upload & reformat</Label>
-              <div className="flex items-center gap-3">
-                <Textarea
-                  value={uploadText}
-                  onChange={(e) => setUploadText(e.target.value)}
-                  placeholder="Paste existing text to reformat..."
-                  rows={2}
-                  className="flex-1"
-                />
-                <div className="flex flex-col gap-1">
-                  <Label
-                    htmlFor="file-upload-dialog"
-                    className="flex cursor-pointer items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted/50"
-                  >
-                    <FileUp className="h-3 w-3" /> Upload
-                  </Label>
-                  <input id="file-upload-dialog" type="file" accept=".txt,.md,.docx,.pdf,.csv,.jpg,.jpeg,.png,.webp" className="hidden" onChange={handleFileUpload} />
-                </div>
-              </div>
-              {uploadText && <span className="text-[10px] text-muted-foreground">{uploadText.length.toLocaleString()} characters</span>}
-            </div>
-
-            {/* Templates */}
-            {!generating && !reformatting && (
-              <div>
-                <p className="mb-2 text-xs text-muted-foreground">Quick templates:</p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {TEMPLATES.map((t) => (
-                    <button
-                      key={t.label}
-                      type="button"
-                      onClick={() => { setTopic(t.topic); }}
-                      className="rounded-md border px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-muted/50"
-                    >
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            {uploadText.trim() && (
-              <Button variant="outline" onClick={() => { setShowAiDialog(false); handleReformat(); }} disabled={reformatting}>
-                {reformatting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                Reformat (2 credits)
-              </Button>
-            )}
-            <Button onClick={() => { setShowAiDialog(false); onGenerateClick(); }} disabled={generating || !topic}>
-              {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-              Generate (3 credits)
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AiGenerateDialog
+        open={showAiDialog}
+        onOpenChange={setShowAiDialog}
+        topic={topic}
+        onTopicChange={setTopic}
+        uploadText={uploadText}
+        onUploadTextChange={setUploadText}
+        generating={generating}
+        reformatting={reformatting}
+        onGenerate={onGenerateClick}
+        onReformat={handleReformat}
+        onFileUpload={handleFileUpload}
+      />
 
       {/* Generation warning dialog */}
-      <Dialog open={warningOpen} onOpenChange={setWarningOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Before you generate</DialogTitle>
-            <DialogDescription>
-              AI-generated content is a draft. Please review and customize all details to match your specific business before publishing.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex items-center gap-2 py-2">
-            <Checkbox id="dismiss-warning" checked={warningDismiss} onCheckedChange={(v) => setWarningDismiss(v === true)} />
-            <label htmlFor="dismiss-warning" className="text-sm text-muted-foreground cursor-pointer">Don&apos;t show this again</label>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setWarningOpen(false)}>Cancel</Button>
-            <Button onClick={confirmGenerate}>Got it, generate</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <GenerationWarningDialog
+        open={warningOpen}
+        onOpenChange={setWarningOpen}
+        dismissChecked={warningDismiss}
+        onDismissChange={setWarningDismiss}
+        onConfirm={confirmGenerate}
+      />
     </div>
   );
 }

@@ -317,7 +317,7 @@ export default function CalendarPage() {
         const { id: _id, ...rest } = entry.data;
         supabase.from("todos").insert(rest).then(() => { invalidateCal(); toast.success("Restored"); });
       } else if (entry.type === "bulk_delete" && entry.data) {
-        const cleaned = entry.data.map((d: any) => { const { id: _id, ...rest } = d; return rest; });
+        const cleaned = entry.data.map((d: Record<string, unknown>) => { const { id: _id, ...rest } = d; return rest; });
         supabase.from("todos").insert(cleaned).then(() => { invalidateCal(); toast.success(`${cleaned.length} restored`); });
       } else if (entry.type === "todo_complete" && entry.data) {
         supabase.from("todos").update({ completed: entry.data.previousState }).eq("id", entry.data.id).then(() => invalidateCal());

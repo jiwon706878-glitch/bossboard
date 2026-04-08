@@ -167,157 +167,218 @@
 }
 
 
-/* ═══ Apple-style center-origin animations ═══ */
+/* ═══ Apple-style micro-interactions ═══ */
+/* All durations 120–200ms · Easing: cubic-bezier(0.16, 1, 0.3, 1) */
+/* GPU only: transform + opacity · Never width/height/margin          */
 
-/* Fade in — generic entrance */
+/* ── Tab fade — instant feel (120ms) ── */
+@keyframes tab-fade-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-tab-fade {
+  animation: tab-fade-in 120ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Fade in — generic entrance ── */
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(3px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in {
-  animation: fade-in 300ms ease-out;
+  animation: fade-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Open: scale from center of element */
+/* ── Modal / dialog enter — 150ms scale + fade ── */
+@keyframes modal-enter {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-modal-enter {
+  animation: modal-enter 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center center;
+}
+
+/* ── Open: scale from center ── */
 @keyframes center-scale-in {
-  from { opacity: 0; transform: scale(0.85); }
+  from { opacity: 0; transform: scale(0.92); }
   to { opacity: 1; transform: scale(1); }
 }
 .animate-center-scale-in {
-  animation: center-scale-in 380ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: center-scale-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
   transform-origin: center center;
 }
 
-/* Close: scale back to center of element */
+/* ── Close: scale back to center ── */
 @keyframes center-scale-out {
   from { opacity: 1; transform: scale(1); }
-  to { opacity: 0; transform: scale(0.85); }
+  to { opacity: 0; transform: scale(0.92); }
 }
 .animate-center-scale-out {
-  animation: center-scale-out 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: center-scale-out 120ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   transform-origin: center center;
 }
 
-/* Tab switch — gentle fade + tiny slide */
+/* ── Tab switch — gentle fade + tiny slide (kept for calendar panel) ── */
 @keyframes tab-enter {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-tab-enter {
-  animation: tab-enter 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation: tab-enter 150ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Scale in — for modals, dialogs, popovers */
+/* ── Scale in — for modals, dialogs, popovers ── */
 @keyframes scale-in {
-  from { opacity: 0; transform: scale(0.9); }
+  from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
 .animate-scale-in {
-  animation: scale-in 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: scale-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
   transform-origin: center center;
 }
 
-/* Board form — opens from center of "New Post" button area */
+/* ── Board form — opens from top center ── */
 @keyframes board-form-enter {
-  from { opacity: 0; transform: scale(0.9) translateY(-8px); }
+  from { opacity: 0; transform: scale(0.96) translateY(-4px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 .animate-board-form-enter {
-  animation: board-form-enter 380ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: board-form-enter 150ms cubic-bezier(0.16, 1, 0.3, 1);
   transform-origin: top center;
 }
 @keyframes board-form-exit {
   from { opacity: 1; transform: scale(1) translateY(0); }
-  to { opacity: 0; transform: scale(0.9) translateY(-8px); }
+  to { opacity: 0; transform: scale(0.96) translateY(-4px); }
 }
 .animate-board-form-exit {
-  animation: board-form-exit 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: board-form-exit 120ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   transform-origin: top center;
 }
 
-/* Post cards — staggered entrance */
+/* ── Post cards — staggered entrance ── */
 @keyframes post-enter {
-  from { opacity: 0; transform: scale(0.97); }
+  from { opacity: 0; transform: scale(0.98); }
   to { opacity: 1; transform: scale(1); }
 }
 .animate-post-enter {
-  animation: post-enter 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: post-enter 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
   transform-origin: center center;
 }
 
-/* Post delete — shrink to center + fade */
+/* ── Post delete — shrink to center + fade ── */
 @keyframes post-exit {
   from { opacity: 1; transform: scale(1); }
-  to { opacity: 0; transform: scale(0.92); margin-top: -8px; margin-bottom: -8px; }
+  to { opacity: 0; transform: scale(0.95); }
 }
 .animate-post-exit {
-  animation: post-exit 350ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: post-exit 150ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   transform-origin: center center;
   overflow: hidden;
 }
 
-/* Comments expand — from center */
+/* ── Comments expand — from top ── */
 @keyframes comments-expand {
-  from { opacity: 0; transform: scaleY(0.9); max-height: 0; }
-  to { opacity: 1; transform: scaleY(1); max-height: 2000px; }
+  from { opacity: 0; transform: scaleY(0.95); }
+  to { opacity: 1; transform: scaleY(1); }
 }
 .animate-comments-expand {
-  animation: comments-expand 380ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: comments-expand 150ms cubic-bezier(0.16, 1, 0.3, 1);
   transform-origin: top center;
 }
 
-/* Popover/dropdown — scale from center */
+/* ── Popover / dropdown — scale from origin ── */
 @keyframes popover-enter {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: scale(0.95) translateY(-4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 .animate-popover-enter {
-  animation: popover-enter 250ms cubic-bezier(0.16, 1, 0.3, 1);
-  transform-origin: center center;
+  animation: popover-enter 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top center;
 }
 
-/* Slide up — for sheets, sticky note */
+/* ── Slide up — for sheets, sticky note, toasts ── */
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(16px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-.animate-slide-up {
-  animation: slide-up 380ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-@keyframes slide-down-out {
-  from { opacity: 1; transform: translateY(0) scale(1); }
-  to { opacity: 0; transform: translateY(16px) scale(0.97); }
-}
-.animate-slide-down-out {
-  animation: slide-down-out 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Settings/team cards stagger */
-@keyframes stagger-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.animate-stagger-in {
-  animation: stagger-in 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+.animate-slide-up {
+  animation: slide-up 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes slide-down-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(8px); }
+}
+.animate-slide-down-out {
+  animation: slide-down-out 150ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Button press — subtle bounce */
+/* ── Item enter — for card/list items ── */
+@keyframes item-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-item-enter {
+  animation: item-enter 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Item exit — for deletions ── */
+@keyframes item-exit {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-4px) scale(0.98); }
+}
+.animate-item-exit {
+  animation: item-exit 150ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Stagger children — for lists ── */
+.stagger-children > * {
+  opacity: 0;
+  animation: item-enter 150ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 25ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 50ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 75ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 125ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 150ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 175ms; }
+.stagger-children > *:nth-child(n+9) { animation-delay: 200ms; }
+
+/* ── Settings/team cards stagger ── */
+@keyframes stagger-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-stagger-in {
+  animation: stagger-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Button press — subtle scale ── */
 .press-effect {
-  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .press-effect:active {
   transform: scale(0.96);
 }
 
-/* Universal post card layout transitions */
-[data-post-id] {
-  transition: transform 350ms cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 350ms cubic-bezier(0.16, 1, 0.3, 1),
-              max-height 350ms cubic-bezier(0.16, 1, 0.3, 1),
-              margin 350ms cubic-bezier(0.16, 1, 0.3, 1);
+/* ── Hover lift — for interactive cards ── */
+.hover-lift {
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hover-lift:hover {
+  transform: translateY(-1px);
 }
 
-/* Toast close button — inside box on right */
+/* ── Universal post card layout transitions ── */
+[data-post-id] {
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Toast close button — inside box on right ── */
 [data-sonner-toast] {
   position: relative;
 }
@@ -331,23 +392,48 @@
   border: none !important;
 }
 
-/* Calendar month transition */
+/* ── Calendar month transition ── */
 @keyframes cal-month-enter {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-cal-month {
-  animation: cal-month-enter 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: cal-month-enter 150ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Shake for rejected actions */
+/* ── Shake for rejected actions ── */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-4px); }
-  40%, 80% { transform: translateX(4px); }
+  20%, 60% { transform: translateX(-3px); }
+  40%, 80% { transform: translateX(3px); }
 }
 .animate-shake {
-  animation: shake 300ms ease-out;
+  animation: shake 200ms ease-out;
+}
+
+/* ── Badge pop — for notification counts ── */
+@keyframes badge-pop {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-badge-pop {
+  animation: badge-pop 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Progress bar fill ── */
+.animate-progress-fill {
+  transition: width 500ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Switch/checkbox smooth ── */
+[data-slot="switch"] {
+  transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* ── Input focus ring fade ── */
+input, textarea, select, [data-slot="input"] {
+  transition: box-shadow 150ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 150ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ═══ Reduced motion ═══ */

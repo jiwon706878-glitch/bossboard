@@ -214,7 +214,7 @@ export default function SOPsPage() {
   const isTrashView = selectedFolder === "trash";
 
   return (
-    <div className="-m-4 lg:-m-6 flex h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="-m-4 lg:-m-6 flex h-[calc(100vh-4rem)] overflow-hidden animate-fade-in">
       {ctxMenu && (
         <SOPContextMenu menu={ctxMenu} onClose={() => setCtxMenu(null)}
           onOpen={() => { router.push(`/dashboard/sops/${ctxMenu.sop.id}`); setCtxMenu(null); }}

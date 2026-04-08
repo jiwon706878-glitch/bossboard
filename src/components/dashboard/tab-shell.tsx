@@ -219,7 +219,7 @@ export function TabShell({ children }: { children: React.ReactNode }) {
           <div
             key={tab.id}
             style={{ display: isVisible ? "block" : "none" }}
-            className="p-4 lg:p-6"
+            className="p-4 lg:p-6 animate-tab-fade"
           >
             <Suspense fallback={<TabSkeleton />}>
               <tab.Component />

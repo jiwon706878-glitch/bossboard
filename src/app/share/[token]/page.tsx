@@ -195,7 +195,7 @@ export default function SharePage() {
       </header>
 
       {/* Content */}
-      <main className="mx-auto max-w-3xl px-4 py-8">
+      <main className="mx-auto max-w-3xl px-4 py-8 animate-fade-in">
         <div className="space-y-6">
           <div>
             <h1 className="text-2xl font-bold text-foreground">{doc.title}</h1>

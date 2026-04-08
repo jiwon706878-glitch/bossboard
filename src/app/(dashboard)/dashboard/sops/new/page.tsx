@@ -508,7 +508,7 @@ export default function NewSOPPage() {
   const businessId = currentBusiness?.id;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] -m-4 lg:-m-6">
+    <div className="flex flex-col h-[calc(100vh-4rem)] -m-4 lg:-m-6 animate-fade-in">
       {/* Top bar */}
       <div className="flex items-center gap-3 border-b px-4 py-2.5 shrink-0">
         <Link href="/dashboard/sops">

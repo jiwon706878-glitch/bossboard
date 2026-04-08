@@ -94,7 +94,7 @@ export function AdminDashboard({
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead><tr className="border-b text-left text-xs text-muted-foreground"><th className="pb-2 pr-4 font-medium">Name</th><th className="pb-2 pr-4 font-medium">Email</th><th className="pb-2 pr-4 font-medium">Role</th><th className="pb-2 font-medium">Joined</th></tr></thead>
-                <tbody>
+                <tbody className="stagger-children">
                   {teamMembers.map((m: any) => (
                     <tr key={m.id} className="border-b last:border-0">
                       <td className="py-3 pr-4">{m.full_name || m.email || "\u2014"}</td>

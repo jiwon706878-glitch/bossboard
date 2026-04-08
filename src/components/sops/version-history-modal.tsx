@@ -54,7 +54,7 @@ export function VersionHistoryModal({
         {versions.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4">No previous versions found.</p>
         ) : (
-          <div className="space-y-3 pt-2">
+          <div className="space-y-3 pt-2 stagger-children">
             {versions.map((v) => (
               <div key={v.id} className="rounded-md border p-3">
                 <div className="flex items-center justify-between">

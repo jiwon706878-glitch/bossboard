@@ -193,7 +193,7 @@ export default function EditSOPPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
         <Link href={`/dashboard/sops/${sopId}`}>
           <Button variant="ghost" size="sm">

@@ -97,7 +97,7 @@ export default async function UsagePage() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3 animate-fade-in">
         {/* Credit Gauge */}
         <Card className="md:col-span-1">
           <CardHeader>

@@ -49,7 +49,7 @@ export function CommentSection({
           Loading comments...
         </div>
       ) : (
-        <div className="animate-center-scale-in space-y-3">
+        <div className="animate-center-scale-in space-y-3 stagger-children">
           {comments.filter((c) => !c.parent_id).map((c) => {
             const replies = comments.filter((r) => r.parent_id === c.id);
             return (

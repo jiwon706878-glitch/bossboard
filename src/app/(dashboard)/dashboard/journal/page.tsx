@@ -240,7 +240,7 @@ export default function JournalPage() {
                   </button>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <div className="space-y-3 pt-1">
+                  <div className="space-y-3 pt-1 stagger-children">
                     {group.entries.map((entry) => (
                       <EntryCard key={entry.id} entry={entry} currentUserId={currentUserId} isAdmin={isAdmin()} feedbackEntryId={feedbackEntryId} feedbackText={feedbackText} feedbackSubmitting={feedbackSubmitting} formatEntryDate={formatEntryDate} onEdit={handleEdit} onFeedback={handleFeedback} onStartFeedback={(id) => setFeedbackEntryId(id)} onCancelFeedback={() => { setFeedbackEntryId(null); setFeedbackText(""); }} onFeedbackTextChange={setFeedbackText} />
                     ))}
@@ -271,7 +271,7 @@ const EntryCard = memo(function EntryCard({ entry, currentUserId, isAdmin, feedb
           {entry.user_id === currentUserId && <Button variant="ghost" size="sm" className="text-xs" onClick={() => onEdit(entry)}>Edit</Button>}
         </div>
         <p className="text-sm whitespace-pre-wrap">{entry.content}</p>
-        {entry.notes && (<div className="rounded-md bg-muted/50 px-3 py-2"><p className="text-xs font-medium text-muted-foreground mb-1">Special notes</p><p className="text-sm whitespace-pre-wrap">{entry.notes}</p></div>)}
+        {entry.notes && (<div className="rounded-md bg-muted/50 px-3 py-2 animate-center-scale-in"><p className="text-xs font-medium text-muted-foreground mb-1">Special notes</p><p className="text-sm whitespace-pre-wrap">{entry.notes}</p></div>)}
         {entry.manager_feedback && (<><Separator /><div className="rounded-md border-l-2 border-l-primary bg-primary/5 px-3 py-2"><p className="text-xs font-medium text-primary mb-1">Feedback from {entry.manager_name || "Manager"}{entry.feedback_at && <span className="font-normal text-muted-foreground ml-2">{format(new Date(entry.feedback_at), "MMM d, h:mm a")}</span>}</p><p className="text-sm whitespace-pre-wrap">{entry.manager_feedback}</p></div></>)}
         {isAdmin && entry.user_id !== currentUserId && !entry.manager_feedback && (<>
           {feedbackEntryId === entry.id ? (

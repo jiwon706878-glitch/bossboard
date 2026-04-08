@@ -340,7 +340,7 @@ Documents not updated in 90+ days show an amber "90+ days" badge in the Wiki lis
           </div>
         </div>
 
-        <Card className="w-full border bg-card">
+        <Card className="w-full border bg-card animate-fade-in">
           {step === 1 && (
             <StepAboutYou
               fullName={fullName}

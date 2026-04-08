@@ -55,7 +55,7 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-[1080px] space-y-6">
       {/* 1. Greeting */}
-      <div className="space-y-1">
+      <div className="space-y-1 animate-fade-in">
         <h2 className="text-2xl font-semibold tracking-tight text-foreground">
           {greeting}, {userName}
         </h2>

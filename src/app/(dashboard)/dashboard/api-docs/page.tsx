@@ -266,7 +266,7 @@ export default function ApiDocsPage() {
         </CardContent>
       </Card>
 
-      <div className="space-y-3">
+      <div className="space-y-3 stagger-children">
         <h2 className="text-lg font-semibold">Endpoints</h2>
         {ENDPOINTS.map((ep) => <EndpointCard key={ep.path + ep.method} ep={ep} />)}
       </div>

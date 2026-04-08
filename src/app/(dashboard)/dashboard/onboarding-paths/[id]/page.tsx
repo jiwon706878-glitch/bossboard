@@ -280,7 +280,7 @@ export default function OnboardingPathDetailPage() {
         <CardHeader>
           <CardTitle className="text-sm font-medium">Path Steps</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-2 stagger-children">
           {steps.map((step, i) => (
             <div
               key={i}

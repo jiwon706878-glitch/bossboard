@@ -407,7 +407,7 @@ export default function CalendarPage() {
           <p className="text-xs text-muted-foreground mt-1">Click + to add one</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 stagger-children">
           {dayEvents.map((ev, i) => (
             <div
               key={ev.id}

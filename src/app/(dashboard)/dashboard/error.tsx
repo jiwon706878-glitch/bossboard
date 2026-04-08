@@ -11,7 +11,7 @@ export default function DashboardError({
   reset: () => void;
 }) {
   return (
-    <div className="mx-auto flex max-w-md flex-col items-center justify-center py-24 text-center">
+    <div className="mx-auto flex max-w-md flex-col items-center justify-center py-24 text-center animate-center-scale-in">
       <AlertTriangle className="mb-4 h-10 w-10 text-destructive" />
       <h2 className="text-lg font-semibold">Something went wrong</h2>
       <p className="mt-1 text-sm text-muted-foreground">

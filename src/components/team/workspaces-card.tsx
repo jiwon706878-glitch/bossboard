@@ -33,7 +33,7 @@ export function WorkspacesCard({
         <CardTitle className="text-sm font-medium">Workspaces</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
+        <div className="space-y-2 stagger-children">
           {allBusinesses.map((biz: any) => (
             <div key={biz.id} className="flex items-center justify-between rounded-md border px-4 py-3">
               <div>

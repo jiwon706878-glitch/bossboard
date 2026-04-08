@@ -74,7 +74,7 @@ export default function SignupPage() {
 
   if (sent) {
     return (
-      <Card className="border bg-card">
+      <Card className="border bg-card animate-fade-in">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-foreground">Check your email</CardTitle>
           <CardDescription className="text-muted-foreground">
@@ -87,7 +87,7 @@ export default function SignupPage() {
   }
 
   return (
-    <Card className="border bg-card">
+    <Card className="border bg-card animate-fade-in">
       <CardHeader className="text-center pb-4">
         <CardTitle className="text-2xl font-bold text-foreground">Create your account</CardTitle>
         <CardDescription className="text-muted-foreground">

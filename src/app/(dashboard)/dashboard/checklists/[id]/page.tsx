@@ -264,7 +264,7 @@ export default function ChecklistDetailPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       {/* Header */}
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-3 animate-fade-in">
         <Link href="/dashboard/checklists">
           <Button variant="ghost" size="sm" className="mt-1">
             <ArrowLeft className="mr-1 h-4 w-4" /> Back
@@ -321,7 +321,7 @@ export default function ChecklistDetailPage() {
         <CardHeader>
           <CardTitle className="text-sm font-medium">Checklist Items</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-1">
+        <CardContent className="space-y-1 stagger-children">
           {(checklist.items ?? []).map((item, index) => {
             const isChecked = checked.has(index) || isCompleted;
             const isAssignedToMe = item.assigned_to === currentUserId;

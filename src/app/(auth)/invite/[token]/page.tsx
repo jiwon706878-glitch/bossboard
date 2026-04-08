@@ -119,7 +119,7 @@ export default function InvitePage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md border bg-card">
+      <Card className="w-full max-w-md border bg-card animate-fade-in">
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Team Invite</CardTitle>
         </CardHeader>

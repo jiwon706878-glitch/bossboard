@@ -23,7 +23,7 @@ export function StatsSection({
   unlimitedCredits,
 }: StatsSectionProps) {
   return (
-    <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+    <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 stagger-children">
       <Card className="rounded-md shadow-none">
         <CardContent className="pt-4 pb-4">
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">

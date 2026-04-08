@@ -751,7 +751,7 @@ export function FolderTree() {
       {/* Folder tree (only when business exists) */}
       {currentBusiness && (
         <>
-          <div className="max-h-[280px] overflow-y-auto">
+          <div className="max-h-[280px] overflow-y-auto stagger-children">
             {displayTree.map((node) => (
               <FolderItem
                 key={node.id}

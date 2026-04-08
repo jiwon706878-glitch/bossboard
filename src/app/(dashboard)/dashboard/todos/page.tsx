@@ -203,7 +203,7 @@ export default function TodosPage() {
       </form>
 
       {overdueTodos.length > 0 && (
-        <div className="space-y-1">
+        <div className="space-y-1 stagger-children">
           <h3 className="text-xs font-medium text-destructive uppercase tracking-wide px-1">Overdue ({overdueTodos.length})</h3>
           {overdueTodos.map((todo) => (
             <TodoItem key={todo.id} todo={todo} carried={carriedFromLabel(todo)} editing={editingId === todo.id} editText={editText}
@@ -215,7 +215,7 @@ export default function TodosPage() {
         </div>
       )}
 
-      <div className="space-y-1">
+      <div className="space-y-1 stagger-children">
         {todayTodos.length === 0 && overdueTodos.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <ListTodo className="mb-3 h-10 w-10 text-muted-foreground/50" />
@@ -267,7 +267,7 @@ function TodoContextMenu({ menu, onClose, onComplete, onDelete }: { menu: { x: n
     return () => { document.removeEventListener("mousedown", h1); document.removeEventListener("keydown", h2); };
   }, [onClose]);
   return (
-    <div ref={ref} className="fixed z-50 w-40 rounded-md border bg-popover p-1 shadow-md" style={{ left: Math.min(menu.x, window.innerWidth - 170), top: Math.min(menu.y, window.innerHeight - 100) }}>
+    <div ref={ref} className="fixed z-50 w-40 rounded-md border bg-popover p-1 shadow-md animate-popover-enter" style={{ left: Math.min(menu.x, window.innerWidth - 170), top: Math.min(menu.y, window.innerHeight - 100) }}>
       <button type="button" className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs cursor-pointer hover:bg-muted text-foreground" onClick={onComplete}>{menu.completed ? "Undo complete" : "Complete"}</button>
       <button type="button" className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs cursor-pointer hover:bg-destructive/10 text-destructive" onClick={onDelete}>Delete</button>
     </div>

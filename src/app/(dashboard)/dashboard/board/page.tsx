@@ -474,7 +474,7 @@ export default function BoardPage() {
           <p className="text-sm text-muted-foreground">No posts yet. Start a conversation!</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 stagger-children">
           {posts.map((post, index) => (
             <PostCard
               key={post.id}

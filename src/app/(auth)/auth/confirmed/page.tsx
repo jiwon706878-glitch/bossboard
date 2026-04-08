@@ -97,7 +97,7 @@ export default function ConfirmedPage() {
   return (
     <>
       <Confetti />
-      <Card className="text-center">
+      <Card className="text-center animate-center-scale-in">
         <CardContent className="pt-10 pb-8 space-y-6">
           <div className="flex justify-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">

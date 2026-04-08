@@ -66,7 +66,7 @@ export default function LoginPage() {
   }
 
   return (
-    <Card className="border bg-card">
+    <Card className="border bg-card animate-fade-in">
       <CardHeader className="text-center pb-4">
         <CardTitle className="text-2xl font-bold text-foreground">Welcome back</CardTitle>
         <CardDescription className="text-muted-foreground">Sign in to your BossBoard account</CardDescription>

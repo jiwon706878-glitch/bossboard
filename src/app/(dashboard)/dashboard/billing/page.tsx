@@ -108,7 +108,7 @@ export default function BillingPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 stagger-children">
         {planOrder.map((planId) => {
           const plan = plans[planId];
           const isCurrent = planId === currentPlan;

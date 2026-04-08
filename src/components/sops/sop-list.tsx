@@ -167,7 +167,7 @@ export const SopList = memo(function SopList({
             )}
           </div>
         ) : (
-          <div>
+          <div className="stagger-children">
             {pinnedSops.length > 0 && (
               <>
                 <div className="flex items-center gap-1.5 px-4 py-1 text-[11px] text-muted-foreground">

@@ -58,7 +58,7 @@ function ChecklistContextMenu({ menu, onClose, onOpen, onDelete }: { menu: { x: 
   }, [onClose]);
 
   return (
-    <div ref={ref} className="fixed z-50 w-40 rounded-md border bg-popover p-1 shadow-md"
+    <div ref={ref} className="fixed z-50 w-40 rounded-md border bg-popover p-1 shadow-md animate-popover-enter"
       style={{ left: Math.min(menu.x, window.innerWidth - 170), top: Math.min(menu.y, window.innerHeight - 100) }}>
       <button type="button" className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs cursor-pointer hover:bg-muted text-foreground" onClick={onOpen}>
         Open
@@ -180,7 +180,7 @@ export default function ChecklistsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 stagger-children">
           {checklists.map((checklist) => {
             const itemCount = checklist.items?.length ?? 0;
             const isDueToday =

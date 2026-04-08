@@ -193,7 +193,7 @@ export default function SOPDetailPage() {
         </div>
       )}
 
-      <Card className="border bg-card">
+      <Card className="border bg-card animate-fade-in">
         <CardContent
           className="py-6"
           data-copy-protected={isCopyProtected || undefined}

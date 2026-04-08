@@ -237,7 +237,7 @@ export default function TeamPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-6 stagger-children">
       <div>
         <h1 className="text-3xl font-bold">Team & Admin</h1>
         <p className="text-muted-foreground">Manage team members and invitations.</p>

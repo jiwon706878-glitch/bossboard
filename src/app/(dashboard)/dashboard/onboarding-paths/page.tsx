@@ -329,7 +329,7 @@ export default function OnboardingPathsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 stagger-children">
           {paths.map((path) => {
             const assignCount = getAssignmentCount(path.id);
             const stepCount = path.steps?.length ?? 0;
@@ -337,7 +337,7 @@ export default function OnboardingPathsPage() {
             return (
               <Card
                 key={path.id}
-                className="cursor-pointer rounded-md shadow-none transition-colors duration-150 hover:bg-muted/30"
+                className="cursor-pointer rounded-md shadow-none transition-colors duration-150 hover:bg-muted/30 hover-lift"
                 onClick={() => router.push(`/dashboard/onboarding-paths/${path.id}`)}
               >
                 <CardContent className="flex items-center gap-4 py-4">

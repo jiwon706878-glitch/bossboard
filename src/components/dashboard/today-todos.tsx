@@ -56,7 +56,7 @@ export function TodayTodos({
         {todos.length === 0 ? (
           <p className="text-xs text-muted-foreground py-2">No todos for today. Type above and press Enter.</p>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-1 stagger-children">
             {todos.map((todo) => (
               <div key={todo.id} className="group flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-muted/50">
                 <button

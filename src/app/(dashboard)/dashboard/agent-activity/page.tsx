@@ -140,7 +140,7 @@ export default function AgentActivityPage() {
           <p className="text-xs text-muted-foreground mt-1">Create an API key in Settings to get started.</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 stagger-children">
           {[...grouped.entries()].map(([dateStr, entries]) => (
             <div key={dateStr}>
               <p className="text-xs font-medium text-muted-foreground mb-2">{formatDateLabel(dateStr)}</p>

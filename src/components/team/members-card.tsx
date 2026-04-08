@@ -62,7 +62,7 @@ export function MembersCard({
       </CardHeader>
       <CardContent className="space-y-6">
         {teamMembers.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-2 stagger-children">
             {teamMembers.map((member: any) => (
               <div key={member.id} className="flex items-center justify-between rounded-md border px-4 py-3">
                 <div className="min-w-0"><p className="font-medium truncate">{member.full_name || member.email || "Unnamed"}</p>{member.email && member.full_name && <p className="text-sm text-muted-foreground truncate">{member.email}</p>}</div>
@@ -87,7 +87,7 @@ export function MembersCard({
         {pendingInvites.length > 0 && (
           <div className="space-y-3">
             <h3 className="text-sm font-medium text-muted-foreground">Pending Invites</h3>
-            <div className="space-y-2">
+            <div className="space-y-2 stagger-children">
               {pendingInvites.map((invite: any) => (
                 <div key={invite.id} className="flex items-center justify-between rounded-md border border-dashed px-4 py-3">
                   <div className="min-w-0"><p className="text-sm font-medium truncate">{invite.email || "Invite link"}</p><p className="text-xs text-muted-foreground">Invited as {invite.role} · {invite.email ? "Email invite" : "Link invite"}</p></div>

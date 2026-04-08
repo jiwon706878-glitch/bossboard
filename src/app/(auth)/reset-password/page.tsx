@@ -51,7 +51,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <Card>
+    <Card className="animate-fade-in">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Set new password</CardTitle>
         <CardDescription>Enter your new password below.</CardDescription>

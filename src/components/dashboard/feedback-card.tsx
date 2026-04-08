@@ -64,7 +64,7 @@ export const FeedbackCard = memo(function FeedbackCard({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-3 animate-fade-in">
       <Select value={category} onValueChange={setCategory}>
         <SelectTrigger className="w-full">
           <SelectValue />

@@ -43,7 +43,7 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <Card>
+      <Card className="animate-fade-in">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Check your email</CardTitle>
           <CardDescription>
@@ -60,7 +60,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <Card>
+    <Card className="animate-fade-in">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Forgot password?</CardTitle>
         <CardDescription>

@@ -58,6 +58,7 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickTitle, setQuickTitle] = useState("");
+  const [quickAddSubmitting, setQuickAddSubmitting] = useState(false);
   const [quickTime, setQuickTime] = useState("");
   const [monthAnimating, setMonthAnimating] = useState(false);
   const [animDir, setAnimDir] = useState<"left" | "right">("right");
@@ -212,13 +213,18 @@ export default function CalendarPage() {
 
   async function handleQuickAdd(titleOverride?: string) {
     const title = titleOverride || quickTitle;
-    if (!title.trim() || !selectedDate || !userId) return;
-    const { error } = await supabase.from("todos").insert({ user_id: userId, text: title.trim(), due_date: selectedDate, completed: false });
-    if (error) { toast.error("Failed to create todo"); return; }
-    toast.success("Todo added");
-    setQuickTitle(""); setQuickTime(""); setShowQuickAdd(false);
-    if (quickAddRef.current) quickAddRef.current.value = "";
-    invalidateCal();
+    if (!title.trim() || !selectedDate || !userId || quickAddSubmitting) return;
+    setQuickAddSubmitting(true);
+    try {
+      const { error } = await supabase.from("todos").insert({ user_id: userId, text: title.trim(), due_date: selectedDate, completed: false });
+      if (error) { toast.error("Failed to create todo"); return; }
+      toast.success("Todo added");
+      setQuickTitle(""); setQuickTime(""); setShowQuickAdd(false);
+      if (quickAddRef.current) quickAddRef.current.value = "";
+      invalidateCal();
+    } finally {
+      setQuickAddSubmitting(false);
+    }
   }
 
   async function handleCompleteTodo(id: string, completed: boolean) {
@@ -315,12 +321,12 @@ export default function CalendarPage() {
       const entry = (e as CustomEvent).detail;
       if (entry.type === "todo_delete" && entry.data) {
         const { id: _id, ...rest } = entry.data;
-        supabase.from("todos").insert(rest).then(() => { invalidateCal(); toast.success("Restored"); });
+        supabase.from("todos").insert(rest).then(() => { invalidateCal(); toast.success("Restored"); }).catch(() => toast.error("Restore failed"));
       } else if (entry.type === "bulk_delete" && entry.data) {
         const cleaned = entry.data.map((d: Record<string, unknown>) => { const { id: _id, ...rest } = d; return rest; });
-        supabase.from("todos").insert(cleaned).then(() => { invalidateCal(); toast.success(`${cleaned.length} restored`); });
+        supabase.from("todos").insert(cleaned).then(() => { invalidateCal(); toast.success(`${cleaned.length} restored`); }).catch(() => toast.error("Restore failed"));
       } else if (entry.type === "todo_complete" && entry.data) {
-        supabase.from("todos").update({ completed: entry.data.previousState }).eq("id", entry.data.id).then(() => invalidateCal());
+        supabase.from("todos").update({ completed: entry.data.previousState }).eq("id", entry.data.id).then(() => invalidateCal()).catch(() => toast.error("Restore failed"));
       }
     }
     function onDelete() { if (selectedRef.current.size > 0) handleBulkDeleteRef.current(); }
@@ -394,7 +400,7 @@ export default function CalendarPage() {
             />
             <div className="flex gap-2">
               <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowQuickAdd(false)}>Cancel</Button>
-              <Button size="sm" className="h-7 text-xs press-effect" onClick={() => handleQuickAdd()}>Add</Button>
+              <Button size="sm" className="h-7 text-xs press-effect" disabled={quickAddSubmitting} onClick={() => handleQuickAdd()}>Add</Button>
             </div>
           </div>
         </div>

@@ -73,6 +73,7 @@ export const SopRow = memo(function SopRow({
         {onMoveUp && (
           <button
             type="button"
+            aria-label="Move up"
             className="text-muted-foreground/40 hover:text-foreground leading-none"
             onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
           >
@@ -82,6 +83,7 @@ export const SopRow = memo(function SopRow({
         {onMoveDown && (
           <button
             type="button"
+            aria-label="Move down"
             className="text-muted-foreground/40 hover:text-foreground leading-none"
             onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
           >
@@ -118,6 +120,7 @@ export const SopRow = memo(function SopRow({
         <button
           type="button"
           title="Edit"
+          aria-label="Edit"
           className="rounded p-0.5 text-muted-foreground hover:text-foreground"
           onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/sops/${sop.id}/edit`); }}
         >
@@ -126,6 +129,7 @@ export const SopRow = memo(function SopRow({
         <button
           type="button"
           title={sop.pinned ? "Unpin" : "Pin"}
+          aria-label={sop.pinned ? "Unpin" : "Pin"}
           className="rounded p-0.5 text-muted-foreground hover:text-foreground"
           onClick={(e) => { e.stopPropagation(); onPin(sop.id, !sop.pinned); }}
         >
@@ -134,6 +138,7 @@ export const SopRow = memo(function SopRow({
         <button
           type="button"
           title="Delete"
+          aria-label="Delete"
           className="rounded p-0.5 text-muted-foreground hover:text-destructive"
           onClick={(e) => { e.stopPropagation(); onDelete(sop.id); }}
         >
@@ -149,6 +154,7 @@ export const SopRow = memo(function SopRow({
         <DropdownMenuTrigger asChild>
           <button
             type="button"
+            aria-label="More actions"
             className="flex h-5 w-5 items-center justify-center rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity"
             onClick={(e) => e.stopPropagation()}
           >

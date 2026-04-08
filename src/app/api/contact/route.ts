@@ -30,12 +30,16 @@ export async function POST(req: Request) {
 
   const to = process.env.CONTACT_EMAIL || process.env.ADMIN_EMAIL || "jiwon706878@gmail.com";
 
-  await sendEmail({
-    to,
-    subject: subject || `New contact form submission from ${name}`,
-    html: contactEmailHtml({ name, email, message, subject }),
-    replyTo: email,
-  });
+  try {
+    await sendEmail({
+      to,
+      subject: subject || `New contact form submission from ${name}`,
+      html: contactEmailHtml({ name, email, message, subject }),
+      replyTo: email,
+    });
+  } catch (err) {
+    console.error("Failed to send contact email:", err);
+  }
 
   return Response.json({ success: true });
 }

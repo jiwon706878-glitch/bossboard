@@ -12,7 +12,7 @@ const faqEntries = [
   {
     keywords: ["price", "pricing", "cost", "plan", "plans", "subscription"],
     response:
-      "BossBoard offers 4 plans:\n\n\u2022 Free: $0/mo (5 SOPs, 5 AI generations)\n\u2022 Starter: $19/mo (50 SOPs, 50 AI generations)\n\u2022 Pro: $49/mo (unlimited SOPs & AI generations)\n\u2022 Business: $129/mo (everything in Pro + unlimited team, API, SSO)\n\nNo credit card required for the free plan!",
+      "BossBoard offers 4 plans:\n\n\u2022 Free: $0/mo (20 documents, 3 team members, 5 AI generations)\n\u2022 Starter: $19/mo (unlimited documents, 15 team members, 200 AI generations, API & MCP access)\n\u2022 Pro: $49/mo (unlimited documents & AI generations, 30 team members)\n\u2022 Business: $129/mo (everything in Pro + unlimited team members)\n\nNo credit card required for the free plan!",
   },
   {
     keywords: ["cancel", "refund", "unsubscribe"],
@@ -22,12 +22,12 @@ const faqEntries = [
   {
     keywords: ["free", "trial", "try"],
     response:
-      "Our free plan includes 5 SOPs, 3 team members, and 5 AI generations per month \u2014 no credit card required! That\u2019s enough to create your first procedures and see how BossBoard works for your team.",
+      "Our free plan includes 20 documents, 3 team members, and 5 AI generations per month \u2014 no credit card required! That\u2019s enough to create your first procedures and see how BossBoard works for your team.",
   },
   {
     keywords: ["credit", "credits", "generation", "generations"],
     response:
-      "AI generations are how BossBoard measures AI usage. Each SOP generation costs 3 credits. Free users get 5/month, Starter gets 50/month, and Pro/Business get unlimited.",
+      "AI generations are how BossBoard measures AI usage. Each SOP generation costs 3 credits. Free users get 5/month, Starter gets 200/month, and Pro/Business get unlimited.",
   },
   {
     keywords: ["feature", "features", "what can", "do", "does", "tool", "tools"],

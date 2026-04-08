@@ -65,7 +65,7 @@ export function TodayTodos({
                   className="flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded border border-muted-foreground/30 hover:border-emerald-400 hover:bg-emerald-400/10 transition-colors"
                 />
                 <span className="flex-1 text-sm">{todo.text}</span>
-                <button type="button" className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={() => onDeleteTodo(todo.id)}>
+                <button type="button" aria-label="Delete todo" className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={() => onDeleteTodo(todo.id)}>
                   <Trash2 className="h-3 w-3" />
                 </button>
               </div>

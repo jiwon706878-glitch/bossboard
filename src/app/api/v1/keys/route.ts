@@ -58,9 +58,22 @@ export async function GET() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    // Only return keys for businesses owned by the current user
+    const { data: userBusinesses } = await supabase
+      .from("businesses")
+      .select("id")
+      .eq("user_id", user.id);
+
+    const businessIds = (userBusinesses ?? []).map((b: { id: string }) => b.id);
+
+    if (businessIds.length === 0) {
+      return NextResponse.json({ keys: [] });
+    }
+
     const { data } = await supabase
       .from("api_keys")
-      .select("id, name, key_prefix, created_at, last_used_at")
+      .select("id, name, key_prefix, created_at, last_used_at, business_id")
+      .in("business_id", businessIds)
       .order("created_at", { ascending: false });
 
     return NextResponse.json({ keys: data ?? [] });
@@ -80,6 +93,28 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const keyId = searchParams.get("id");
     if (!keyId) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+    // Verify the key belongs to a business owned by the current user
+    const { data: keyRecord } = await supabase
+      .from("api_keys")
+      .select("id, business_id")
+      .eq("id", keyId)
+      .single();
+
+    if (!keyRecord) {
+      return NextResponse.json({ error: "Key not found" }, { status: 404 });
+    }
+
+    const { data: biz } = await supabase
+      .from("businesses")
+      .select("id")
+      .eq("id", keyRecord.business_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!biz) {
+      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+    }
 
     const { error } = await supabase.from("api_keys").delete().eq("id", keyId);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

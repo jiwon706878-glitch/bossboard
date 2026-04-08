@@ -343,6 +343,8 @@ export default function BoardPage() {
     } catch {
       toast.error("Failed to vote");
       invalidateBoard();
+      setVotingLock(false);
+      return;
     }
 
     // Refresh with actual server data

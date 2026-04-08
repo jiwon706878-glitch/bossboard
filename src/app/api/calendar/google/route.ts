@@ -70,17 +70,17 @@ export async function GET(request: NextRequest) {
 
 // PATCH /api/calendar/google — move an event to a different date
 export async function PATCH(request: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const tokens = await getValidTokens(supabase, user.id);
-  if (!tokens) return NextResponse.json({ error: "Not connected" }, { status: 400 });
-
-  const { eventId, date } = await request.json();
-  if (!eventId || !date) return NextResponse.json({ error: "Missing eventId or date" }, { status: 400 });
-
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const tokens = await getValidTokens(supabase, user.id);
+    if (!tokens) return NextResponse.json({ error: "Not connected" }, { status: 400 });
+
+    const { eventId, date } = await request.json();
+    if (!eventId || !date) return NextResponse.json({ error: "Missing eventId or date" }, { status: 400 });
+
     // Get existing event
     const getRes = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,

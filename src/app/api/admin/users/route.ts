@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { z } from "zod/v4";
+
+const AdminUserSchema = z.object({
+  userId: z.uuid(),
+  action: z.enum(["change_plan", "ban", "unban"]),
+  plan_id: z.enum(["free", "starter", "pro", "business"]).optional(),
+});
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "";
 
@@ -16,14 +23,12 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { userId, action, plan_id } = await req.json();
-
-    if (!userId || !action) {
-      return NextResponse.json(
-        { error: "userId and action are required" },
-        { status: 400 }
-      );
+    const body = await req.json();
+    const parsed = AdminUserSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
+    const { userId, action, plan_id } = parsed.data;
 
     const admin = createAdminClient();
 

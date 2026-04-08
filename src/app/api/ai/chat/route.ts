@@ -2,6 +2,7 @@ import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { createClient } from "@/lib/supabase/server";
 import { checkCredits, deductCredit, CREDIT_COSTS } from "@/lib/ai/credits";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
@@ -12,6 +13,10 @@ export async function POST(req: Request) {
 
     if (!user) {
       return new Response("Unauthorized", { status: 401 });
+    }
+
+    if (!checkRateLimit(`ai:${user.id}`, 20, 60_000)) {
+      return new Response("Too many requests. Please wait a minute.", { status: 429 });
     }
 
     // Get user plan

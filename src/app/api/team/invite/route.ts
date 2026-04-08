@@ -3,6 +3,14 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { plans, type PlanId } from "@/config/plans";
 import { sendEmail, inviteEmailHtml } from "@/lib/email";
+import { z } from "zod/v4";
+
+const InviteSchema = z.object({
+  email: z.email().optional(),
+  role: z.enum(["member", "admin"]),
+  businessId: z.uuid(),
+  linkOnly: z.boolean().optional(),
+});
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
@@ -18,25 +26,15 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { email, role, businessId, linkOnly } = body;
-
-    if (!role || !businessId) {
-      return NextResponse.json(
-        { error: "Role and businessId are required" },
-        { status: 400 }
-      );
+    const parsed = InviteSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
+    const { email, role, businessId, linkOnly } = parsed.data;
 
     if (!linkOnly && !email) {
       return NextResponse.json(
         { error: "Email is required for email invites" },
-        { status: 400 }
-      );
-    }
-
-    if (!["member", "admin"].includes(role)) {
-      return NextResponse.json(
-        { error: "Role must be member or admin" },
         { status: 400 }
       );
     }

@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { hashKey } from "@/lib/api/auth";
+import { z } from "zod/v4";
+
+const CreateKeySchema = z.object({
+  name: z.string().min(1).max(100),
+  businessId: z.uuid(),
+});
 
 // Generate a new API key (requires session auth, not API key)
 export async function POST(req: NextRequest) {
@@ -9,10 +15,12 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { name, businessId } = await req.json();
-    if (!name || !businessId) {
-      return NextResponse.json({ error: "name and businessId required" }, { status: 400 });
+    const body = await req.json();
+    const parsed = CreateKeySchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
+    const { name, businessId } = parsed.data;
 
     // Verify ownership
     const { data: biz } = await supabase

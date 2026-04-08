@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { createClient } from "@/lib/supabase/server";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
   try {
@@ -57,6 +58,11 @@ export async function GET(req: NextRequest) {
 
     if (mode !== "ai") {
       return NextResponse.json({ results: searchResults ?? [] });
+    }
+
+    // Rate limit AI search mode
+    if (!checkRateLimit(`ai-search:${user.id}`, 10, 60_000)) {
+      return NextResponse.json({ error: "Too many AI search requests. Please wait a minute." }, { status: 429 });
     }
 
     // AI mode: answer the question using document context

@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkCredits, deductCredit, CREDIT_COSTS } from "@/lib/ai/credits";
 import { buildBusinessContext, BUSINESS_PROFILE_SELECT } from "@/lib/ai/business-context";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES: Record<string, string> = {
@@ -86,6 +87,10 @@ export async function POST(req: Request) {
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!checkRateLimit(`ai:${user.id}`, 10, 60_000)) {
+    return NextResponse.json({ error: "Too many requests. Please wait a minute." }, { status: 429 });
   }
 
   const formData = await req.formData();

@@ -1,20 +1,11 @@
 import { sendEmail, contactEmailHtml } from "@/lib/email";
-
-// Simple in-memory rate limiter for contact form (per IP, 3 per minute)
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
-  // Rate limit by IP to prevent email spam
+  // Rate limit by IP to prevent email spam (3 per minute)
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (entry && now < entry.resetAt) {
-    if (entry.count >= 3) {
-      return Response.json({ error: "Too many requests. Please try again later." }, { status: 429 });
-    }
-    entry.count++;
-  } else {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + 60_000 });
+  if (!checkRateLimit(`contact:${ip}`, 3, 60_000)) {
+    return Response.json({ error: "Too many requests. Please try again later." }, { status: 429 });
   }
 
   const { name, email, message, subject } = await req.json();

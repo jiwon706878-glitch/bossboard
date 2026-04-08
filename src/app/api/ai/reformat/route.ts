@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkCredits, deductCredit, CREDIT_COSTS } from "@/lib/ai/credits";
 import { buildBusinessContext, BUSINESS_PROFILE_SELECT } from "@/lib/ai/business-context";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -13,6 +14,10 @@ export async function POST(req: Request) {
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!checkRateLimit(`ai:${user.id}`, 20, 60_000)) {
+    return NextResponse.json({ error: "Too many requests. Please wait a minute." }, { status: 429 });
   }
 
   const { businessId, text } = await req.json();

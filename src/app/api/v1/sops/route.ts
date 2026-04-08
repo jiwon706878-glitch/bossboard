@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiKey, logApiCall } from "@/lib/api/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { z } from "zod/v4";
+
+const CreateSopSchema = z.object({
+  title: z.string().min(1).max(500),
+  content: z.string().optional(),
+  type: z.string().max(50).optional(),
+  folder_id: z.uuid().optional(),
+  status: z.enum(["draft", "published", "archived"]).optional(),
+});
 
 // GET /api/v1/sops — List SOPs
 export async function GET(req: NextRequest) {
@@ -45,8 +54,12 @@ export async function POST(req: NextRequest) {
     const auth = await authenticateApiKey(req);
     if (auth instanceof NextResponse) return auth;
 
-    const { title, content, type, folder_id, status: sopStatus } = await req.json();
-    if (!title) return NextResponse.json({ error: "title required" }, { status: 400 });
+    const body = await req.json();
+    const parsed = CreateSopSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+    }
+    const { title, content, type, folder_id, status: sopStatus } = parsed.data;
 
     const admin = createAdminClient();
 

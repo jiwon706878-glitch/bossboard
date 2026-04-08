@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiKey, logApiCall } from "@/lib/api/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { z } from "zod/v4";
+
+const WriteContextSchema = z.object({
+  content: z.string().min(1).max(2000),
+});
 
 // POST /api/v1/context/write — Agent writes a note
 export async function POST(req: NextRequest) {
@@ -8,10 +13,12 @@ export async function POST(req: NextRequest) {
     const auth = await authenticateApiKey(req);
     if (auth instanceof NextResponse) return auth;
 
-    const { content } = await req.json();
-    if (!content || typeof content !== "string") {
-      return NextResponse.json({ error: "content required" }, { status: 400 });
+    const body = await req.json();
+    const parsed = WriteContextSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
+    const { content } = parsed.data;
 
     const admin = createAdminClient();
     const { data, error } = await admin

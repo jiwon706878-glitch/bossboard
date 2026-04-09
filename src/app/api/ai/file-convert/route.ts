@@ -5,8 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 import { checkCredits, deductCredit, CREDIT_COSTS } from "@/lib/ai/credits";
 import { buildBusinessContext, BUSINESS_PROFILE_SELECT } from "@/lib/ai/business-context";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { plans, type PlanId } from "@/config/plans";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const FALLBACK_MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB fallback
 const ALLOWED_TYPES: Record<string, string> = {
   "application/pdf": "pdf",
   "image/jpeg": "image",
@@ -101,8 +102,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  if (file.size > MAX_FILE_SIZE) {
-    return NextResponse.json({ error: "File too large. Max 10MB." }, { status: 400 });
+  if (file.size > FALLBACK_MAX_FILE_SIZE) {
+    // Quick reject for obviously oversized files before plan lookup
+    return NextResponse.json({ error: "File too large." }, { status: 400 });
   }
 
   const fileType = ALLOWED_TYPES[file.type];
@@ -147,7 +149,18 @@ export async function POST(req: Request) {
     .eq("id", user.id)
     .single();
 
-  const planId = (profile?.plan_id as "free" | "starter" | "pro" | "business") ?? "free";
+  const planId: PlanId = (profile?.plan_id as PlanId) ?? "free";
+  const planConfig = plans[planId];
+
+  // Plan-based file size enforcement
+  const maxFileSize = planConfig.limits.fileSizeMb * 1024 * 1024;
+  if (file.size > maxFileSize) {
+    return NextResponse.json(
+      { error: `File too large. Your ${planConfig.name} plan allows up to ${planConfig.limits.fileSizeMb} MB per file.` },
+      { status: 400 }
+    );
+  }
+
   const cost = CREDIT_COSTS.file_convert;
   const creditCheck = await checkCredits(user.id, planId, cost);
   if (!creditCheck.allowed) {

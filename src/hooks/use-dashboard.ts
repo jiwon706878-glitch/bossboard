@@ -143,6 +143,7 @@ export function useDashboard() {
     queryKey: userKeys.current,
     queryFn: fetchCurrentUser,
     retry: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   const userId = user?.id;
@@ -151,12 +152,14 @@ export function useDashboard() {
     queryKey: userKeys.profile(userId ?? ""),
     queryFn: () => fetchProfile(userId!),
     enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: monthlyUsage = 0 } = useQuery({
     queryKey: usageKeys.monthly(userId ?? ""),
     queryFn: () => fetchMonthlyUsage(userId!),
     enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
   });
 
   // Dashboard-specific queries

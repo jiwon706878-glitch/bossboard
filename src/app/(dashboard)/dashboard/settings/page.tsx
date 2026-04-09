@@ -20,6 +20,7 @@ import { StickyNoteCard } from "@/components/settings/sticky-note-card";
 import { GoogleCalendarCard } from "@/components/settings/google-calendar-card";
 import { ThemeCard } from "@/components/settings/theme-card";
 import { DeveloperModeCard } from "@/components/settings/developer-mode-card";
+import { StorageUsageCard } from "@/components/settings/storage-usage-card";
 
 interface NotificationSettings {
   [key: string]: boolean | undefined;
@@ -165,8 +166,15 @@ export default function SettingsPage() {
 
       {/* Card 1: Profile */}
       <div className="animate-stagger-in" style={{ animationDelay: "0ms" }}>
-        <ProfileCard userId={userId!} initialName={profile?.full_name ?? ""} initialAvatarUrl={profile?.avatar_url} isFetching={profileFetching} />
+        <ProfileCard userId={userId!} initialName={profile?.full_name ?? ""} initialAvatarUrl={profile?.avatar_url} isFetching={profileFetching} planId={planId} />
       </div>
+
+      {/* Card 1b: Storage & Downloads */}
+      {businessId && (
+        <div className="animate-stagger-in" style={{ animationDelay: "30ms" }}>
+          <StorageUsageCard businessId={businessId} userId={userId!} planId={planId} />
+        </div>
+      )}
 
       {/* Card 2: Email Change */}
       <div className="animate-stagger-in" style={{ animationDelay: "60ms" }}>

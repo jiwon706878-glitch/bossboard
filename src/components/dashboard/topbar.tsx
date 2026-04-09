@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useState, useCallback } from "react";
+import { memo, useEffect, useState } from "react";
 import { Menu, Search, MessageSquarePlus, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +16,7 @@ import { BusinessSwitcher } from "./business-switcher";
 import { NotificationBell } from "./notification-bell";
 import { SearchDropdown } from "./search-dropdown";
 import { FeedbackCard } from "./feedback-card";
+import { RefreshButton } from "./refresh-button";
 
 export const DashboardTopbar = memo(function DashboardTopbar() {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -71,6 +72,7 @@ export const DashboardTopbar = memo(function DashboardTopbar() {
             <Search className="h-4 w-4" />
             <span className="sr-only">Search</span>
           </Button>
+          <RefreshButton />
           <NotificationBell />
           <Popover>
             <PopoverTrigger asChild>

@@ -27,6 +27,7 @@ export function BusinessSwitcher() {
     queryKey: businessKeys.all(user?.id ?? ""),
     queryFn: () => fetchUserBusinesses(user!.id),
     enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
   });
 
   // Sync zustand with query data

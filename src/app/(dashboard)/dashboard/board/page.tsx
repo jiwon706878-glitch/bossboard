@@ -5,8 +5,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { useRoleStore } from "@/hooks/use-role";
-import { boardKeys, userKeys, fetchCurrentUser } from "@/lib/queries";
+import { boardKeys, userKeys, fetchCurrentUser, fetchProfile } from "@/lib/queries";
 import { FilePreview } from "@/components/dashboard/file-preview";
+import { FileSizeLimitModal } from "@/components/dashboard/file-size-limit-modal";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Plus, X, MessageCircle } from "lucide-react";
@@ -14,6 +15,7 @@ import { Post, Attachment, Comment } from "@/components/board/types";
 import { CreatePostForm } from "@/components/board/create-post-form";
 import { PostCard } from "@/components/board/post-card";
 import { CommentSection } from "@/components/board/comment-section";
+import { plans, type PlanId } from "@/config/plans";
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -43,6 +45,9 @@ export default function BoardPage() {
   // File preview
   const [previewFile, setPreviewFile] = useState<Attachment | null>(null);
 
+  // File size limit modal
+  const [oversizedFile, setOversizedFile] = useState<{ size: number; limitMb: number } | null>(null);
+
   // Expanded post (for comments)
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -60,6 +65,19 @@ export default function BoardPage() {
 
   // Vote lock
   const [votingLock, setVotingLock] = useState(false);
+
+  // User plan for file size limits
+  const { data: profile } = useQuery({
+    queryKey: userKeys.profile(currentUserId ?? ""),
+    queryFn: () => fetchProfile(currentUserId!),
+    enabled: !!currentUserId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const planId = (profile?.plan_id || "free") as PlanId;
+  const plan = plans[planId];
+  const nextTierMap: Record<PlanId, PlanId> = { free: "starter", starter: "pro", pro: "business", business: "business" };
+  const nextPlan = plans[nextTierMap[planId]];
 
   // ─── Load posts via React Query ──────────────────────────────────────────
 
@@ -154,6 +172,16 @@ export default function BoardPage() {
     setSubmitting(true);
 
     if (!currentUserId) { toast.error("Not logged in"); setSubmitting(false); return; }
+
+    // Validate file sizes against plan limit
+    const maxBytes = plan.limits.fileSizeMb * 1024 * 1024;
+    for (const file of formAttachments) {
+      if (file.size > maxBytes) {
+        setOversizedFile({ size: file.size, limitMb: plan.limits.fileSizeMb });
+        setSubmitting(false);
+        return;
+      }
+    }
 
     // Upload attachments — use UUID path to avoid special character issues
     const uploadedFiles: Attachment[] = [];
@@ -519,6 +547,18 @@ export default function BoardPage() {
           ))}
         </div>
       )}
+
+      <FileSizeLimitModal
+        open={!!oversizedFile}
+        onClose={() => setOversizedFile(null)}
+        fileSize={oversizedFile?.size ?? 0}
+        limitMb={oversizedFile?.limitMb ?? 0}
+        planName={plan.name}
+        nextPlanName={nextPlan.name}
+        nextPlanLimitMb={nextPlan.limits.fileSizeMb}
+        nextPlanStorageGb={nextPlan.limits.storageGb}
+        nextPlanPrice={nextPlan.monthlyPrice}
+      />
 
       <FilePreview file={previewFile} onClose={() => setPreviewFile(null)} />
     </div>

@@ -1,3 +1,5 @@
+export const dynamic = "force-static";
+
 export default function TermsPage() {
   const heading2Style = {
     fontFamily: "'DM Sans', sans-serif",

@@ -1,3 +1,6 @@
+export const dynamic = "force-static";
+export const revalidate = 3600; // revalidate every hour
+
 import Link from "next/link";
 import { PricingToggle } from "@/components/marketing/pricing-toggle";
 import { FaqSection } from "@/components/marketing/faq-section";

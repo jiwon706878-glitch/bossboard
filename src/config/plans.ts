@@ -12,6 +12,9 @@ export interface PlanConfig {
     aiCredits: number; // per month, -1 = unlimited
     sops: number; // -1 = unlimited
     teamMembers: number; // -1 = unlimited
+    storageGb: number; // total storage in GB
+    fileSizeMb: number; // per-file upload limit in MB
+    egressGbPerMonth: number; // monthly download bandwidth in GB
   };
   features: string[];
 }
@@ -29,13 +32,16 @@ export const plans: Record<PlanId, PlanConfig> = {
       aiCredits: 5,
       sops: 20,
       teamMembers: 3,
+      storageGb: 5,
+      fileSizeMb: 50,
+      egressGbPerMonth: 10,
     },
     features: [
       "20 documents",
       "3 team members",
       "5 AI generations/month",
       "Basic folders & search",
-      "2 GB storage",
+      "5 GB storage · 50 MB per file",
     ],
   },
   starter: {
@@ -50,6 +56,9 @@ export const plans: Record<PlanId, PlanConfig> = {
       aiCredits: 200,
       sops: -1,
       teamMembers: 15,
+      storageGb: 50,
+      fileSizeMb: 100,
+      egressGbPerMonth: 100,
     },
     features: [
       "Unlimited documents",
@@ -59,7 +68,7 @@ export const plans: Record<PlanId, PlanConfig> = {
       "Daily checklists",
       "File upload & AI reformat",
       "API & MCP access",
-      "10 GB storage",
+      "50 GB storage · 100 MB per file",
     ],
   },
   pro: {
@@ -74,6 +83,9 @@ export const plans: Record<PlanId, PlanConfig> = {
       aiCredits: -1,
       sops: -1,
       teamMembers: 30,
+      storageGb: 200,
+      fileSizeMb: 500,
+      egressGbPerMonth: 500,
     },
     features: [
       "Everything in Starter",
@@ -87,7 +99,7 @@ export const plans: Record<PlanId, PlanConfig> = {
       "Advanced sharing controls",
       "Agent activity dashboard",
       "Priority support",
-      "50 GB storage",
+      "200 GB storage · 500 MB per file",
     ],
   },
   business: {
@@ -102,6 +114,9 @@ export const plans: Record<PlanId, PlanConfig> = {
       aiCredits: -1,
       sops: -1,
       teamMembers: -1,
+      storageGb: 1000,
+      fileSizeMb: 1024,
+      egressGbPerMonth: 2000,
     },
     features: [
       "Everything in Pro",
@@ -111,7 +126,7 @@ export const plans: Record<PlanId, PlanConfig> = {
       "Real-time wiki editing",
       "Dedicated support",
       "Custom integrations",
-      "200 GB storage",
+      "1 TB storage · 1 GB per file",
     ],
   },
 };

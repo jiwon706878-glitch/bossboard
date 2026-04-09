@@ -1,3 +1,6 @@
+export const dynamic = "force-static";
+export const revalidate = 3600;
+
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Brain, FileText, Activity } from "lucide-react";

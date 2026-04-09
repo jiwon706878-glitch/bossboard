@@ -1,3 +1,5 @@
+export const dynamic = "force-static";
+
 export default function PrivacyPage() {
   const heading2Style = {
     fontFamily: "'DM Sans', sans-serif",

@@ -10,15 +10,18 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Camera } from "lucide-react";
 import { toast } from "sonner";
+import { plans, type PlanId } from "@/config/plans";
 
 interface ProfileCardProps {
   userId: string;
   initialName: string;
   initialAvatarUrl?: string | null;
   isFetching: boolean;
+  planId?: PlanId;
 }
 
-export function ProfileCard({ userId, initialName, initialAvatarUrl, isFetching }: ProfileCardProps) {
+export function ProfileCard({ userId, initialName, initialAvatarUrl, isFetching, planId = "free" }: ProfileCardProps) {
+  const plan = plans[planId];
   const [nameInput, setNameInput] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -35,8 +38,9 @@ export function ProfileCard({ userId, initialName, initialAvatarUrl, isFetching 
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Image must be under 10MB");
+    const maxAvatarBytes = Math.min(plan.limits.fileSizeMb, 10) * 1024 * 1024;
+    if (file.size > maxAvatarBytes) {
+      toast.error(`Image must be under ${Math.min(plan.limits.fileSizeMb, 10)} MB`);
       return;
     }
 

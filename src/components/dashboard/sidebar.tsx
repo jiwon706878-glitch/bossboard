@@ -30,6 +30,7 @@ import {
   Activity,
   Code2,
   Plug,
+  HelpCircle,
   LogOut,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -258,8 +259,14 @@ export function DashboardSidebar({ className }: { className?: string }) {
         </div>
       </nav>
 
-      {/* Bottom: Log out */}
-      <div className="border-t p-3">
+      {/* Bottom: Support + Log out */}
+      <div className="border-t p-3 space-y-1">
+        <a href="/dashboard/support">
+          <Button variant="ghost" className="w-full justify-start gap-3 h-9 flex-nowrap overflow-hidden text-muted-foreground">
+            <HelpCircle className="h-4 w-4 shrink-0 min-w-[16px]" />
+            <span className="truncate">Support</span>
+          </Button>
+        </a>
         <Button
           variant="ghost"
           className="w-full justify-start gap-3 h-9 flex-nowrap overflow-hidden text-muted-foreground"

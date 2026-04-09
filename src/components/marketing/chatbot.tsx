@@ -71,69 +71,18 @@ function nextId() {
 // ---------------------------------------------------------------------------
 
 function ContactForm() {
-  const [submitted, setSubmitted] = useState(false);
-  const [sending, setSending] = useState(false);
-
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setSending(true);
-    const fd = new FormData(e.currentTarget);
-    try {
-      await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: fd.get("name"),
-          email: fd.get("email"),
-          message: fd.get("message"),
-        }),
-      });
-    } catch {
-      // still show success — message is best-effort
-    }
-    setSending(false);
-    setSubmitted(true);
-  }
-
-  if (submitted) {
-    return (
-      <div className="rounded-lg border bg-muted/50 p-4 text-center text-sm">
-        <p className="font-medium">Message sent!</p>
-        <p className="mt-1 text-muted-foreground">
-          We&apos;ll get back to you within 24 hours.
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 rounded-lg border bg-muted/50 p-4">
-      <p className="text-sm font-medium">Contact Support</p>
-      <input
-        name="name"
-        type="text"
-        placeholder="Name"
-        required
-        className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-      />
-      <input
-        name="email"
-        type="email"
-        placeholder="Email"
-        required
-        className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-      />
-      <textarea
-        name="message"
-        placeholder="Message"
-        required
-        rows={3}
-        className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-none"
-      />
-      <Button type="submit" size="sm" className="w-full gap-2" disabled={sending}>
-        {sending ? "Sending..." : "Send"} <ArrowRight className="h-3 w-3" />
-      </Button>
-    </form>
+    <div className="rounded-lg border bg-muted/50 p-4 text-center text-sm space-y-3">
+      <p className="font-medium">Need help?</p>
+      <p className="text-muted-foreground">
+        Log in to send a support request and get a reply directly in your dashboard.
+      </p>
+      <a href="/dashboard/support">
+        <Button size="sm" className="w-full gap-2">
+          Open Support <ArrowRight className="h-3 w-3" />
+        </Button>
+      </a>
+    </div>
   );
 }
 
@@ -142,65 +91,18 @@ function ContactForm() {
 // ---------------------------------------------------------------------------
 
 function BugReportForm() {
-  const [submitted, setSubmitted] = useState(false);
-  const [sending, setSending] = useState(false);
-
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setSending(true);
-    const fd = new FormData(e.currentTarget);
-    const title = fd.get("title") as string;
-    const description = fd.get("description") as string;
-    try {
-      await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: "Bug Report",
-          email: "bug@bossboard.app",
-          message: `[BossBoard Bug] ${title}\n\n${description}`,
-          subject: `[BossBoard Bug] ${title}`,
-        }),
-      });
-    } catch {
-      // best-effort
-    }
-    setSending(false);
-    setSubmitted(true);
-  }
-
-  if (submitted) {
-    return (
-      <div className="rounded-lg border bg-muted/50 p-4 text-center text-sm">
-        <p className="font-medium">Bug reported!</p>
-        <p className="mt-1 text-muted-foreground">
-          Thanks for letting us know. We&apos;ll look into it.
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 rounded-lg border bg-muted/50 p-4">
-      <p className="text-sm font-medium">Report a Bug</p>
-      <input
-        name="title"
-        type="text"
-        placeholder="Bug title"
-        required
-        className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-      />
-      <textarea
-        name="description"
-        placeholder="What happened? What did you expect?"
-        required
-        rows={3}
-        className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-none"
-      />
-      <Button type="submit" size="sm" className="w-full gap-2" disabled={sending}>
-        {sending ? "Sending..." : "Submit Bug"} <ArrowRight className="h-3 w-3" />
-      </Button>
-    </form>
+    <div className="rounded-lg border bg-muted/50 p-4 text-center text-sm space-y-3">
+      <p className="font-medium">Found a bug?</p>
+      <p className="text-muted-foreground">
+        Log in and send us a support request. We&apos;ll look into it right away.
+      </p>
+      <a href="/dashboard/support">
+        <Button size="sm" className="w-full gap-2">
+          Report Bug <ArrowRight className="h-3 w-3" />
+        </Button>
+      </a>
+    </div>
   );
 }
 

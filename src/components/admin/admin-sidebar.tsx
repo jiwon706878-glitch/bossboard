@@ -11,6 +11,7 @@ import {
   DollarSign,
   BarChart3,
   MessageSquare,
+  Inbox,
   ArrowLeft,
   LogOut,
 } from "lucide-react";
@@ -19,6 +20,7 @@ import { useBusinessStore } from "@/hooks/use-business";
 
 const links = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
+  { href: "/admin/inbox", label: "Inbox", icon: Inbox },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/revenue", label: "Revenue", icon: DollarSign },
   { href: "/admin/usage", label: "AI Usage", icon: BarChart3 },

@@ -3,8 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "";
-
 export default async function AdminLayout({
   children,
 }: {
@@ -15,8 +13,19 @@ export default async function AdminLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || user.email !== ADMIN_EMAIL) {
+  if (!user) {
     redirect("/login");
+  }
+
+  // Check is_admin flag on profile
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile?.is_admin) {
+    redirect("/dashboard");
   }
 
   return (

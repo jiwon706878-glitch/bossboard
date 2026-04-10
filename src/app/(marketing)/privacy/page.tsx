@@ -5,7 +5,7 @@ export default function PrivacyPage() {
     fontFamily: "'DM Sans', sans-serif",
     fontSize: "1.5rem",
     fontWeight: 600,
-    color: "#E8ECF4",
+    color: "var(--foreground)",
     letterSpacing: "-0.01em",
     marginBottom: "16px",
   } as React.CSSProperties;
@@ -14,7 +14,7 @@ export default function PrivacyPage() {
     fontFamily: "'Source Sans 3', sans-serif",
     fontSize: "16px",
     lineHeight: 1.7,
-    color: "#8B95B0",
+    color: "var(--muted-foreground)",
     marginBottom: "16px",
   } as React.CSSProperties;
 
@@ -22,7 +22,7 @@ export default function PrivacyPage() {
     fontFamily: "'Source Sans 3', sans-serif",
     fontSize: "16px",
     lineHeight: 1.7,
-    color: "#8B95B0",
+    color: "var(--muted-foreground)",
     paddingLeft: "20px",
     marginBottom: "16px",
     listStyleType: "none",
@@ -37,7 +37,7 @@ export default function PrivacyPage() {
   const bulletStyle = {
     position: "absolute" as const,
     left: 0,
-    color: "#4F8BFF",
+    color: "#4A6CF7",
   } as React.CSSProperties;
 
   return (
@@ -47,14 +47,14 @@ export default function PrivacyPage() {
           style={{
             fontFamily: "'DM Sans', sans-serif",
             fontSize: "2.5rem",
-            fontWeight: 700,
-            color: "#E8ECF4",
+            fontWeight: 600,
+            color: "var(--foreground)",
             letterSpacing: "-0.02em",
           }}
         >
           Privacy Policy
         </h1>
-        <p style={{ color: "#5A6480", fontSize: "14px", marginTop: "8px", fontFamily: "'Source Sans 3', sans-serif" }}>
+        <p style={{ color: "var(--muted-foreground)", fontSize: "14px", marginTop: "8px", fontFamily: "'Source Sans 3', sans-serif", opacity: 0.75 }}>
           Last updated: April 9, 2026
         </p>
 
@@ -137,35 +137,35 @@ export default function PrivacyPage() {
           <ul style={listStyle}>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              <strong style={{ color: "#E8ECF4" }}>Supabase</strong> — Database hosting, user
+              <strong style={{ color: "var(--foreground)" }}>Supabase</strong> — Database hosting, user
               authentication, and file storage
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              <strong style={{ color: "#E8ECF4" }}>Anthropic (Claude)</strong> — AI processing for SOP
+              <strong style={{ color: "var(--foreground)" }}>Anthropic (Claude)</strong> — AI processing for SOP
               generation, summarization, and insights
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              <strong style={{ color: "#E8ECF4" }}>Paddle</strong> — Payment processing and subscription
+              <strong style={{ color: "var(--foreground)" }}>Paddle</strong> — Payment processing and subscription
               management
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              <strong style={{ color: "#E8ECF4" }}>Resend</strong> — Transactional email delivery
+              <strong style={{ color: "var(--foreground)" }}>Resend</strong> — Transactional email delivery
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              <strong style={{ color: "#E8ECF4" }}>Vercel</strong> — Application hosting and edge delivery
+              <strong style={{ color: "var(--foreground)" }}>Vercel</strong> — Application hosting and edge delivery
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              <strong style={{ color: "#E8ECF4" }}>Google</strong> — Calendar integration (only if you connect
+              <strong style={{ color: "var(--foreground)" }}>Google</strong> — Calendar integration (only if you connect
               your Google Calendar)
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              <strong style={{ color: "#E8ECF4" }}>Sentry</strong> — Error monitoring and performance tracking
+              <strong style={{ color: "var(--foreground)" }}>Sentry</strong> — Error monitoring and performance tracking
             </li>
           </ul>
           <p style={paragraphStyle}>
@@ -183,12 +183,12 @@ export default function PrivacyPage() {
           <ul style={listStyle}>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              <strong style={{ color: "#E8ECF4" }}>Session cookies</strong> — Required to keep you signed in
+              <strong style={{ color: "var(--foreground)" }}>Session cookies</strong> — Required to keep you signed in
               and maintain your workspace context
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              <strong style={{ color: "#E8ECF4" }}>Analytics cookies</strong> — Help us understand feature
+              <strong style={{ color: "var(--foreground)" }}>Analytics cookies</strong> — Help us understand feature
               usage and improve the product. You can opt out of analytics cookies in your account settings
             </li>
           </ul>
@@ -286,7 +286,7 @@ export default function PrivacyPage() {
           <p style={paragraphStyle}>
             If you have questions about this Privacy Policy or your personal data, contact us at:
           </p>
-          <p style={{ ...paragraphStyle, color: "#E8ECF4" }}>
+          <p style={{ ...paragraphStyle, color: "var(--foreground)" }}>
             support@mybossboard.com
           </p>
         </div>

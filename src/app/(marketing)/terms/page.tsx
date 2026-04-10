@@ -5,7 +5,7 @@ export default function TermsPage() {
     fontFamily: "'DM Sans', sans-serif",
     fontSize: "1.5rem",
     fontWeight: 600,
-    color: "#E8ECF4",
+    color: "var(--foreground)",
     letterSpacing: "-0.01em",
     marginBottom: "16px",
   } as React.CSSProperties;
@@ -14,7 +14,7 @@ export default function TermsPage() {
     fontFamily: "'Source Sans 3', sans-serif",
     fontSize: "16px",
     lineHeight: 1.7,
-    color: "#8B95B0",
+    color: "var(--muted-foreground)",
     marginBottom: "16px",
   } as React.CSSProperties;
 
@@ -22,7 +22,7 @@ export default function TermsPage() {
     fontFamily: "'Source Sans 3', sans-serif",
     fontSize: "16px",
     lineHeight: 1.7,
-    color: "#8B95B0",
+    color: "var(--muted-foreground)",
     paddingLeft: "20px",
     marginBottom: "16px",
     listStyleType: "none",
@@ -37,7 +37,7 @@ export default function TermsPage() {
   const bulletStyle = {
     position: "absolute" as const,
     left: 0,
-    color: "#4F8BFF",
+    color: "#4A6CF7",
   } as React.CSSProperties;
 
   return (
@@ -47,14 +47,14 @@ export default function TermsPage() {
           style={{
             fontFamily: "'DM Sans', sans-serif",
             fontSize: "2.5rem",
-            fontWeight: 700,
-            color: "#E8ECF4",
+            fontWeight: 600,
+            color: "var(--foreground)",
             letterSpacing: "-0.02em",
           }}
         >
           Terms of Service
         </h1>
-        <p style={{ color: "#5A6480", fontSize: "14px", marginTop: "8px", fontFamily: "'Source Sans 3', sans-serif" }}>
+        <p style={{ color: "var(--muted-foreground)", fontSize: "14px", marginTop: "8px", fontFamily: "'Source Sans 3', sans-serif", opacity: 0.75 }}>
           Last updated: April 9, 2026
         </p>
 
@@ -288,7 +288,7 @@ export default function TermsPage() {
           <p style={paragraphStyle}>
             If you have questions about these Terms of Service, contact us at:
           </p>
-          <p style={{ ...paragraphStyle, color: "#E8ECF4" }}>
+          <p style={{ ...paragraphStyle, color: "var(--foreground)" }}>
             support@mybossboard.com
           </p>
         </div>

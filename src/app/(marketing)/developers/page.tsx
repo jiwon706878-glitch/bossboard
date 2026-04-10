@@ -36,7 +36,7 @@ export default function DevelopersPage() {
                 BossBoard is the structured knowledge base your AI agents read from, write to, and learn from. REST API + MCP server included — starting at $19/mo.
               </p>
               <div className="mt-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-                <Link href="#api" className="inline-flex items-center justify-center gap-2.5 rounded-lg px-6 py-4 sm:py-3 text-sm font-semibold transition-all duration-200 hover:brightness-110 w-full sm:w-auto" style={{ backgroundColor: "#4A6CF7", color: "#fff", fontFamily: f }}>
+                <Link href="/developers#api" className="inline-flex items-center justify-center gap-2.5 rounded-lg px-6 py-4 sm:py-3 text-sm font-semibold transition-all duration-200 hover:brightness-110 w-full sm:w-auto" style={{ backgroundColor: "#4A6CF7", color: "#fff", fontFamily: f }}>
                   View API Docs <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link href="/signup" className="text-sm font-medium transition-colors duration-200 text-center sm:text-left" style={{ color: "var(--muted-foreground)", fontFamily: f }}>

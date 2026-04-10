@@ -39,6 +39,26 @@ const faqs = [
     answer:
       "You can cancel anytime from your account settings -- no questions asked. Your plan will remain active until the end of your billing period, and you won't be charged again.",
   },
+  {
+    question: "What happens when I run out of credits?",
+    answer:
+      "You can buy credit packs anytime — 300 for $15, 500 for $20, or 1000 for $35. Purchased credits never expire. Or use your own Anthropic API key (BYOK) for zero credit consumption.",
+  },
+  {
+    question: "Can I use my own AI API key?",
+    answer:
+      "Yes. Go to Settings → External API Keys and add your Anthropic key. AI features then use your key directly — no BossBoard credits consumed.",
+  },
+  {
+    question: "Is there a per-user fee?",
+    answer:
+      "No. BossBoard uses flat team pricing. The whole team is included in your plan — no surprises as you grow. Only the Free plan caps team size at 3 members.",
+  },
+  {
+    question: "Can AI agents access BossBoard?",
+    answer:
+      "Yes — that's a core feature. We provide a REST API, MCP server, and the `bossboard-cli` npm package. Agents can read/write wiki pages, post to the board, manage todos, and run searches with ~50 tokens per action (vs ~5000 for browser automation).",
+  },
 ];
 
 export function FaqSection() {

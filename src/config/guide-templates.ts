@@ -24,7 +24,7 @@ Every plan includes AI credits. Use them to:
 - Generate SOPs from a description
 - Reformat uploaded documents
 - Ask questions about your wiki
-- Scan receipts for expense tracking
+- Get context-aware help on any tab
 
 ## Need Help?
 Click the Support link in the sidebar to reach our team.`,
@@ -66,7 +66,7 @@ Click the Support link in the sidebar to reach our team.`,
 
 ## Credit System
 Each AI action costs credits:
-- **1 credit**: AI questions, smart search, receipt OCR
+- **1 credit**: AI questions, smart search, tab AI chat
 - **3 credits**: SOP generation, document reformat, file conversion
 - **5 credits**: Onboarding templates, monthly reports
 
@@ -83,7 +83,6 @@ Save credits by using your own Anthropic API key:
 ## Available AI Features
 - **SOP Generation** — Describe any task, get a complete manual
 - **Smart Search** — Ask questions, get answers from your wiki
-- **Receipt OCR** — Scan receipts, auto-track expenses
 - **Tab AI** — Context-aware assistant on every page
 - **Document Reformat** — Clean up uploaded documents`,
   },

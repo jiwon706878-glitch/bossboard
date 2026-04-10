@@ -20,6 +20,15 @@ export default function HomePage() {
 
   return (
     <>
+      {/* ── Launch Banner ──────────────────────────────────────────────── */}
+      <div className="relative bg-primary/10 border-b border-primary/20 px-4 py-2.5 text-center text-sm">
+        <span className="font-medium" style={{ color: "var(--foreground)" }}>
+          🎉 Launch Special: First 100 users get 30% lifetime discount —{" "}
+        </span>
+        <a href="/#pricing" className="font-semibold underline" style={{ color: "#4A6CF7" }}>
+          Starter from $13/mo
+        </a>
+      </div>
       {/* ── Hero ───────────────────────────────────────────────────────── */}
       <style>{`
         @keyframes hero-float {
@@ -33,20 +42,32 @@ export default function HomePage() {
           <div className="flex flex-col lg:flex-row lg:items-center lg:gap-12 overflow-hidden lg:overflow-visible">
             {/* Left — text */}
             <div className="max-w-2xl lg:max-w-[480px] lg:flex-shrink-0">
-              <p className="text-sm font-medium tracking-wide uppercase" style={{ color: "#4A6CF7", fontFamily: "'A2Z', sans-serif", letterSpacing: "0.08em" }}>The Operations Wiki for Small Business</p>
+              <p className="text-sm font-medium tracking-wide uppercase" style={{ color: "#4A6CF7", fontFamily: "'A2Z', sans-serif", letterSpacing: "0.08em" }}>For Developers, Agents & Small Teams</p>
               <h1 className="mt-5" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "clamp(2.75rem, 5.5vw, 4rem)", fontWeight: 800, letterSpacing: "-0.035em", lineHeight: 1.08, color: "var(--foreground)" }}>
-                Build structure.<br />Drive growth.
+                The Office Where<br />AI Agents Work
               </h1>
               <p className="mt-6 max-w-lg" style={{ fontFamily: "'A2Z', sans-serif", fontSize: "18px", lineHeight: 1.7, color: "var(--foreground)", fontWeight: 400, opacity: 0.65 }}>
-                Stop explaining the same thing twice. BossBoard generates manuals with AI, syncs your calendar, runs a team board, and turns SOPs into daily checklists your team actually follows. Developers: connect via REST API or MCP.
+                Wiki, board, calendar, checklists, MCP server, REST API, and CLI — everything your agents and team need to collaborate, learn, and deliver. Use BossBoard credits or bring your own AI key.
               </p>
               <div className="mt-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                 <Link href="/signup" className="inline-flex items-center justify-center gap-2.5 rounded-lg px-6 py-4 sm:py-3 text-sm font-semibold transition-all duration-200 hover:brightness-110 w-full sm:w-auto" style={{ backgroundColor: "#4A6CF7", color: "#fff", fontFamily: "'A2Z', sans-serif" }}>
                   Start for free <ArrowRight className="h-4 w-4" />
                 </Link>
-                <Link href="/#how-it-works" className="text-sm font-medium transition-colors duration-200 text-center sm:text-left" style={{ color: "var(--muted-foreground)", fontFamily: "'A2Z', sans-serif" }}>See how it works</Link>
+                <Link href="/developers" className="inline-flex items-center justify-center gap-2.5 rounded-lg px-6 py-4 sm:py-3 text-sm font-semibold transition-all duration-200 w-full sm:w-auto" style={{ border: "1px solid var(--border)", color: "var(--foreground)", fontFamily: "'A2Z', sans-serif" }}>
+                  View Developer Docs
+                </Link>
               </div>
               <p className="mt-5 text-xs text-center sm:text-left" style={{ color: "var(--muted-foreground)", fontFamily: "'A2Z', sans-serif", opacity: 0.7 }}>No credit card required. Free for up to 3 team members.</p>
+              <div className="mt-8 hidden lg:block max-w-lg">
+                <div className="rounded-md border bg-[#0C0F17] p-4 font-mono text-xs leading-relaxed">
+                  <div style={{ color: "#34D399" }}>$ bb auth --key bb_xxx</div>
+                  <div style={{ color: "#8B95B0" }}>✓ Authenticated as Acme Cafe</div>
+                  <div style={{ color: "#34D399", marginTop: "4px" }}>$ bb wiki create --title "Deploy SOP"</div>
+                  <div style={{ color: "#8B95B0" }}>✓ Created page abc123</div>
+                  <div style={{ color: "#34D399", marginTop: "4px" }}>$ bb board post --title "Deploy Complete"</div>
+                  <div style={{ color: "#8B95B0" }}>✓ Posted to board · 0 credits used (BYOK)</div>
+                </div>
+              </div>
             </div>
 
             {/* Right — 3D perspective mockup (desktop only) */}

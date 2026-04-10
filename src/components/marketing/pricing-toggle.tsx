@@ -12,6 +12,14 @@ export function PricingToggle() {
 
   return (
     <div>
+      <div className="mb-8 mx-auto max-w-md rounded-lg border-2 border-primary/30 bg-primary/5 p-4 text-center">
+        <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
+          🎉 Launch Special — First 100 users
+        </p>
+        <p className="mt-1 text-xs" style={{ color: "var(--muted-foreground)" }}>
+          30% lifetime discount on all paid plans
+        </p>
+      </div>
       {/* Billing toggle */}
       <div className="mb-10 flex items-center justify-center gap-4">
         <span
@@ -182,6 +190,44 @@ export function PricingToggle() {
             </div>
           );
         })}
+      </div>
+
+      <div className="mt-16 max-w-3xl mx-auto">
+        <div className="text-center mb-8">
+          <h3 className="text-xl font-bold" style={{ color: "var(--foreground)" }}>
+            Need more AI credits?
+          </h3>
+          <p className="mt-2 text-sm" style={{ color: "var(--muted-foreground)" }}>
+            Top up anytime. Purchased credits never expire.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            { credits: 300, price: 15, label: "Starter Pack" },
+            { credits: 500, price: 20, label: "Most Popular", popular: true },
+            { credits: 1000, price: 35, label: "Best Value" },
+          ].map((pack) => (
+            <div
+              key={pack.credits}
+              className={`rounded-lg border p-5 text-center ${pack.popular ? "border-primary/40" : ""}`}
+              style={{
+                backgroundColor: "var(--card)",
+                borderColor: pack.popular ? "#4F8BFF" : "var(--border)",
+              }}
+            >
+              {pack.popular && (
+                <span className="inline-block mb-2 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded" style={{ backgroundColor: "rgba(79,139,255,0.1)", color: "#4F8BFF" }}>
+                  Most Popular
+                </span>
+              )}
+              <div style={{ fontFamily: "'JetBrains Mono', monospace" }} className="text-2xl font-bold">
+                {pack.credits.toLocaleString()}
+              </div>
+              <div className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>credits</div>
+              <div className="mt-3 text-lg font-semibold">${pack.price}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

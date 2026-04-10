@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Edit, FileText, Clock, Lock, ArrowLeft } from "lucide-react";
 import dynamic from "next/dynamic";
 import { formatLongDate } from "@/types/sops";
@@ -132,10 +131,14 @@ export default function SOPDetailPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4">
-        <div className="h-8 w-48 animate-pulse rounded bg-muted" />
-        <div className="h-6 w-96 animate-pulse rounded bg-muted" />
-        <div className="h-64 animate-pulse rounded-md border bg-muted/40" />
+      <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
+        <div className="space-y-3">
+          <div className="h-3 w-24 animate-pulse rounded bg-surface" />
+          <div className="h-12 w-3/4 animate-pulse rounded bg-surface" />
+          <div className="h-6 w-2/3 animate-pulse rounded bg-surface" />
+        </div>
+        <div className="h-px bg-border" />
+        <div className="h-64 animate-pulse rounded bg-surface/40" />
       </div>
     );
   }
@@ -143,22 +146,62 @@ export default function SOPDetailPage() {
   if (!sop) return null;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      {/* Back button for wiki navigation */}
+    <div className="mx-auto max-w-3xl px-4 py-8 lg:py-12 animate-fade-in">
+      {/* Print-only title */}
+      <h1 className="print-only text-2xl font-bold">{sop.title}</h1>
+
+      {/* Back link */}
       {typeof window !== "undefined" && window.history.length > 1 && (
         <button
           type="button"
-          className="no-print flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="no-print mb-6 flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary transition-colors"
           onClick={() => router.back()}
         >
-          <ArrowLeft className="h-3 w-3" /> Back
+          <ArrowLeft className="h-3.5 w-3.5" /> Back
         </button>
       )}
 
-      <h1 className="print-only text-2xl font-bold">{sop.title}</h1>
+      {/* ── Hero: Category → Title → Subtitle ── */}
+      <div className="no-print mb-8">
+        {/* Category label */}
+        {sop.category && (
+          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-text-secondary">
+            {sop.category}
+          </p>
+        )}
 
-      <div className="no-print flex items-start justify-between gap-4">
-        <SOPDetailHeader sop={sop} />
+        {/* Title */}
+        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-[1.1] text-text-primary">
+          {sop.title}
+        </h1>
+
+        {/* Subtitle / summary */}
+        {sop.summary && (
+          <p className="mt-4 max-w-2xl text-lg sm:text-xl font-light leading-relaxed text-text-secondary">
+            {sop.summary}
+          </p>
+        )}
+      </div>
+
+      {/* ── Author bar (border-top + border-bottom) ── */}
+      <div className="no-print flex items-center justify-between border-y border-border py-4 mb-10">
+        <div className="flex items-center gap-3 text-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">
+            {sop.last_edited_by_name?.charAt(0).toUpperCase() ?? "?"}
+          </div>
+          <div>
+            <p className="font-medium text-text-primary">
+              {sop.last_edited_by_name ?? "Unknown"}
+            </p>
+            <p className="flex items-center gap-1.5 text-xs text-text-secondary">
+              <Clock className="h-3 w-3" />
+              {sop.updated_at && sop.updated_at !== sop.created_at
+                ? `Updated ${formatLongDate(sop.updated_at)}`
+                : `Created ${formatLongDate(sop.created_at)}`}
+              <span>· v{sop.version}</span>
+            </p>
+          </div>
+        </div>
         <SOPDetailActions
           sop={sop}
           onTogglePin={handleTogglePin}
@@ -172,53 +215,44 @@ export default function SOPDetailPage() {
         />
       </div>
 
-      <div className="no-print flex items-center gap-4 text-sm text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <Clock className="h-3.5 w-3.5" />
-          Created {formatLongDate(sop.created_at)}
-        </span>
-        {sop.updated_at && sop.updated_at !== sop.created_at && (
-          <span className="flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5" />
-            Updated {formatLongDate(sop.updated_at)}
-            {sop.last_edited_by_name && <span>by {sop.last_edited_by_name}</span>}
-          </span>
-        )}
+      {/* Hidden detail header for SEO/print */}
+      <div className="hidden">
+        <SOPDetailHeader sop={sop} />
       </div>
 
+      {/* Copy protected notice */}
       {isCopyProtected && (
-        <div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-600 dark:text-amber-400">
+        <div className="no-print mb-6 flex items-center gap-2 rounded-md border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">
           <Lock className="h-3.5 w-3.5" />
           This document is copy protected.
         </div>
       )}
 
-      <Card className="border bg-card animate-fade-in">
-        <CardContent
-          className="py-6"
-          data-copy-protected={isCopyProtected || undefined}
-          style={isCopyProtected ? { userSelect: "none", WebkitUserSelect: "none" } : undefined}
-        >
-          {sop.content ? (
-            <SOPEditor
-              content={sop.content}
-              editable={false}
-              businessId={currentBusiness?.id}
-              onNavigate={(docId) => router.push(`/dashboard/sops/${docId}`)}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <FileText className="mb-3 h-10 w-10 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">This document has no content yet.</p>
-              <Link href={`/dashboard/sops/${sop.id}/edit`} className="mt-3">
-                <Button variant="outline" size="sm">
-                  <Edit className="mr-1 h-4 w-4" /> Add content
-                </Button>
-              </Link>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* ── Content body ── */}
+      <article
+        className="wiki-content"
+        data-copy-protected={isCopyProtected || undefined}
+        style={isCopyProtected ? { userSelect: "none", WebkitUserSelect: "none" } : undefined}
+      >
+        {sop.content ? (
+          <SOPEditor
+            content={sop.content}
+            editable={false}
+            businessId={currentBusiness?.id}
+            onNavigate={(docId) => router.push(`/dashboard/sops/${docId}`)}
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-surface py-16 text-center">
+            <FileText className="mb-3 h-10 w-10 text-text-tertiary" />
+            <p className="text-sm text-text-secondary">This document has no content yet.</p>
+            <Link href={`/dashboard/sops/${sop.id}/edit`} className="mt-3">
+              <Button variant="outline" size="sm">
+                <Edit className="mr-1 h-4 w-4" /> Add content
+              </Button>
+            </Link>
+          </div>
+        )}
+      </article>
 
       {footnotes.length > 0 && (
         <div className="border-t pt-4">

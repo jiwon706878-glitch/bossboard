@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET() {
   try {
@@ -17,6 +18,12 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    // Rate limit per IP: 3 submissions per hour
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!checkRateLimit(`waitlist:${ip}`, 3, 60 * 60_000)) {
+      return Response.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const { email, businessType, interestedFeatures, featureRequest } =
       await req.json();
 
@@ -24,6 +31,11 @@ export async function POST(req: Request) {
       return new Response("Email and business type are required", {
         status: 400,
       });
+    }
+
+    // Email format validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return new Response("Invalid email format", { status: 400 });
     }
 
     const supabase = createAdminClient();

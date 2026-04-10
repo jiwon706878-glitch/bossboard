@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -9,6 +10,11 @@ export async function POST(req: Request) {
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limit: 10 extractions per minute per user (CPU-heavy operation)
+  if (!checkRateLimit(`extract:${user.id}`, 10, 60_000)) {
+    return NextResponse.json({ error: "Too many requests. Please wait." }, { status: 429 });
   }
 
   const formData = await req.formData();
@@ -40,7 +46,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Text extraction error:", error);
     return NextResponse.json(
-      { error: `Failed to extract text: ${error instanceof Error ? error.message : "Unknown error"}` },
+      { error: "Failed to extract text from file" },
       { status: 500 }
     );
   }

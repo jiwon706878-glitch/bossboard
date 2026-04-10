@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { AdminLangToggle } from "@/components/admin/admin-lang-toggle";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 
 export default async function AdminLayout({
@@ -36,7 +37,10 @@ export default async function AdminLayout({
           <h2 className="text-sm font-medium text-muted-foreground">
             Admin Panel
           </h2>
-          <ThemeToggle />
+          <div className="flex items-center gap-3">
+            <AdminLangToggle />
+            <ThemeToggle />
+          </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
       </div>

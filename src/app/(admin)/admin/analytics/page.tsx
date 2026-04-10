@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { CREDIT_CONFIG, type ActionName } from "@/config/credits";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Zap, DollarSign, TrendingUp, Building2 } from "lucide-react";
+import { useAdminLang } from "@/lib/admin-i18n";
 import {
   BarChart,
   Bar,
@@ -35,6 +36,7 @@ interface BusinessRow {
 }
 
 export default function AdminAnalyticsPage() {
+  const { t } = useAdminLang();
   const [usage, setUsage] = useState<UsageRow[]>([]);
   const [businesses, setBusinesses] = useState<BusinessRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,7 +168,7 @@ export default function AdminAnalyticsPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Credit Analytics</h1>
+        <h1 className="text-3xl font-bold">{t("analytics")}</h1>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}>
@@ -182,14 +184,14 @@ export default function AdminAnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Credit Analytics</h1>
+      <h1 className="text-3xl font-bold">{t("analytics")}</h1>
 
       {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Credits Used Today
+              {t("credits_used_today")}
             </CardTitle>
             <Zap className="h-5 w-5 text-amber-500" />
           </CardHeader>
@@ -201,7 +203,7 @@ export default function AdminAnalyticsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Credits Used MTD
+              {t("credits_used_mtd")}
             </CardTitle>
             <TrendingUp className="h-5 w-5 text-blue-500" />
           </CardHeader>
@@ -213,7 +215,7 @@ export default function AdminAnalyticsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Estimated API Cost MTD
+              {t("estimated_api_cost")}
             </CardTitle>
             <DollarSign className="h-5 w-5 text-red-500" />
           </CardHeader>
@@ -228,13 +230,13 @@ export default function AdminAnalyticsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Active Businesses
+              {t("active_businesses")}
             </CardTitle>
             <Building2 className="h-5 w-5 text-emerald-500" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{activeBusinesses}</div>
-            <p className="text-xs text-muted-foreground mt-1">this month</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("this_month")}</p>
           </CardContent>
         </Card>
       </div>
@@ -244,7 +246,7 @@ export default function AdminAnalyticsPage() {
         {/* Bar chart — 2/3 width */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Credits by Day (Last 30 Days)</CardTitle>
+            <CardTitle>{t("daily_usage_30d")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-72">
@@ -278,12 +280,12 @@ export default function AdminAnalyticsPage() {
         {/* Pie chart — 1/3 width */}
         <Card>
           <CardHeader>
-            <CardTitle>By Action Type</CardTitle>
+            <CardTitle>{t("by_action_type")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-72 flex items-center justify-center">
               {typeBreakdown.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No data yet.</p>
+                <p className="text-sm text-muted-foreground">{t("no_data")}</p>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -326,21 +328,21 @@ export default function AdminAnalyticsPage() {
       {/* Top businesses table */}
       <Card>
         <CardHeader>
-          <CardTitle>Top 10 Businesses by Credit Usage (This Month)</CardTitle>
+          <CardTitle>{t("top_businesses")}</CardTitle>
         </CardHeader>
         <CardContent>
           {topBusinesses.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No usage data this month.</p>
+            <p className="text-sm text-muted-foreground">{t("no_data")}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50">
                     <th className="px-4 py-3 text-left font-medium">#</th>
-                    <th className="px-4 py-3 text-left font-medium">Business</th>
-                    <th className="px-4 py-3 text-left font-medium">Credits Used</th>
-                    <th className="px-4 py-3 text-left font-medium">Est. Cost</th>
-                    <th className="px-4 py-3 text-left font-medium">% of MTD</th>
+                    <th className="px-4 py-3 text-left font-medium">{t("business")}</th>
+                    <th className="px-4 py-3 text-left font-medium">{t("credits_used")}</th>
+                    <th className="px-4 py-3 text-left font-medium">{t("estimated_cost")}</th>
+                    <th className="px-4 py-3 text-left font-medium">% {t("credits_used_mtd")}</th>
                   </tr>
                 </thead>
                 <tbody>

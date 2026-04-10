@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, DollarSign, Sparkles, Building2, MessageSquare } from "lucide-react";
 import { plans } from "@/config/plans";
+import { AdminPageTitle } from "@/components/admin/admin-page-title";
 
 export default async function AdminOverviewPage() {
   const supabase = createAdminClient();
@@ -50,7 +51,7 @@ export default async function AdminOverviewPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Admin Overview</h1>
+      <AdminPageTitle titleKey="overview" />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {stats.map((stat) => (

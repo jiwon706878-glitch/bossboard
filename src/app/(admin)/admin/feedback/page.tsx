@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { FeedbackTable } from "@/components/admin/feedback-table";
+import { AdminPageTitle } from "@/components/admin/admin-page-title";
 
 export default async function AdminFeedbackPage() {
   const supabase = createAdminClient();
@@ -48,12 +49,10 @@ export default async function AdminFeedbackPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Feedback</h1>
-        <p className="text-muted-foreground">
-          {stats.total} total — {stats.feedback} feedback {"\u00b7"} {stats.bugs} bugs {"\u00b7"} {stats.features} feature requests
-        </p>
-      </div>
+      <AdminPageTitle
+        titleKey="feedback"
+        subtitle={`${stats.total} total — ${stats.feedback} feedback \u00b7 ${stats.bugs} bugs \u00b7 ${stats.features} feature requests`}
+      />
       <FeedbackTable items={feedbackItems} />
     </div>
   );

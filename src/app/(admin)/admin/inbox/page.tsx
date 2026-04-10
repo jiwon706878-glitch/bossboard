@@ -20,6 +20,7 @@ import {
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useAdminLang } from "@/lib/admin-i18n";
 
 type Thread = {
   id: string;
@@ -55,6 +56,7 @@ const STATUS_BADGE_CLASSES: Record<string, string> = {
 };
 
 export default function AdminInboxPage() {
+  const { t } = useAdminLang();
   const supabase = createClient();
   const queryClient = useQueryClient();
 
@@ -238,7 +240,7 @@ export default function AdminInboxPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-3xl font-bold">Inbox</h1>
+        <h1 className="text-3xl font-bold">{t("inbox")}</h1>
         <p className="text-muted-foreground">
           {threads.length} thread{threads.length !== 1 ? "s" : ""} total
         </p>

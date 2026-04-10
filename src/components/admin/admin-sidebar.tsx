@@ -15,24 +15,28 @@ import {
   ArrowLeft,
   LogOut,
   PieChart,
+  TrendingUp,
 } from "lucide-react";
+import { useAdminLang } from "@/lib/admin-i18n";
 import { toast } from "sonner";
 import { useBusinessStore } from "@/hooks/use-business";
 
-const links = [
-  { href: "/admin", label: "Overview", icon: LayoutDashboard },
-  { href: "/admin/inbox", label: "Inbox", icon: Inbox },
-  { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/revenue", label: "Revenue", icon: DollarSign },
-  { href: "/admin/usage", label: "AI Usage", icon: BarChart3 },
-  { href: "/admin/analytics", label: "Analytics", icon: PieChart },
-  { href: "/admin/feedback", label: "Feedback", icon: MessageSquare },
+const linkConfigs = [
+  { href: "/admin", labelKey: "overview" as const, icon: LayoutDashboard },
+  { href: "/admin/inbox", labelKey: "inbox" as const, icon: Inbox },
+  { href: "/admin/users", labelKey: "users" as const, icon: Users },
+  { href: "/admin/revenue", labelKey: "revenue" as const, icon: DollarSign },
+  { href: "/admin/usage", labelKey: "ai_usage" as const, icon: BarChart3 },
+  { href: "/admin/analytics", labelKey: "analytics" as const, icon: PieChart },
+  { href: "/admin/costs", labelKey: "costs" as const, icon: TrendingUp },
+  { href: "/admin/feedback", labelKey: "feedback" as const, icon: MessageSquare },
 ];
 
 export function AdminSidebar({ className }: { className?: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const { t } = useAdminLang();
 
   async function handleLogout() {
     useBusinessStore.getState().clear();
@@ -47,10 +51,10 @@ export function AdminSidebar({ className }: { className?: string }) {
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white font-bold text-lg">
           Ad
         </div>
-        <span className="text-lg font-bold">Admin</span>
+        <span className="text-lg font-bold">{t("admin_panel")}</span>
       </div>
       <nav className="flex-1 space-y-1 p-3">
-        {links.map((link) => {
+        {linkConfigs.map((link) => {
           const isActive =
             pathname === link.href ||
             (link.href !== "/admin" && pathname.startsWith(link.href));
@@ -64,7 +68,7 @@ export function AdminSidebar({ className }: { className?: string }) {
                 )}
               >
                 <link.icon className="h-4 w-4" />
-                {link.label}
+                {t(link.labelKey)}
               </Button>
             </Link>
           );
@@ -74,7 +78,7 @@ export function AdminSidebar({ className }: { className?: string }) {
         <Link href="/dashboard">
           <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground">
             <ArrowLeft className="h-4 w-4" />
-            Back to App
+            {t("back_to_app")}
           </Button>
         </Link>
         <Button
@@ -83,7 +87,7 @@ export function AdminSidebar({ className }: { className?: string }) {
           onClick={handleLogout}
         >
           <LogOut className="h-4 w-4" />
-          Log out
+          {t("log_out")}
         </Button>
       </div>
     </aside>

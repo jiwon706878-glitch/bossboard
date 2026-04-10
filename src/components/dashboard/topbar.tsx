@@ -101,10 +101,13 @@ export const DashboardTopbar = memo(function DashboardTopbar() {
                   </div>
                 ))}
               </div>
-              <div className="mt-4 border-t pt-3">
+              <div className="mt-4 border-t pt-3 space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  Need help? Send feedback using the message icon.
+                  Need help? Click the sparkle icon at the bottom-right to ask the AI assistant, or send feedback using the message icon.
                 </p>
+                <a href="/dashboard/support" className="block text-xs text-primary hover:underline">
+                  Contact Support
+                </a>
               </div>
             </PopoverContent>
           </Popover>

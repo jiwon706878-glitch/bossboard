@@ -6,6 +6,7 @@ import { DashboardPrefetcher } from "@/components/dashboard/prefetcher";
 import { TabShell } from "@/components/dashboard/tab-shell";
 import { ContextMenuBlocker } from "@/components/dashboard/context-menu-blocker";
 import { GlobalShortcuts } from "@/components/dashboard/global-shortcuts";
+import { TabAIChat } from "@/components/ai/tab-ai-chat";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -27,6 +28,7 @@ export default function DashboardLayout({
         <LazyOverlays />
         <DashboardPrefetcher />
         <GlobalShortcuts />
+        <TabAIChat tab="wiki" context={{}} />
       </div>
     </ContextMenuBlocker>
   );

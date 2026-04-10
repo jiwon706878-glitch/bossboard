@@ -14,6 +14,7 @@ import {
   Inbox,
   ArrowLeft,
   LogOut,
+  PieChart,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useBusinessStore } from "@/hooks/use-business";
@@ -24,6 +25,7 @@ const links = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/revenue", label: "Revenue", icon: DollarSign },
   { href: "/admin/usage", label: "AI Usage", icon: BarChart3 },
+  { href: "/admin/analytics", label: "Analytics", icon: PieChart },
   { href: "/admin/feedback", label: "Feedback", icon: MessageSquare },
 ];
 

@@ -2,7 +2,9 @@
   "name": "bossboard-cli",
   "version": "0.1.0",
   "description": "CLI for BossBoard — the operations wiki for small business",
-  "bin": { "bb": "./bin/bb.js" },
+  "bin": {
+    "bb": "./bin/bb.js"
+  },
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

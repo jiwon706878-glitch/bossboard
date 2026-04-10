@@ -15,7 +15,7 @@ export async function apiCall(method: string, path: string, body?: unknown) {
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
+    const err = (await res.json().catch(() => ({ error: res.statusText }))) as { error?: string };
     console.error(`Error ${res.status}: ${err.error || res.statusText}`);
     process.exit(1);
   }

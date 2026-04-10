@@ -185,7 +185,9 @@ interface SendOpts {
 export async function sendEmail(opts: SendOpts): Promise<boolean> {
   const resend = getResend();
   if (!resend) {
-    console.log("[email] No RESEND_API_KEY, skipping:", opts.subject);
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[email] No RESEND_API_KEY configured");
+    }
     return false;
   }
   try {

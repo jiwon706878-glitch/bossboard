@@ -77,11 +77,12 @@ async function fetchDashboardSopStats(businessId: string) {
   if (error) throw error;
   const sops = data ?? [];
   const staleThreshold = Date.now() - 90 * 24 * 60 * 60 * 1000;
+  type SopStat = { status: string; updated_at: string | null };
   return {
     total: sops.length,
-    draft: sops.filter((s: any) => s.status === "draft").length,
-    published: sops.filter((s: any) => s.status === "published").length,
-    stale: sops.filter((s: any) => s.updated_at && new Date(s.updated_at).getTime() < staleThreshold).length,
+    draft: sops.filter((s: SopStat) => s.status === "draft").length,
+    published: sops.filter((s: SopStat) => s.status === "published").length,
+    stale: sops.filter((s: SopStat) => s.updated_at && new Date(s.updated_at).getTime() < staleThreshold).length,
   };
 }
 
@@ -197,19 +198,19 @@ export function useDashboard() {
   const unlimitedCredits = creditsLimit === -1;
 
   const overdueChecklists = useMemo(
-    () => checklists.filter((cl: any) => cl.due_date && cl.due_date < getTodayStr()),
+    () => checklists.filter((cl: ChecklistRow) => cl.due_date && cl.due_date < getTodayStr()),
     [checklists]
   );
   const todayChecklists = useMemo(
-    () => checklists.filter((cl: any) => !cl.due_date || cl.due_date >= getTodayStr()),
+    () => checklists.filter((cl: ChecklistRow) => !cl.due_date || cl.due_date >= getTodayStr()),
     [checklists]
   );
   const overdueTodos = useMemo(
-    () => todos.filter((t: any) => t.due_date && t.due_date < getTodayStr()),
+    () => todos.filter((t: TodoRow) => t.due_date && t.due_date < getTodayStr()),
     [todos]
   );
   const todayTodos = useMemo(
-    () => todos.filter((t: any) => !t.due_date || t.due_date >= getTodayStr()),
+    () => todos.filter((t: TodoRow) => !t.due_date || t.due_date >= getTodayStr()),
     [todos]
   );
 
@@ -237,7 +238,7 @@ export function useDashboard() {
     onMutate: async (text) => {
       await queryClient.cancelQueries({ queryKey: dashboardKeys.todos(userId!) });
       const previous = queryClient.getQueryData(dashboardKeys.todos(userId!));
-      queryClient.setQueryData(dashboardKeys.todos(userId!), (old: any[]) => [
+      queryClient.setQueryData(dashboardKeys.todos(userId!), (old: TodoRow[] | undefined) => [
         ...(old ?? []),
         { id: `temp-${Date.now()}`, text: text.trim(), completed: false, completed_at: null, due_date: getTodayStr(), priority: "normal", created_at: new Date().toISOString() },
       ]);
@@ -265,8 +266,8 @@ export function useDashboard() {
     onMutate: async (todoId) => {
       await queryClient.cancelQueries({ queryKey: dashboardKeys.todos(userId!) });
       const previous = queryClient.getQueryData(dashboardKeys.todos(userId!));
-      queryClient.setQueryData(dashboardKeys.todos(userId!), (old: any[]) =>
-        (old ?? []).filter((t: any) => t.id !== todoId)
+      queryClient.setQueryData(dashboardKeys.todos(userId!), (old: TodoRow[] | undefined) =>
+        (old ?? []).filter((t: TodoRow) => t.id !== todoId)
       );
       return { previous };
     },
@@ -291,8 +292,8 @@ export function useDashboard() {
     onMutate: async (todoId) => {
       await queryClient.cancelQueries({ queryKey: dashboardKeys.todos(userId!) });
       const previous = queryClient.getQueryData(dashboardKeys.todos(userId!));
-      queryClient.setQueryData(dashboardKeys.todos(userId!), (old: any[]) =>
-        (old ?? []).filter((t: any) => t.id !== todoId)
+      queryClient.setQueryData(dashboardKeys.todos(userId!), (old: TodoRow[] | undefined) =>
+        (old ?? []).filter((t: TodoRow) => t.id !== todoId)
       );
       return { previous };
     },

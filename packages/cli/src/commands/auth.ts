@@ -24,9 +24,9 @@ authCommand
         console.error(`Authentication failed (${res.status}). Check your API key.`);
         process.exit(1);
       }
-      const data = await res.json();
+      const data = (await res.json()) as { business?: { name?: string } };
       console.log(`Connected to: ${data.business?.name || "your workspace"}`);
-    } catch (err) {
+    } catch {
       console.error("Could not reach the API. Check your URL and network.");
       process.exit(1);
     }

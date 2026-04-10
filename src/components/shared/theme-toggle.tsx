@@ -8,22 +8,44 @@ import { Button } from "@/components/ui/button";
 /**
  * Theme toggle button.
  *
- * Wraps the next-themes setTheme call in a temporary `theme-changing`
- * class on <html> so the smooth 400ms color crossfade only applies
- * during the actual switch — not during normal navigation.
+ * Modern browsers (Chrome, Edge, Safari 18+): Uses the View Transitions
+ * API for a buttery smooth full-screen crossfade.
+ *
+ * Older browsers (Firefox, older Safari): Falls back to CSS transitions
+ * scoped via the `theme-changing` class, which is added before the
+ * switch and removed 550ms later.
  */
 export function ThemeToggle() {
   const { setTheme, theme } = useTheme();
 
   const handleToggle = useCallback(() => {
     if (typeof document === "undefined") return;
+    const nextTheme = theme === "light" ? "dark" : "light";
+
+    // Hint the browser to optimize for these properties during transition
+    document.body.style.willChange = "background-color, color";
+
+    const cleanup = () => {
+      document.body.style.willChange = "auto";
+    };
+
+    // Modern path: View Transitions API (Chrome, Edge, Safari 18+)
+    if (typeof document.startViewTransition === "function") {
+      const transition = document.startViewTransition(() => {
+        setTheme(nextTheme);
+      });
+      transition.finished.finally(cleanup);
+      return;
+    }
+
+    // Fallback path: CSS class + setTimeout (Firefox, older Safari)
     const root = document.documentElement;
     root.classList.add("theme-changing");
-    setTheme(theme === "light" ? "dark" : "light");
-    // Remove the class after the transition completes
+    setTheme(nextTheme);
     window.setTimeout(() => {
       root.classList.remove("theme-changing");
-    }, 450);
+      cleanup();
+    }, 550);
   }, [setTheme, theme]);
 
   return (

@@ -246,18 +246,30 @@
   /* ─── Theme switch transitions (the "스르륵" effect) ───
      CRITICAL: Only applied while the user is actively toggling the theme.
      The .theme-changing class is added by the theme toggle handler, then
-     removed after 450ms. This avoids the perf penalty of having a universal
-     transition rule on every DOM element during normal navigation. */
+     removed after 550ms. Modern browsers use the View Transitions API
+     (see ::view-transition rules below) — this is the fallback for
+     older browsers like Firefox. */
   html.theme-changing,
   html.theme-changing *,
   html.theme-changing *::before,
   html.theme-changing *::after {
     transition:
-      background-color 400ms ease,
-      color 400ms ease,
-      border-color 400ms ease,
-      fill 400ms ease,
-      stroke 400ms ease !important;
+      background-color 500ms cubic-bezier(0.4, 0, 0.2, 1),
+      color 500ms cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 500ms cubic-bezier(0.4, 0, 0.2, 1),
+      fill 500ms cubic-bezier(0.4, 0, 0.2, 1),
+      stroke 500ms cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 500ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  /* Exclude heavy elements from the transition to prevent jank.
+     Images, charts, and complex SVG paths shouldn't crossfade. */
+  html.theme-changing img,
+  html.theme-changing video,
+  html.theme-changing canvas,
+  html.theme-changing .recharts-wrapper *,
+  html.theme-changing [data-no-transition] {
+    transition: none !important;
   }
 
   /* Respect reduced motion */
@@ -268,6 +280,41 @@
     html.theme-changing *::after {
       transition: none !important;
     }
+  }
+}
+
+/* ═══ View Transitions API (modern browsers) ═══
+   When supported, theme toggle uses document.startViewTransition()
+   for a buttery smooth full-screen crossfade. This is the preferred
+   path — the .theme-changing class above is the fallback. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 400ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  animation-name: theme-fade-out;
+}
+
+::view-transition-new(root) {
+  animation-name: theme-fade-in;
+}
+
+@keyframes theme-fade-out {
+  to { opacity: 0; }
+}
+
+@keyframes theme-fade-in {
+  from { opacity: 0; }
+}
+
+/* Disable view transitions entirely for reduced motion users */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
   }
 }
 

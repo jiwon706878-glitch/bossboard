@@ -17,6 +17,8 @@ interface StepGenerateSOPsProps {
   generatingComplete: boolean;
   genProgress: number;
   onGenerateAll: () => void;
+  onSkip: () => void;
+  skipLoading: boolean;
   onGoToDashboard: () => void;
 }
 
@@ -27,6 +29,8 @@ export function StepGenerateSOPs({
   generatingComplete,
   genProgress,
   onGenerateAll,
+  onSkip,
+  skipLoading,
   onGoToDashboard,
 }: StepGenerateSOPsProps) {
   return (
@@ -37,8 +41,8 @@ export function StepGenerateSOPs({
         </CardTitle>
         <CardDescription className="text-muted-foreground">
           {generatingComplete
-            ? "We've created sample SOPs and a Getting Started guide in your wiki."
-            : `Based on your ${industries.find((i) => i.value === industry)?.label || "business"} type, we'll generate ${suggestions.length} sample SOPs for you.`}
+            ? "We've created sample SOPs and BossBoard Guide pages in your wiki."
+            : `Based on your ${industries.find((i) => i.value === industry)?.label || "business"} type, we'll generate ${suggestions.length} sample SOPs for you. Uses AI credits.`}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -62,6 +66,14 @@ export function StepGenerateSOPs({
             >
               <Sparkles className="mr-2 h-4 w-4" />
               Generate {suggestions.length} Sample SOPs
+            </Button>
+            <Button
+              variant="outline"
+              onClick={onSkip}
+              disabled={skipLoading}
+              className="w-full transition-colors duration-150"
+            >
+              {skipLoading ? "Setting up..." : "Skip — just create guide pages"}
             </Button>
           </>
         )}

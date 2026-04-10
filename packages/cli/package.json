@@ -1,0 +1,17 @@
+{
+  "name": "bossboard-cli",
+  "version": "0.1.0",
+  "description": "CLI for BossBoard — the operations wiki for small business",
+  "bin": { "bb": "./bin/bb.js" },
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "commander": "^12.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

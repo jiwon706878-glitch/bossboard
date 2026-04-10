@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { StepAboutYou } from "@/components/onboarding/step-about-you";
 import { StepIndustry } from "@/components/onboarding/step-industry";
 import { StepGenerateSOPs } from "@/components/onboarding/step-generate-sops";
+import { GUIDE_TEMPLATES } from "@/config/guide-templates";
 
 const sopSuggestions: Record<string, string[]> = {
   "cafe-restaurant": ["Opening Checklist — morning prep, equipment check, register setup", "Closing Checklist — cleaning, cash reconciliation, lockup", "New Barista Training Guide — espresso basics, drink recipes, POS operation"],
@@ -217,7 +218,8 @@ export default function OnboardingPage() {
       }
     }
 
-    await createGuideDocuments(user.id, currentBusiness.id);
+    await createGuidePages(user.id, currentBusiness.id);
+    await markOnboardingComplete(currentBusiness.id);
 
     setGenProgress(topics.length);
     setGeneratingComplete(true);
@@ -225,84 +227,65 @@ export default function OnboardingPage() {
     if (created > 0) toast.success(`${created} sample SOPs created!`);
   }
 
-  async function createGuideDocuments(userId: string, businessId: string) {
-    const { data: folder } = await supabase
+  async function createGuidePages(userId: string, businessId: string) {
+    // Find or create the "BossBoard Guide" folder
+    const { data: existingFolder } = await supabase
       .from("folders")
-      .insert({ business_id: businessId, name: "BossBoard Guide", sort_order: 999, created_by: userId })
       .select("id")
+      .eq("business_id", businessId)
+      .eq("name", "BossBoard Guide")
       .single();
 
-    const folderId = folder?.id || null;
+    let guideFolderId = existingFolder?.id || null;
 
-    const gettingStarted = `Getting Started with BossBoard
+    if (!guideFolderId) {
+      const { data: folder } = await supabase
+        .from("folders")
+        .insert({ business_id: businessId, name: "BossBoard Guide", sort_order: 999, created_by: userId })
+        .select("id")
+        .single();
+      guideFolderId = folder?.id || null;
+    }
 
-Welcome to BossBoard — your AI-powered operations wiki.
-
-1. Create Your First SOP
-Open the Wiki from the sidebar, click "New SOP", and choose one of three methods:
-- AI Generate: Describe any task and AI writes a complete procedure in 30 seconds
-- Upload & Reformat: Upload a PDF, Word doc, or image — AI converts it to a structured SOP
-- Start from Scratch: Write your own document using the rich text editor
-
-2. Organize with Folders
-Right-click any folder in the sidebar to create subfolders, rename, or set access permissions. Drag and drop documents between folders to organize your wiki.
-
-3. Invite Your Team
-Go to Team & Admin from the sidebar. Send email invites or copy a shareable invite link. Team members can view, read, and sign off on documents.
-
-4. Create Checklists
-Open any SOP and click "Create Checklist" to convert it into a daily recurring checklist. Track completion from the Dashboard.
-
-5. Track Everything
-The Dashboard shows overdue checklists, pending todos, and team activity at a glance. Every document tracks who has read it.`;
-
-    const tipsShortcuts = `Tips & Shortcuts
-
-Keyboard Shortcuts
-- Ctrl+K / Cmd+K: Open smart search from anywhere in the dashboard
-- Ctrl+N / Cmd+N: Create a new SOP (from the Wiki page)
-- ?: Show all keyboard shortcuts
-
-Smart Search
-Press Ctrl+K to open the search bar. Type keywords to search across all document titles and content. Ask a natural language question (like "How often do we clean the tanks?") and click the AI button for an instant answer with source references.
-
-Wiki Links
-Type [[ in the editor to link to another document. As you type, a dropdown shows matching documents. Select one to insert a clickable wiki link. In view mode, clicking the link navigates directly to that document.
-
-Copy Protection
-In the SOP editor, toggle "Copy Protection" to prevent copying, printing, and right-clicking on sensitive documents. This protection carries over to shared links too.
-
-Sharing Documents
-Click "Share" on any document to generate a public link. You can set a password, expiration date, and control whether downloads are allowed. Recipients don't need a BossBoard account.
-
-Document Types
-- SOP: Step-by-step procedures and manuals
-- Note: General notes, meeting minutes, references
-- Policy: Rules, regulations, compliance documents
-
-Stale Document Badges
-Documents not updated in 90+ days show an amber "90+ days" badge in the Wiki list as a reminder to review.`;
-
-    const docs = [
-      { title: "Getting Started", content: gettingStarted },
-      { title: "Tips & Shortcuts", content: tipsShortcuts },
-    ];
-
-    for (const doc of docs) {
+    for (const guide of GUIDE_TEMPLATES) {
       await supabase.from("sops").insert({
         business_id: businessId,
-        folder_id: folderId,
-        title: doc.title,
-        content: textToTipTapJSON(doc.content),
-        summary: doc.content.substring(0, 200).replace(/\n/g, " ").trim(),
+        title: guide.title,
+        content: textToTipTapJSON(guide.content),
+        summary: guide.content.substring(0, 200).replace(/\n/g, " ").trim(),
+        status: "published",
         doc_type: "note",
+        folder_id: guideFolderId,
         tags: ["guide"],
         pinned: true,
-        status: "published",
         version: 1,
         created_by: userId,
       });
     }
+  }
+
+  async function markOnboardingComplete(businessId: string) {
+    await supabase
+      .from("businesses")
+      .update({ onboarding_completed: true })
+      .eq("id", businessId);
+  }
+
+  async function handleSkipGeneration() {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !currentBusiness) {
+      toast.error("Not authenticated");
+      setLoading(false);
+      return;
+    }
+
+    await createGuidePages(user.id, currentBusiness.id);
+    await markOnboardingComplete(currentBusiness.id);
+
+    setLoading(false);
+    toast.success("Guide pages created! Welcome to BossBoard.");
+    router.push("/dashboard");
   }
 
   function handleGoToDashboard() {
@@ -367,6 +350,8 @@ Documents not updated in 90+ days show an amber "90+ days" badge in the Wiki lis
               generatingComplete={generatingComplete}
               genProgress={genProgress}
               onGenerateAll={handleGenerateAllSOPs}
+              onSkip={handleSkipGeneration}
+              skipLoading={loading}
               onGoToDashboard={handleGoToDashboard}
             />
           )}
@@ -380,19 +365,10 @@ Documents not updated in 90+ days show an amber "90+ days" badge in the Wiki lis
             ) : (
               <div />
             )}
-            {step < 3 ? (
+            {step < 3 && (
               <Button onClick={handleNext} disabled={loading} className="transition-colors duration-150">
                 {loading ? "Saving..." : "Next"}
               </Button>
-            ) : (
-              !generatingComplete && !isGenerating && (
-                <button
-                  onClick={handleGoToDashboard}
-                  className="text-sm text-muted-foreground underline hover:text-foreground transition-colors duration-150"
-                >
-                  Skip for now
-                </button>
-              )
             )}
           </div>
         </Card>

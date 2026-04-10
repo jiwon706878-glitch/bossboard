@@ -6,6 +6,7 @@ export const CREDIT_COSTS: Record<string, number> = {
   sop_reformat: 2,
   file_convert: 3,
   chat: 1,
+  receipt_ocr: 1,
 };
 
 export async function getMonthlyUsage(userId: string) {

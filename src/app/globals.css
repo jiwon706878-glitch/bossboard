@@ -2,11 +2,16 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* A2Z — only load weights actually used (400, 500, 600, 700) */
+/* A2Z — all 9 weights for full typographic control */
+@font-face { font-family: "A2Z"; src: url("/fonts/A2Z-1Thin.ttf") format("truetype"); font-weight: 100; font-style: normal; font-display: swap; }
+@font-face { font-family: "A2Z"; src: url("/fonts/A2Z-2ExtraLight.ttf") format("truetype"); font-weight: 200; font-style: normal; font-display: swap; }
+@font-face { font-family: "A2Z"; src: url("/fonts/A2Z-3Light.ttf") format("truetype"); font-weight: 300; font-style: normal; font-display: swap; }
 @font-face { font-family: "A2Z"; src: url("/fonts/A2Z-4Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: swap; }
 @font-face { font-family: "A2Z"; src: url("/fonts/A2Z-5Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; font-display: swap; }
 @font-face { font-family: "A2Z"; src: url("/fonts/A2Z-6SemiBold.ttf") format("truetype"); font-weight: 600; font-style: normal; font-display: swap; }
 @font-face { font-family: "A2Z"; src: url("/fonts/A2Z-7Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "A2Z"; src: url("/fonts/A2Z-8ExtraBold.ttf") format("truetype"); font-weight: 800; font-style: normal; font-display: swap; }
+@font-face { font-family: "A2Z"; src: url("/fonts/A2Z-9Black.ttf") format("truetype"); font-weight: 900; font-style: normal; font-display: swap; }
 
 @custom-variant dark (&:is(.dark *));
 
@@ -55,6 +60,24 @@
   --radius-4xl: calc(var(--radius) + 8px);
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-shimmer: shimmer 1.5s infinite;
+
+  /* ─── NEW DESIGN SYSTEM TOKENS ───────────────────────────────── */
+  /* These expose new Tailwind utilities: bg-bg, bg-surface,
+     text-text-primary, bg-success, bg-warning, bg-error, etc. */
+  --color-bg: var(--bg);
+  --color-bg-sidebar: var(--bg-sidebar);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-accent-cyan: var(--accent-cyan);
+  --color-accent-purple: var(--accent-purple);
+  --color-primary-hover: var(--primary-hover);
 }
 
 @keyframes accordion-down {
@@ -69,76 +92,122 @@
 
 :root {
   --radius: 0.375rem;
-  --background: #F5F6F8;
-  --foreground: #1E2330;
-  --card: #FAFBFC;
-  --card-foreground: #1E2330;
-  --popover: #FAFBFC;
-  --popover-foreground: #1E2330;
-  --primary: #3366FF;
-  --primary-foreground: #FAFBFC;
-  --secondary: #EEF0F4;
-  --secondary-foreground: #1E2330;
-  --muted: #F0F1F4;
-  --muted-foreground: #6B7280;
-  --accent: #EEF0F4;
-  --accent-foreground: #1E2330;
-  --destructive: #DC2626;
-  --border: #E2E6EF;
-  --input: #E2E6EF;
-  --ring: #3366FF;
-  --amber: #FBBF24;
-  --amber-foreground: #1E2330;
-  --chart-1: #3366FF;
-  --chart-2: #059669;
-  --chart-3: #D97706;
-  --chart-4: #DC2626;
-  --chart-5: #6B7280;
-  --sidebar: #FAFBFC;
-  --sidebar-foreground: #1E2330;
-  --sidebar-primary: #3366FF;
-  --sidebar-primary-foreground: #FAFBFC;
-  --sidebar-accent: #EEF0F4;
-  --sidebar-accent-foreground: #1E2330;
-  --sidebar-border: #E2E6EF;
-  --sidebar-ring: #3366FF;
+
+  /* ─── NEW DESIGN SYSTEM (light mode) ─────────────────────── */
+  --bg: #FFFFFF;
+  --bg-sidebar: #F8F9FB;
+  --surface: #F8F9FB;
+  --surface-elevated: #FFFFFF;
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
+  --text-tertiary: #94A3B8;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --accent-cyan: #06B6D4;
+  --accent-purple: #A855F7;
+  --primary-hover: #3B5EE0;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 6px rgba(15, 23, 42, 0.07), 0 2px 4px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 10px 15px rgba(15, 23, 42, 0.08), 0 4px 6px rgba(15, 23, 42, 0.05);
+  --shadow-xl: 0 20px 25px rgba(15, 23, 42, 0.1), 0 8px 10px rgba(15, 23, 42, 0.04);
+
+  /* ─── Legacy tokens (mapped to new palette for backward compat) ─── */
+  --background: #FFFFFF;
+  --foreground: #0F172A;
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
+  --primary: #4A6CF7;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #0F172A;
+  --muted: #F8F9FB;
+  --muted-foreground: #64748B;
+  --accent: #F1F5F9;
+  --accent-foreground: #0F172A;
+  --destructive: #EF4444;
+  --border: #E5E7EB;
+  --input: #E5E7EB;
+  --ring: #4A6CF7;
+  --amber: #F59E0B;
+  --amber-foreground: #0F172A;
+  --chart-1: #4A6CF7;
+  --chart-2: #10B981;
+  --chart-3: #F59E0B;
+  --chart-4: #EF4444;
+  --chart-5: #94A3B8;
+  --sidebar: #F8F9FB;
+  --sidebar-foreground: #0F172A;
+  --sidebar-primary: #4A6CF7;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F1F5F9;
+  --sidebar-accent-foreground: #0F172A;
+  --sidebar-border: #E5E7EB;
+  --sidebar-ring: #4A6CF7;
 }
 
 .dark {
   --radius: 0.375rem;
-  --background: #101420;
-  --foreground: #E4E8F0;
-  --card: #171C2E;
-  --card-foreground: #E4E8F0;
-  --popover: #171C2E;
-  --popover-foreground: #E4E8F0;
-  --primary: #4F8BFF;
-  --primary-foreground: #F0F2F7;
-  --secondary: #1E2438;
-  --secondary-foreground: #E4E8F0;
-  --muted: #1E2438;
-  --muted-foreground: #8B95B0;
-  --accent: #232840;
-  --accent-foreground: #E4E8F0;
+
+  /* ─── NEW DESIGN SYSTEM (dark mode — warm Obsidian neutral) ─── */
+  --bg: #1E1E1E;
+  --bg-sidebar: #181818;
+  --surface: #252525;
+  --surface-elevated: #2A2A2A;
+  --text-primary: #DCDCDC;
+  --text-secondary: #9A9A9A;
+  --text-tertiary: #6B6B6B;
+  --success: #34D399;
+  --warning: #FBBF24;
+  --error: #F87171;
+  --accent-cyan: #06B6D4;
+  --accent-purple: #A855F7;
+  --primary-hover: #5A7CFF;
+
+  /* Dark mode shadows */
+  --shadow-sm: none;
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.5);
+
+  /* ─── Legacy tokens (mapped to new warm Obsidian palette) ─── */
+  --background: #1E1E1E;
+  --foreground: #DCDCDC;
+  --card: #252525;
+  --card-foreground: #DCDCDC;
+  --popover: #2A2A2A;
+  --popover-foreground: #DCDCDC;
+  --primary: #4A6CF7;
+  --primary-foreground: #FFFFFF;
+  --secondary: #2A2A2A;
+  --secondary-foreground: #DCDCDC;
+  --muted: #252525;
+  --muted-foreground: #9A9A9A;
+  --accent: #2A2A2A;
+  --accent-foreground: #DCDCDC;
   --destructive: #F87171;
-  --border: #2A3050;
-  --input: #2A3050;
-  --ring: #4F8BFF;
+  --border: #2F2F2F;
+  --input: #2F2F2F;
+  --ring: #4A6CF7;
   --amber: #FBBF24;
-  --amber-foreground: #101420;
-  --chart-1: #4F8BFF;
+  --amber-foreground: #1E1E1E;
+  --chart-1: #4A6CF7;
   --chart-2: #34D399;
   --chart-3: #FBBF24;
   --chart-4: #F87171;
-  --chart-5: #8B95B0;
-  --sidebar: #101420;
-  --sidebar-foreground: #E4E8F0;
-  --sidebar-primary: #4F8BFF;
-  --sidebar-primary-foreground: #F0F2F7;
-  --sidebar-accent: #1E2438;
-  --sidebar-accent-foreground: #E4E8F0;
-  --sidebar-border: #2A3050;
-  --sidebar-ring: #4F8BFF;
+  --chart-5: #9A9A9A;
+  --sidebar: #181818;
+  --sidebar-foreground: #DCDCDC;
+  --sidebar-primary: #4A6CF7;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #2A2A2A;
+  --sidebar-accent-foreground: #DCDCDC;
+  --sidebar-border: #2F2F2F;
+  --sidebar-ring: #4A6CF7;
 }
 
 @layer base {
@@ -164,6 +233,43 @@
   button, [data-slot="button"] {
     font-weight: 600;
   }
+
+  /* ─── Smooth theme transitions (the "스르륵" effect) ───
+     Only color/background/border properties — no transform/opacity to avoid
+     interfering with layout animations. */
+  html.theme-transition,
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition:
+      background-color 400ms ease,
+      color 400ms ease,
+      border-color 400ms ease,
+      fill 400ms ease,
+      stroke 400ms ease,
+      box-shadow 400ms ease !important;
+  }
+
+  /* Disable on first paint to prevent flash */
+  .preload,
+  .preload * {
+    transition: none !important;
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    html.theme-transition,
+    html.theme-transition *,
+    html.theme-transition *::before,
+    html.theme-transition *::after {
+      transition: none !important;
+    }
+  }
+}
+
+/* Shimmer animation for skeleton loaders */
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
 }
 
 

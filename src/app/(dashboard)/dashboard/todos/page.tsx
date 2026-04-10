@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, memo } from "react";
+import { useState, useRef, useEffect, memo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, isYesterday } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
@@ -158,14 +158,25 @@ export default function TodosPage() {
     setTimeout(() => inputRef.current?.focus(), 0);
   }
 
-  function handleToggle(todoId: string, completed: boolean) { toggleMutation.mutate({ todoId, completed }); }
-  function handleDelete(todoId: string) { deleteMutation.mutate(todoId); }
-  function handleEdit(todoId: string) {
+  const handleToggle = useCallback((todoId: string, completed: boolean) => { toggleMutation.mutate({ todoId, completed }); }, [toggleMutation]);
+  const handleDelete = useCallback((todoId: string) => { deleteMutation.mutate(todoId); }, [deleteMutation]);
+  const handleEdit = useCallback((todoId: string) => {
     if (!editText.trim()) return;
     editMutation.mutate({ todoId, text: editText.trim() });
     setEditingId(null);
     setEditText("");
-  }
+  }, [editText, editMutation]);
+
+  // Stable handler refs for memoized TodoItem
+  const handleToggleTodo = useCallback((id: string) => handleToggle(id, true), [handleToggle]);
+  const handleDeleteTodo = useCallback((id: string) => handleDelete(id), [handleDelete]);
+  const handleStartEditTodo = useCallback((id: string, text: string) => { setEditingId(id); setEditText(text); }, []);
+  const handleEditSubmitTodo = useCallback((id: string) => handleEdit(id), [handleEdit]);
+  const handleEditCancelTodo = useCallback(() => setEditingId(null), []);
+  const handleTodoContextMenu = useCallback((e: React.MouseEvent, id: string, completed: boolean) => {
+    e.preventDefault();
+    setTodoCtxMenu({ x: e.clientX, y: e.clientY, todoId: id, completed });
+  }, []);
 
   function carriedFromLabel(todo: TodoRow): string | null {
     if (!todo.due_date || todo.due_date >= getTodayStr()) return null;
@@ -207,10 +218,10 @@ export default function TodosPage() {
           <h3 className="text-xs font-medium text-destructive uppercase tracking-wide px-1">Overdue ({overdueTodos.length})</h3>
           {overdueTodos.map((todo) => (
             <TodoItem key={todo.id} todo={todo} carried={carriedFromLabel(todo)} editing={editingId === todo.id} editText={editText}
-              onToggle={() => handleToggle(todo.id, true)} onDelete={() => handleDelete(todo.id)}
-              onStartEdit={() => { setEditingId(todo.id); setEditText(todo.text); }} onEditChange={setEditText}
-              onEditSubmit={() => handleEdit(todo.id)} onEditCancel={() => setEditingId(null)}
-              onContextMenu={(e) => { e.preventDefault(); setTodoCtxMenu({ x: e.clientX, y: e.clientY, todoId: todo.id, completed: todo.completed }); }} />
+              onToggle={handleToggleTodo} onDelete={handleDeleteTodo}
+              onStartEdit={handleStartEditTodo} onEditChange={setEditText}
+              onEditSubmit={handleEditSubmitTodo} onEditCancel={handleEditCancelTodo}
+              onContextMenu={handleTodoContextMenu} />
           ))}
         </div>
       )}
@@ -225,10 +236,10 @@ export default function TodosPage() {
         )}
         {todayTodos.map((todo) => (
           <TodoItem key={todo.id} todo={todo} carried={null} editing={editingId === todo.id} editText={editText}
-            onToggle={() => handleToggle(todo.id, true)} onDelete={() => handleDelete(todo.id)}
-            onStartEdit={() => { setEditingId(todo.id); setEditText(todo.text); }} onEditChange={setEditText}
-            onEditSubmit={() => handleEdit(todo.id)} onEditCancel={() => setEditingId(null)}
-            onContextMenu={(e) => { e.preventDefault(); setTodoCtxMenu({ x: e.clientX, y: e.clientY, todoId: todo.id, completed: todo.completed }); }} />
+            onToggle={handleToggleTodo} onDelete={handleDeleteTodo}
+            onStartEdit={handleStartEditTodo} onEditChange={setEditText}
+            onEditSubmit={handleEditSubmitTodo} onEditCancel={handleEditCancelTodo}
+            onContextMenu={handleTodoContextMenu} />
         ))}
       </div>
 
@@ -249,7 +260,7 @@ export default function TodosPage() {
               </button>
               <span className="flex-1 text-sm text-muted-foreground line-through">{todo.text}</span>
               {todo.completed_at && <span className="text-[10px] text-muted-foreground">{format(new Date(todo.completed_at), "h:mm a")}</span>}
-              <button type="button" className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(todo.id)} aria-label="Delete todo"><Trash2 className="h-3 w-3" /></button>
+              <button type="button" className="inline-flex h-8 w-8 shrink-0 items-center justify-center opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(todo.id)} aria-label="Delete todo"><Trash2 className="h-4 w-4" /></button>
             </div>
           ))}
         </div>
@@ -275,32 +286,41 @@ function TodoContextMenu({ menu, onClose, onComplete, onDelete }: { menu: { x: n
 }
 
 const TodoItem = memo(function TodoItem({ todo, carried, editing, editText, onToggle, onDelete, onStartEdit, onEditChange, onEditSubmit, onEditCancel, onContextMenu }: {
-  todo: TodoRow; carried: string | null; editing: boolean; editText: string; onToggle: () => void; onDelete: () => void; onStartEdit: () => void;
-  onEditChange: (v: string) => void; onEditSubmit: () => void; onEditCancel: () => void; onContextMenu?: (e: React.MouseEvent) => void;
+  todo: TodoRow; carried: string | null; editing: boolean; editText: string;
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
+  onStartEdit: (id: string, text: string) => void;
+  onEditChange: (v: string) => void;
+  onEditSubmit: (id: string) => void;
+  onEditCancel: () => void;
+  onContextMenu?: (e: React.MouseEvent, id: string, completed: boolean) => void;
 }) {
   const rowRef = useRef<HTMLDivElement>(null);
+  const todoId = todo.id;
+  const todoText = todo.text;
+  const todoCompleted = todo.completed;
   useEffect(() => {
     const el = rowRef.current;
     if (!el || editing) return;
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); onDelete(); }
-      else if (e.key === "Enter") { e.preventDefault(); onStartEdit(); }
+      if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); onDelete(todoId); }
+      else if (e.key === "Enter") { e.preventDefault(); onStartEdit(todoId, todoText); }
     }
     el.addEventListener("keydown", handleKeyDown);
     return () => el.removeEventListener("keydown", handleKeyDown);
-  }, [editing, onDelete, onStartEdit]);
+  }, [editing, onDelete, onStartEdit, todoId, todoText]);
   return (
-    <div ref={rowRef} tabIndex={0} className="group flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted/50 outline-none focus-visible:ring-1 focus-visible:ring-ring" onContextMenu={onContextMenu}>
-      <button type="button" onClick={onToggle} tabIndex={-1} className="flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded border border-muted-foreground/30 hover:border-primary hover:bg-primary/10 transition-all duration-200" />
+    <div ref={rowRef} tabIndex={0} className="group flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted/50 outline-none focus-visible:ring-1 focus-visible:ring-ring" onContextMenu={onContextMenu ? (e) => onContextMenu(e, todoId, todoCompleted) : undefined}>
+      <button type="button" onClick={() => onToggle(todoId)} tabIndex={-1} className="flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded border border-muted-foreground/30 hover:border-primary hover:bg-primary/10 transition-all duration-200" />
       {editing ? (
-        <form className="flex-1" onSubmit={(e) => { e.preventDefault(); onEditSubmit(); }}>
-          <Input value={editText} onChange={(e) => onEditChange(e.target.value)} className="h-7 text-sm" autoFocus onBlur={onEditSubmit} onKeyDown={(e) => e.key === "Escape" && onEditCancel()} />
+        <form className="flex-1" onSubmit={(e) => { e.preventDefault(); onEditSubmit(todoId); }}>
+          <Input value={editText} onChange={(e) => onEditChange(e.target.value)} className="h-7 text-sm" autoFocus onBlur={() => onEditSubmit(todoId)} onKeyDown={(e) => e.key === "Escape" && onEditCancel()} />
         </form>
-      ) : (<span className="flex-1 text-sm">{todo.text}</span>)}
+      ) : (<span className="flex-1 text-sm">{todoText}</span>)}
       {carried && <span className="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive">{carried}</span>}
       {!editing && (<>
-        <button type="button" tabIndex={-1} className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground" onClick={onStartEdit} aria-label="Edit todo"><Pencil className="h-3 w-3" /></button>
-        <button type="button" tabIndex={-1} className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={onDelete} aria-label="Delete todo"><Trash2 className="h-3 w-3" /></button>
+        <button type="button" tabIndex={-1} className="inline-flex h-8 w-8 shrink-0 items-center justify-center opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground" onClick={() => onStartEdit(todoId, todoText)} aria-label="Edit todo"><Pencil className="h-4 w-4" /></button>
+        <button type="button" tabIndex={-1} className="inline-flex h-8 w-8 shrink-0 items-center justify-center opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={() => onDelete(todoId)} aria-label="Delete todo"><Trash2 className="h-4 w-4" /></button>
       </>)}
     </div>
   );

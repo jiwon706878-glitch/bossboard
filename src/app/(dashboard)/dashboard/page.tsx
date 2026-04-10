@@ -19,7 +19,7 @@ export default function DashboardPage() {
   useEffect(() => { loadRole(); }, [loadRole]);
 
   const {
-    userName, loading,
+    userName, loading, todosLoading,
     overdueChecklists, todayChecklists, overdueTodos, todayTodos,
     todoText, setTodoText, addingTodo,
     totalSops, draftSops, publishedSops, staleSops, teamCount,
@@ -89,7 +89,7 @@ export default function DashboardPage() {
       <TodayChecklists checklists={todayChecklists} />
 
       {/* 6. Today's Todos */}
-      <TodayTodos todos={todayTodos} todoText={todoText} setTodoText={setTodoText} addingTodo={addingTodo} onAddTodo={handleAddTodo} onToggleTodo={handleToggleTodo} onDeleteTodo={handleDeleteTodo} />
+      <TodayTodos todos={todayTodos} todoText={todoText} setTodoText={setTodoText} addingTodo={addingTodo} onAddTodo={handleAddTodo} onToggleTodo={handleToggleTodo} onDeleteTodo={handleDeleteTodo} loading={todosLoading} />
 
       {/* 7. Recent Board Posts */}
       <RecentBoardPosts />

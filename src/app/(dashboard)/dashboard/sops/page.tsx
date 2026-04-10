@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
@@ -108,14 +108,21 @@ export default function SOPsPage() {
   let unfiledCount = 0;
   for (const s of sops.allSops) { if (s.folder_id) folderCounts[s.folder_id] = (folderCounts[s.folder_id] ?? 0) + 1; else unfiledCount++; }
 
-  let displaySops = sops.allSops;
-  if (selectedFolder === "unfiled") displaySops = sops.allSops.filter((s) => !s.folder_id);
-  else if (selectedFolder && selectedFolder !== "trash") displaySops = sops.allSops.filter((s) => s.folder_id === selectedFolder);
-  if (searchQuery && selectedFolder !== "trash") { const q = searchQuery.toLowerCase(); displaySops = displaySops.filter((s) => s.title.toLowerCase().includes(q) || s.summary?.toLowerCase().includes(q) || s.tags?.some((t) => t.toLowerCase().includes(q))); }
-
-  const sortedDisplay = [...displaySops].sort((a, b) => sortBy === "title" ? a.title.localeCompare(b.title) : new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
-  const pinnedSops = sortedDisplay.filter((s) => s.pinned);
-  const unpinnedSops = sortedDisplay.filter((s) => !s.pinned);
+  const { displaySops, pinnedSops, unpinnedSops } = useMemo(() => {
+    let displaySops = sops.allSops;
+    if (selectedFolder === "unfiled") displaySops = sops.allSops.filter((s) => !s.folder_id);
+    else if (selectedFolder && selectedFolder !== "trash") displaySops = sops.allSops.filter((s) => s.folder_id === selectedFolder);
+    if (searchQuery && selectedFolder !== "trash") {
+      const q = searchQuery.toLowerCase();
+      displaySops = displaySops.filter((s) => s.title.toLowerCase().includes(q) || s.summary?.toLowerCase().includes(q) || s.tags?.some((t) => t.toLowerCase().includes(q)));
+    }
+    const sortedDisplay = [...displaySops].sort((a, b) => sortBy === "title" ? a.title.localeCompare(b.title) : new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+    return {
+      displaySops,
+      pinnedSops: sortedDisplay.filter((s) => s.pinned),
+      unpinnedSops: sortedDisplay.filter((s) => !s.pinned),
+    };
+  }, [sops.allSops, selectedFolder, searchQuery, sortBy]);
   const currentFolderName = selectedFolder === "unfiled" ? "Unfiled" : selectedFolder === "trash" ? "Trash" : foldersHook.folders.find((f) => f.id === selectedFolder)?.name ?? "All Documents";
   const folderPath = selectedFolder && selectedFolder !== "unfiled" && selectedFolder !== "trash"
     ? foldersHook.getFolderPath(selectedFolder)

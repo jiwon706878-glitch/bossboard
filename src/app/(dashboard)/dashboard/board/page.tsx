@@ -230,13 +230,17 @@ export default function BoardPage() {
     if (formType === "poll" && post) {
       const validOptions = pollInputs.filter((o) => o.trim());
       if (validOptions.length >= 2) {
-        await supabase.from("poll_options").insert(
+        const { error: pollError } = await supabase.from("poll_options").insert(
           validOptions.map((text, i) => ({
             post_id: post.id,
             option_text: text.trim(),
             sort_order: i,
           }))
         );
+        if (pollError) {
+          toast.error("Post created but poll options failed to save");
+          console.error("[board] Poll options insert failed:", pollError.message);
+        }
       }
     }
 

@@ -22,6 +22,7 @@ interface TodayTodosProps {
   onAddTodo: () => void;
   onToggleTodo: (todoId: string) => void;
   onDeleteTodo: (todoId: string) => void;
+  loading?: boolean;
 }
 
 export function TodayTodos({
@@ -32,6 +33,7 @@ export function TodayTodos({
   onAddTodo,
   onToggleTodo,
   onDeleteTodo,
+  loading = false,
 }: TodayTodosProps) {
   return (
     <Card className="rounded-md border-l-[3px] border-l-emerald-400 shadow-none">
@@ -53,7 +55,13 @@ export function TodayTodos({
           {addingTodo && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
         </form>
 
-        {todos.length === 0 ? (
+        {loading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-10 rounded-md border bg-muted/40 animate-pulse" />
+            ))}
+          </div>
+        ) : todos.length === 0 ? (
           <p className="text-xs text-muted-foreground py-2">No todos for today. Type above and press Enter.</p>
         ) : (
           <div className="space-y-1 stagger-children">

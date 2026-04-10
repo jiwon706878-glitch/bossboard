@@ -329,6 +329,7 @@ export function useDashboard() {
   return {
     userName,
     loading,
+    todosLoading,
     overdueChecklists,
     todayChecklists,
     overdueTodos,

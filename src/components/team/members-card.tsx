@@ -61,6 +61,11 @@ export function MembersCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        {teamMembers.length === 0 && pendingInvites.length === 0 && (
+          <div className="text-center py-8 text-sm text-muted-foreground">
+            Your team will appear here once you invite members.
+          </div>
+        )}
         {teamMembers.length > 0 && (
           <div className="space-y-2 stagger-children">
             {teamMembers.map((member: any) => (

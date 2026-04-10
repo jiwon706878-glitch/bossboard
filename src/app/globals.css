@@ -2,16 +2,12 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* A2Z — all 9 weights for full typographic control */
-@font-face { font-family: "A2Z"; src: url("/fonts/A2Z-1Thin.ttf") format("truetype"); font-weight: 100; font-style: normal; font-display: swap; }
-@font-face { font-family: "A2Z"; src: url("/fonts/A2Z-2ExtraLight.ttf") format("truetype"); font-weight: 200; font-style: normal; font-display: swap; }
-@font-face { font-family: "A2Z"; src: url("/fonts/A2Z-3Light.ttf") format("truetype"); font-weight: 300; font-style: normal; font-display: swap; }
+/* A2Z — 4 essential weights only (cuts font payload by 55%).
+   The CSS font-weight system synthesizes intermediate weights when not loaded. */
 @font-face { font-family: "A2Z"; src: url("/fonts/A2Z-4Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: swap; }
 @font-face { font-family: "A2Z"; src: url("/fonts/A2Z-5Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; font-display: swap; }
-@font-face { font-family: "A2Z"; src: url("/fonts/A2Z-6SemiBold.ttf") format("truetype"); font-weight: 600; font-style: normal; font-display: swap; }
 @font-face { font-family: "A2Z"; src: url("/fonts/A2Z-7Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; font-display: swap; }
 @font-face { font-family: "A2Z"; src: url("/fonts/A2Z-8ExtraBold.ttf") format("truetype"); font-weight: 800; font-style: normal; font-display: swap; }
-@font-face { font-family: "A2Z"; src: url("/fonts/A2Z-9Black.ttf") format("truetype"); font-weight: 900; font-style: normal; font-display: swap; }
 
 @custom-variant dark (&:is(.dark *));
 
@@ -60,7 +56,6 @@
   --radius-4xl: calc(var(--radius) + 8px);
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
-  --animate-shimmer: shimmer 1.5s infinite;
 
   /* ─── NEW DESIGN SYSTEM TOKENS ───────────────────────────────── */
   /* These expose new Tailwind utilities: bg-bg, bg-surface,
@@ -234,42 +229,32 @@
     font-weight: 600;
   }
 
-  /* ─── Smooth theme transitions (the "스르륵" effect) ───
-     Only color/background/border properties — no transform/opacity to avoid
-     interfering with layout animations. */
-  html.theme-transition,
-  html.theme-transition *,
-  html.theme-transition *::before,
-  html.theme-transition *::after {
+  /* ─── Theme switch transitions (the "스르륵" effect) ───
+     CRITICAL: Only applied while the user is actively toggling the theme.
+     The .theme-changing class is added by the theme toggle handler, then
+     removed after 450ms. This avoids the perf penalty of having a universal
+     transition rule on every DOM element during normal navigation. */
+  html.theme-changing,
+  html.theme-changing *,
+  html.theme-changing *::before,
+  html.theme-changing *::after {
     transition:
       background-color 400ms ease,
       color 400ms ease,
       border-color 400ms ease,
       fill 400ms ease,
-      stroke 400ms ease,
-      box-shadow 400ms ease !important;
-  }
-
-  /* Disable on first paint to prevent flash */
-  .preload,
-  .preload * {
-    transition: none !important;
+      stroke 400ms ease !important;
   }
 
   /* Respect reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    html.theme-transition,
-    html.theme-transition *,
-    html.theme-transition *::before,
-    html.theme-transition *::after {
+    html.theme-changing,
+    html.theme-changing *,
+    html.theme-changing *::before,
+    html.theme-changing *::after {
       transition: none !important;
     }
   }
-}
-
-/* Shimmer animation for skeleton loaders */
-@keyframes shimmer {
-  100% { transform: translateX(100%); }
 }
 
 /* ═══ Wiki reading typography ═══ */

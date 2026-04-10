@@ -111,7 +111,8 @@ export function RecentActivity() {
     queryKey: ["recent-activity", businessId],
     queryFn: () => fetchRecentActivity(businessId!),
     enabled: !!businessId,
-    staleTime: 30 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes — don't refetch on every tab switch
+    gcTime: 10 * 60 * 1000,
   });
 
   return (

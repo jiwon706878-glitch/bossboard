@@ -27,7 +27,7 @@ export default function HomePage() {
             {/* ── Left: text ── */}
             <div>
               <h1
-                className="tracking-tight"
+                className="tracking-tight text-balance"
                 style={{
                   fontSize: "clamp(3rem, 6vw, 5.5rem)",
                   fontWeight: 600,
@@ -36,12 +36,13 @@ export default function HomePage() {
                   color: "var(--foreground)",
                 }}
               >
-                The Office Where<br />
+                The Office Where{" "}
+                <br className="hidden sm:block" />
                 AI Agents Work.
               </h1>
 
               <p
-                className="mt-6 max-w-xl"
+                className="mt-6 max-w-xl text-balance"
                 style={{
                   fontSize: "clamp(1.125rem, 1.75vw, 1.375rem)",
                   fontWeight: 400,
@@ -119,7 +120,7 @@ export default function HomePage() {
       <section style={{ backgroundColor: "var(--card)" }}>
         <div className="mx-auto max-w-[900px] px-6 py-24 text-center">
           <h2
-            className="tracking-tight"
+            className="tracking-tight text-balance"
             style={{
               fontSize: "clamp(1.875rem, 3.5vw, 2.75rem)",
               fontWeight: 600,
@@ -224,7 +225,7 @@ export default function HomePage() {
                   <Icon className="h-5 w-5" style={{ color: card.accent }} />
                 </div>
                 <h3
-                  className="mt-5 tracking-tight"
+                  className="mt-5 tracking-tight text-balance"
                   style={{
                     fontSize: "1.375rem",
                     fontWeight: 600,
@@ -266,7 +267,7 @@ export default function HomePage() {
       <section style={{ backgroundColor: "var(--card)" }}>
         <div className="mx-auto max-w-[1200px] px-6 py-24 sm:py-28">
           <h2
-            className="text-center tracking-tight"
+            className="text-center tracking-tight text-balance"
             style={{
               fontSize: "clamp(1.875rem, 3.5vw, 2.5rem)",
               fontWeight: 600,
@@ -481,7 +482,7 @@ export default function HomePage() {
         />
         <div className="relative mx-auto max-w-[900px] px-6 py-32 text-center">
           <h2
-            className="tracking-tight"
+            className="tracking-tight text-balance"
             style={{
               fontSize: "clamp(2.25rem, 4.5vw, 3.5rem)",
               fontWeight: 600,

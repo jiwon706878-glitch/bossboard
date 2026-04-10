@@ -27,8 +27,10 @@ export default function DevelopersPage() {
               <p className="text-sm font-medium tracking-wide uppercase" style={{ color: "#4A6CF7", fontFamily: f, letterSpacing: "0.08em" }}>
                 For Developers &amp; AI Agents
               </p>
-              <h1 className="mt-5" style={{ fontFamily: f, fontSize: "clamp(2.5rem, 5vw, 3.5rem)", fontWeight: 600, letterSpacing: "-0.035em", lineHeight: 1.08, color: "var(--foreground)" }}>
-                Give your AI agent<br />a brain.
+              <h1 className="mt-5 text-balance" style={{ fontFamily: f, fontSize: "clamp(2.5rem, 5vw, 3.5rem)", fontWeight: 600, letterSpacing: "-0.035em", lineHeight: 1.08, color: "var(--foreground)" }}>
+                Give your AI agent{" "}
+                <br className="hidden sm:block" />
+                a brain.
               </h1>
               <p className="mt-6 max-w-lg" style={{ fontFamily: f, fontSize: "17px", lineHeight: 1.7, color: "var(--foreground)", fontWeight: 400, opacity: 0.65 }}>
                 BossBoard is the structured knowledge base your AI agents read from, write to, and learn from. REST API + MCP server included — starting at $19/mo.
@@ -71,7 +73,7 @@ export default function DevelopersPage() {
         <div className="mx-auto max-w-[1080px] px-6 py-20 sm:py-24">
           <div className="max-w-lg mb-12">
             <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: f, letterSpacing: "0.08em" }}>Why BossBoard</p>
-            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>Why your agent needs a knowledge base</h2>
+            <h2 className="mt-3 text-balance" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>Why your agent needs a knowledge base</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
@@ -96,7 +98,7 @@ export default function DevelopersPage() {
             <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: f, letterSpacing: "0.08em" }}>
               Agent Sandbox
             </p>
-            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
+            <h2 className="mt-3 text-balance" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
               A safe space for your agents
             </h2>
             <p className="mt-4 text-base leading-relaxed" style={{ color: "var(--muted-foreground)", fontFamily: f }}>
@@ -127,7 +129,7 @@ export default function DevelopersPage() {
             <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: f, letterSpacing: "0.08em" }}>
               Multi-Agent
             </p>
-            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
+            <h2 className="mt-3 text-balance" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
               The meeting room where agents collaborate
             </h2>
             <p className="mt-4 text-base leading-relaxed" style={{ color: "var(--muted-foreground)", fontFamily: f }}>
@@ -165,7 +167,7 @@ export default function DevelopersPage() {
             <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: f, letterSpacing: "0.08em" }}>
               BossBoard CLI
             </p>
-            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
+            <h2 className="mt-3 text-balance" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
               Stop screenshotting. Start commanding.
             </h2>
             <p className="mt-4 text-base leading-relaxed" style={{ color: "var(--muted-foreground)", fontFamily: f }}>
@@ -192,7 +194,7 @@ export default function DevelopersPage() {
         <div className="mx-auto max-w-[1080px] px-6 py-20 sm:py-24">
           <div className="max-w-lg">
             <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: f, letterSpacing: "0.08em" }}>How it works</p>
-            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>Three steps to a smarter agent</h2>
+            <h2 className="mt-3 text-balance" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>Three steps to a smarter agent</h2>
           </div>
           <div className="mt-12 grid gap-0 divide-y" style={{ borderColor: "var(--border)" }}>
             {[
@@ -217,7 +219,7 @@ export default function DevelopersPage() {
         <div className="mx-auto max-w-[1080px] px-6 py-20 sm:py-24">
           <div className="max-w-lg mb-12">
             <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: f, letterSpacing: "0.08em" }}>API Reference</p>
-            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>REST API + MCP Server</h2>
+            <h2 className="mt-3 text-balance" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>REST API + MCP Server</h2>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -297,7 +299,7 @@ export default function DevelopersPage() {
         <div className="mx-auto max-w-[1080px] px-6 py-20 sm:py-24">
           <div className="max-w-lg mb-12">
             <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: f, letterSpacing: "0.08em" }}>Use Cases</p>
-            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>Built for every kind of agent</h2>
+            <h2 className="mt-3 text-balance" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>Built for every kind of agent</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[

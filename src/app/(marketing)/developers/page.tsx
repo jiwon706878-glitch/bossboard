@@ -27,7 +27,7 @@ export default function DevelopersPage() {
               <p className="text-sm font-medium tracking-wide uppercase" style={{ color: "#4A6CF7", fontFamily: f, letterSpacing: "0.08em" }}>
                 For Developers &amp; AI Agents
               </p>
-              <h1 className="mt-5" style={{ fontFamily: f, fontSize: "clamp(2.5rem, 5vw, 3.5rem)", fontWeight: 800, letterSpacing: "-0.035em", lineHeight: 1.08, color: "var(--foreground)" }}>
+              <h1 className="mt-5" style={{ fontFamily: f, fontSize: "clamp(2.5rem, 5vw, 3.5rem)", fontWeight: 600, letterSpacing: "-0.035em", lineHeight: 1.08, color: "var(--foreground)" }}>
                 Give your AI agent<br />a brain.
               </h1>
               <p className="mt-6 max-w-lg" style={{ fontFamily: f, fontSize: "17px", lineHeight: 1.7, color: "var(--foreground)", fontWeight: 400, opacity: 0.65 }}>
@@ -71,7 +71,7 @@ export default function DevelopersPage() {
         <div className="mx-auto max-w-[1080px] px-6 py-20 sm:py-24">
           <div className="max-w-lg mb-12">
             <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: f, letterSpacing: "0.08em" }}>Why BossBoard</p>
-            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>Why your agent needs a knowledge base</h2>
+            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>Why your agent needs a knowledge base</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
@@ -81,7 +81,7 @@ export default function DevelopersPage() {
             ].map((card) => (
               <div key={card.title} className="rounded-xl border border-gray-200 dark:border-gray-700 p-8" style={{ backgroundColor: "var(--background)" }}>
                 <card.Icon className="h-8 w-8 mb-4" style={{ color: "#4A6CF7" }} />
-                <h3 style={{ fontFamily: f, fontSize: "18px", fontWeight: 800, color: "var(--foreground)", letterSpacing: "-0.01em" }}>{card.title}</h3>
+                <h3 style={{ fontFamily: f, fontSize: "18px", fontWeight: 600, color: "var(--foreground)", letterSpacing: "-0.01em" }}>{card.title}</h3>
                 <p className="mt-2 text-sm" style={{ color: "var(--foreground)", opacity: 0.6, lineHeight: 1.7 }}>{card.body}</p>
               </div>
             ))}
@@ -96,7 +96,7 @@ export default function DevelopersPage() {
             <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: f, letterSpacing: "0.08em" }}>
               Agent Sandbox
             </p>
-            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
+            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
               A safe space for your agents
             </h2>
             <p className="mt-4 text-base leading-relaxed" style={{ color: "var(--muted-foreground)", fontFamily: f }}>
@@ -127,7 +127,7 @@ export default function DevelopersPage() {
             <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: f, letterSpacing: "0.08em" }}>
               Multi-Agent
             </p>
-            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
+            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
               The meeting room where agents collaborate
             </h2>
             <p className="mt-4 text-base leading-relaxed" style={{ color: "var(--muted-foreground)", fontFamily: f }}>
@@ -165,7 +165,7 @@ export default function DevelopersPage() {
             <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: f, letterSpacing: "0.08em" }}>
               BossBoard CLI
             </p>
-            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
+            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
               Stop screenshotting. Start commanding.
             </h2>
             <p className="mt-4 text-base leading-relaxed" style={{ color: "var(--muted-foreground)", fontFamily: f }}>
@@ -192,7 +192,7 @@ export default function DevelopersPage() {
         <div className="mx-auto max-w-[1080px] px-6 py-20 sm:py-24">
           <div className="max-w-lg">
             <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: f, letterSpacing: "0.08em" }}>How it works</p>
-            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>Three steps to a smarter agent</h2>
+            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>Three steps to a smarter agent</h2>
           </div>
           <div className="mt-12 grid gap-0 divide-y" style={{ borderColor: "var(--border)" }}>
             {[
@@ -217,7 +217,7 @@ export default function DevelopersPage() {
         <div className="mx-auto max-w-[1080px] px-6 py-20 sm:py-24">
           <div className="max-w-lg mb-12">
             <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: f, letterSpacing: "0.08em" }}>API Reference</p>
-            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>REST API + MCP Server</h2>
+            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>REST API + MCP Server</h2>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -297,7 +297,7 @@ export default function DevelopersPage() {
         <div className="mx-auto max-w-[1080px] px-6 py-20 sm:py-24">
           <div className="max-w-lg mb-12">
             <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: f, letterSpacing: "0.08em" }}>Use Cases</p>
-            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>Built for every kind of agent</h2>
+            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>Built for every kind of agent</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
@@ -306,7 +306,7 @@ export default function DevelopersPage() {
               { title: "The onboarding agent", body: "New hire asks a question? The agent searches BossBoard's wiki and answers with source references — no more \"ask your manager.\"" },
             ].map((c) => (
               <div key={c.title} className="rounded-xl border border-gray-200 dark:border-gray-700 p-8" style={{ backgroundColor: "var(--card)" }}>
-                <h3 style={{ fontFamily: f, fontSize: "16px", fontWeight: 800, color: "var(--foreground)", letterSpacing: "-0.01em" }}>{c.title}</h3>
+                <h3 style={{ fontFamily: f, fontSize: "16px", fontWeight: 600, color: "var(--foreground)", letterSpacing: "-0.01em" }}>{c.title}</h3>
                 <p className="mt-3 text-sm" style={{ color: "var(--foreground)", opacity: 0.6, lineHeight: 1.7 }}>{c.body}</p>
               </div>
             ))}
@@ -334,7 +334,7 @@ export default function DevelopersPage() {
       <section className="relative overflow-hidden">
         <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2" style={{ width: "800px", height: "400px", background: "radial-gradient(ellipse at center, rgba(74,108,247,0.08) 0%, transparent 70%)" }} />
         <div className="relative mx-auto max-w-[1080px] px-6 py-24 sm:py-28 text-center">
-          <h2 style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
+          <h2 style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
             Your agent deserves a knowledge base.
           </h2>
           <p className="mt-5 mx-auto max-w-lg text-sm" style={{ color: "var(--foreground)", opacity: 0.6, lineHeight: 1.7 }}>

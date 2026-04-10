@@ -30,7 +30,7 @@ export default function HomePage() {
                 className="tracking-tight"
                 style={{
                   fontSize: "clamp(3rem, 6vw, 5.5rem)",
-                  fontWeight: 700,
+                  fontWeight: 600,
                   letterSpacing: "-0.03em",
                   lineHeight: 1.05,
                   color: "var(--foreground)",
@@ -484,7 +484,7 @@ export default function HomePage() {
             className="tracking-tight"
             style={{
               fontSize: "clamp(2.25rem, 4.5vw, 3.5rem)",
-              fontWeight: 700,
+              fontWeight: 600,
               letterSpacing: "-0.025em",
               lineHeight: 1.1,
               color: "var(--foreground)",

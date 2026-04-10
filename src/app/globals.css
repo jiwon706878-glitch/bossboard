@@ -58,18 +58,18 @@
   --animate-accordion-up: accordion-up 0.2s ease-out;
 
   /* ─── FONT WEIGHT SCALE OVERRIDE ─────────────────────────────── */
-  /* A2Z's heavy weights render too thick — shift everything down one
-     step so font-bold uses 600 instead of 700, font-extrabold uses 700
-     instead of 800, etc. Normal weights (100-500) untouched. */
+  /* A2Z's heavy weights render too thick. Compressed scale so nothing
+     above 700 renders. font-bold and font-extrabold both hit 600.
+     font-black tops out at 700. */
   --font-weight-thin: 100;
   --font-weight-extralight: 200;
   --font-weight-light: 300;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
-  --font-weight-semibold: 500;  /* was 600 */
-  --font-weight-bold: 600;      /* was 700 */
-  --font-weight-extrabold: 700; /* was 800 */
-  --font-weight-black: 800;     /* was 900 */
+  --font-weight-semibold: 500;   /* was 600 */
+  --font-weight-bold: 600;       /* was 700 */
+  --font-weight-extrabold: 600;  /* was 800 */
+  --font-weight-black: 700;      /* was 900 */
 
   /* ─── NEW DESIGN SYSTEM TOKENS ───────────────────────────────── */
   /* These expose new Tailwind utilities: bg-bg, bg-surface,
@@ -334,7 +334,7 @@
 
 .wiki-content h1 {
   font-size: 2.25rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.2;
   margin: 2em 0 0.75em;

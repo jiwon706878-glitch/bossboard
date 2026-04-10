@@ -9,6 +9,7 @@ import { boardKeys, userKeys, fetchCurrentUser, fetchProfile } from "@/lib/queri
 import { FilePreview } from "@/components/dashboard/file-preview";
 import { FileSizeLimitModal } from "@/components/dashboard/file-size-limit-modal";
 import { Button } from "@/components/ui/button";
+import { uploadFile } from "@/lib/storage";
 import { toast } from "sonner";
 import { Plus, X, MessageCircle } from "lucide-react";
 import { Post, Attachment, Comment } from "@/components/board/types";
@@ -186,23 +187,20 @@ export default function BoardPage() {
     // Upload attachments — use UUID path to avoid special character issues
     const uploadedFiles: Attachment[] = [];
     if (formAttachments.length > 0) {
-      // Ensure bucket exists (silently fails if already created)
-      await supabase.storage.createBucket("attachments", { public: true, fileSizeLimit: 10485760 });
-
       for (const file of formAttachments) {
         const fileExt = file.name.split(".").pop() || "bin";
-        const storagePath = `${currentBusiness.id}/board/${crypto.randomUUID()}.${fileExt}`;
-        const { data, error: uploadErr } = await supabase.storage
-          .from("attachments")
-          .upload(storagePath, file, { contentType: file.type });
-        if (uploadErr) {
+        const storageKey = `${currentBusiness.id}/board/${crypto.randomUUID()}.${fileExt}`;
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const result = await uploadFile({
+            key: storageKey,
+            body: Buffer.from(arrayBuffer),
+            contentType: file.type,
+          });
+          uploadedFiles.push({ name: file.name, url: result.url, type: file.type, size: file.size });
+        } catch (err) {
           console.error("[board] File upload failed");
           toast.error(`Failed to upload ${file.name}`);
-          continue;
-        }
-        if (data) {
-          const { data: urlData } = supabase.storage.from("attachments").getPublicUrl(data.path);
-          uploadedFiles.push({ name: file.name, url: urlData.publicUrl, type: file.type, size: file.size });
         }
       }
     }

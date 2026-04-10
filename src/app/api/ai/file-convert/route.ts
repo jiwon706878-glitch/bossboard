@@ -2,6 +2,7 @@ import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { uploadFile } from "@/lib/storage";
 import { checkCredits, deductCredit, CREDIT_COSTS } from "@/lib/ai/credits";
 import { buildBusinessContext, BUSINESS_PROFILE_SELECT } from "@/lib/ai/business-context";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -174,23 +175,19 @@ export async function POST(req: Request) {
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 
-  // Upload original file to Supabase Storage
+  // Upload original file to B2 Storage
   const fileExt = file.name.split(".").pop()?.toLowerCase() || "bin";
-  const storagePath = `${resolvedBusinessId}/${crypto.randomUUID()}.${fileExt}`;
+  const storageKey = `${resolvedBusinessId}/wiki-uploads/${crypto.randomUUID()}.${fileExt}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from("wiki-uploads")
-    .upload(storagePath, buffer, {
+  try {
+    await uploadFile({
+      key: storageKey,
+      body: buffer,
       contentType: file.type,
-      upsert: false,
     });
-
-  if (uploadError) {
-    console.error("Storage upload error:", uploadError);
-    return NextResponse.json(
-      { error: "Failed to upload file. " + uploadError.message },
-      { status: 500 }
-    );
+  } catch (uploadErr) {
+    console.error("Storage upload error:", uploadErr);
+    return NextResponse.json({ error: "File storage failed" }, { status: 503 });
   }
 
   // Get business context
@@ -276,7 +273,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       text: resultText,
-      fileUrl: storagePath,
+      fileUrl: storageKey,
       fileName: file.name,
       suggestedDocType,
     });

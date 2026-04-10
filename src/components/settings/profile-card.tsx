@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { uploadFile } from "@/lib/storage";
 import { Camera } from "lucide-react";
 import { toast } from "sonner";
 import { plans, type PlanId } from "@/config/plans";
@@ -52,26 +53,15 @@ export function ProfileCard({ userId, initialName, initialAvatarUrl, isFetching,
     setUploading(true);
     try {
       const ext = file.name.split(".").pop() || "jpg";
-      const path = `avatars/${userId}/${crypto.randomUUID()}.${ext}`;
 
-      // Ensure bucket exists (silently fails if already created)
-      await supabase.storage.createBucket("attachments", { public: true, fileSizeLimit: 10485760 });
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await uploadFile({
+        key: `avatars/${userId}/${crypto.randomUUID()}.${ext}`,
+        body: Buffer.from(arrayBuffer),
+        contentType: file.type,
+      });
 
-      const { error: uploadError } = await supabase.storage
-        .from("attachments")
-        .upload(path, file, { upsert: true, contentType: file.type });
-
-      if (uploadError) {
-        console.error("[avatar] Upload failed");
-        toast.error("Upload failed. Please try a different image.");
-        return;
-      }
-
-      const { data: urlData } = supabase.storage
-        .from("attachments")
-        .getPublicUrl(path);
-
-      const publicUrl = urlData.publicUrl;
+      const publicUrl = result.url;
 
       const { error: updateError } = await supabase
         .from("profiles")

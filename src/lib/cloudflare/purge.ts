@@ -14,7 +14,9 @@ export async function purgeUrls(urls: string[]): Promise<{
   errors?: string[];
 }> {
   if (!CF_API_TOKEN || !CF_ZONE_ID) {
-    console.warn("[Cloudflare] No credentials, skipping purge");
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[Cloudflare] No credentials, skipping purge");
+    }
     return { success: true };
   }
 

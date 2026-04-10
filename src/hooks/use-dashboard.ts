@@ -327,6 +327,8 @@ export function useDashboard() {
     deleteTodoMutation.mutate(todoId);
   }
 
+  const activeTodos = todos.length;
+
   return {
     userName,
     loading,
@@ -335,6 +337,7 @@ export function useDashboard() {
     todayChecklists,
     overdueTodos,
     todayTodos,
+    activeTodos,
     todoText,
     setTodoText,
     addingTodo,

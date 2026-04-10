@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Lock } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,8 @@ import { SOPOption, PreviewItem } from "@/lib/checklists/types";
 import { FromSopTab } from "@/components/checklists/from-sop-tab";
 import { AiGenerateTab } from "@/components/checklists/ai-generate-tab";
 import { ManualTab } from "@/components/checklists/manual-tab";
+import { fetchCurrentUser, fetchProfile, userKeys } from "@/lib/queries";
+import { plans, type PlanId } from "@/config/plans";
 
 export default function NewChecklistPage() {
   const supabase = createClient();
@@ -29,6 +32,22 @@ export default function NewChecklistPage() {
   const [showOnCalendar, setShowOnCalendar] = useState(false);
   const [dueDate, setDueDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [creating, setCreating] = useState(false);
+
+  // Plan gating: daily/recurring checklists require Starter or above
+  const { data: user } = useQuery({
+    queryKey: userKeys.current,
+    queryFn: fetchCurrentUser,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: profile } = useQuery({
+    queryKey: userKeys.profile(user?.id ?? ""),
+    queryFn: () => fetchProfile(user!.id),
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+  const planId = (profile?.plan_id as PlanId) ?? "free";
+  const recurringAllowed = planId !== "free";
 
   // Auto-set showOnCalendar default based on recurrence
   useEffect(() => {
@@ -69,6 +88,13 @@ export default function NewChecklistPage() {
         return;
       }
 
+      // Plan gating: only Starter and above can create recurring checklists
+      if (recurrence !== "none" && !recurringAllowed) {
+        toast.error("Recurring checklists require the Starter plan or higher. Upgrade to unlock.");
+        setCreating(false);
+        return;
+      }
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -102,7 +128,7 @@ export default function NewChecklistPage() {
       setCreating(false);
       if (data?.id) router.push(`/dashboard/checklists/${data.id}`);
     },
-    [currentBusiness?.id, dueDate, recurrence, showOnCalendar, router, supabase]
+    [currentBusiness?.id, dueDate, recurrence, showOnCalendar, router, supabase, recurringAllowed]
   );
 
   const handleFromSop = useCallback(
@@ -156,6 +182,27 @@ export default function NewChecklistPage() {
         <Switch checked={showOnCalendar} onCheckedChange={setShowOnCalendar} />
         <Label className="text-sm">Show on calendar</Label>
       </div>
+
+      {!recurringAllowed && (
+        <div className="flex items-start gap-3 rounded-md border border-primary/20 bg-primary/5 p-3 text-sm">
+          <Lock className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
+          <div className="flex-1">
+            <p className="font-medium text-foreground">
+              Recurring checklists require the Starter plan
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Upgrade to create daily, weekly, or monthly recurring checklists that auto-reset.
+              You can still create one-time checklists on the Free plan.
+            </p>
+            <Link
+              href="/dashboard/settings"
+              className="mt-1.5 inline-block text-xs font-medium text-primary hover:underline"
+            >
+              Upgrade now →
+            </Link>
+          </div>
+        </div>
+      )}
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>

@@ -57,6 +57,20 @@
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
 
+  /* ─── FONT WEIGHT SCALE OVERRIDE ─────────────────────────────── */
+  /* A2Z's heavy weights render too thick — shift everything down one
+     step so font-bold uses 600 instead of 700, font-extrabold uses 700
+     instead of 800, etc. Normal weights (100-500) untouched. */
+  --font-weight-thin: 100;
+  --font-weight-extralight: 200;
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 500;  /* was 600 */
+  --font-weight-bold: 600;      /* was 700 */
+  --font-weight-extrabold: 700; /* was 800 */
+  --font-weight-black: 800;     /* was 900 */
+
   /* ─── NEW DESIGN SYSTEM TOKENS ───────────────────────────────── */
   /* These expose new Tailwind utilities: bg-bg, bg-surface,
      text-text-primary, bg-success, bg-warning, bg-error, etc. */
@@ -220,13 +234,13 @@
     height: 100%;
   }
   h1 {
-    font-weight: 700;
+    font-weight: 600;
   }
   h2, h3 {
-    font-weight: 600;
+    font-weight: 500;
   }
   button, [data-slot="button"] {
-    font-weight: 600;
+    font-weight: 500;
   }
 
   /* ─── Theme switch transitions (the "스르륵" effect) ───
@@ -273,7 +287,7 @@
 
 .wiki-content h1 {
   font-size: 2.25rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.2;
   margin: 2em 0 0.75em;
@@ -282,7 +296,7 @@
 
 .wiki-content h2 {
   font-size: 1.75rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.015em;
   line-height: 1.25;
   margin: 2em 0 0.6em;
@@ -291,7 +305,7 @@
 
 .wiki-content h3 {
   font-size: 1.375rem;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.3;
   margin: 1.75em 0 0.5em;
   color: var(--text-primary);
@@ -299,7 +313,7 @@
 
 .wiki-content h4 {
   font-size: 1.125rem;
-  font-weight: 600;
+  font-weight: 500;
   margin: 1.5em 0 0.5em;
   color: var(--text-primary);
 }

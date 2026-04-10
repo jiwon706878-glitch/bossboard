@@ -1,7 +1,9 @@
 "use client";
 
-import { memo, useEffect, useState } from "react";
-import { Menu, Search, MessageSquarePlus, HelpCircle } from "lucide-react";
+import { memo, useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { Menu, Search, MessageSquarePlus, LogOut, User as UserIcon, Settings as SettingsIcon } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -12,11 +14,104 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { DashboardSidebar } from "./sidebar";
-import { BusinessSwitcher } from "./business-switcher";
 import { NotificationBell } from "./notification-bell";
 import { SearchDropdown } from "./search-dropdown";
 import { FeedbackCard } from "./feedback-card";
 import { RefreshButton } from "./refresh-button";
+import { fetchCurrentUser, fetchProfile, userKeys } from "@/lib/queries";
+import { useBusinessStore } from "@/hooks/use-business";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
+
+const supabase = createClient();
+
+// ─── User menu dropdown ──────────────────────────────────────────────────────
+
+function UserMenu() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  const { data: user } = useQuery({
+    queryKey: userKeys.current,
+    queryFn: fetchCurrentUser,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+  const userId = user?.id;
+  const { data: profile } = useQuery({
+    queryKey: userKeys.profile(userId ?? ""),
+    queryFn: () => fetchProfile(userId!),
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const handleLogout = useCallback(async () => {
+    useBusinessStore.getState().clear();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    toast.success("Logged out");
+    router.push("/login");
+  }, [router, queryClient]);
+
+  const userName = profile?.full_name || user?.email?.split("@")[0] || "";
+  const initial = userName ? userName.charAt(0).toUpperCase() : "?";
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white press-effect hover:brightness-110 transition-all"
+          aria-label="Account menu"
+        >
+          {profile?.avatar_url ? (
+            <img
+              src={profile.avatar_url}
+              alt="Avatar"
+              className="h-8 w-8 rounded-full object-cover"
+            />
+          ) : (
+            initial
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-56 p-1 animate-popover-enter">
+        <div className="border-b border-border px-3 py-2.5">
+          <p className="truncate text-sm font-semibold text-text-primary">{userName}</p>
+          <p className="truncate text-xs text-text-secondary">{user?.email ?? ""}</p>
+        </div>
+        <div className="py-1">
+          <a
+            href="/dashboard/settings"
+            className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-text-primary hover:bg-surface transition-colors"
+          >
+            <UserIcon className="h-4 w-4 text-text-secondary" />
+            Profile
+          </a>
+          <a
+            href="/dashboard/settings"
+            className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-text-primary hover:bg-surface transition-colors"
+          >
+            <SettingsIcon className="h-4 w-4 text-text-secondary" />
+            Settings
+          </a>
+        </div>
+        <div className="border-t border-border py-1">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-error hover:bg-surface transition-colors press-effect"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign out
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ─── Topbar ──────────────────────────────────────────────────────────────────
 
 export const DashboardTopbar = memo(function DashboardTopbar() {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -34,7 +129,8 @@ export const DashboardTopbar = memo(function DashboardTopbar() {
 
   return (
     <>
-      <header className="flex h-16 items-center justify-between border-b bg-card px-4 lg:px-6">
+      <header className="flex h-16 items-center justify-between border-b border-border bg-bg px-4 lg:px-6">
+        {/* ── Left: Mobile menu toggle ── */}
         <div className="flex items-center gap-3">
           <Sheet>
             <SheetTrigger asChild>
@@ -48,74 +144,40 @@ export const DashboardTopbar = memo(function DashboardTopbar() {
               <DashboardSidebar />
             </SheetContent>
           </Sheet>
-          <BusinessSwitcher />
         </div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="hidden sm:flex items-center gap-2 text-muted-foreground"
+
+        {/* ── Center: Search bar ── */}
+        <div className="hidden flex-1 sm:flex justify-center max-w-xl mx-auto">
+          <button
+            type="button"
             onClick={() => setSearchOpen(true)}
+            className="flex w-full max-w-md items-center gap-2.5 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text-secondary hover:border-text-tertiary transition-colors press-effect"
           >
-            <Search className="h-4 w-4" />
-            <span className="text-xs">Search</span>
-            <kbd className="ml-1 rounded border bg-muted px-1.5 py-0.5 text-[10px] font-mono">
-              Ctrl+K
+            <Search className="h-4 w-4 shrink-0" />
+            <span className="flex-1 text-left">Search BossBoard...</span>
+            <kbd className="ml-2 hidden md:inline-flex rounded border border-border bg-bg px-1.5 py-0.5 text-[10px] font-mono text-text-tertiary">
+              ⌘K
             </kbd>
-          </Button>
+          </button>
+        </div>
+
+        {/* ── Right: Actions ── */}
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
             className="sm:hidden"
             onClick={() => setSearchOpen(true)}
+            aria-label="Search"
           >
             <Search className="h-4 w-4" />
-            <span className="sr-only">Search</span>
           </Button>
-          <RefreshButton />
-          <NotificationBell />
+
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <HelpCircle className="h-4 w-4" />
-                <span className="sr-only">Help & Shortcuts</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-72 p-4 animate-popover-enter">
-              <h3 className="text-sm font-semibold mb-3">Keyboard Shortcuts</h3>
-              <div className="space-y-2 text-sm">
-                {[
-                  ["Ctrl+K", "Search"],
-                  ["Ctrl+N", "New Document (in Wiki)"],
-                  ["Ctrl+B", "Bold"],
-                  ["Ctrl+I", "Italic"],
-                  ["Ctrl+U", "Underline"],
-                  ["Ctrl+Z", "Undo"],
-                  ["Ctrl+Shift+Z", "Redo"],
-                  ["[[", "Link to document"],
-                  ["Esc", "Close modal/menu"],
-                ].map(([key, desc]) => (
-                  <div key={key} className="flex items-center justify-between">
-                    <span className="text-muted-foreground">{desc}</span>
-                    <kbd className="rounded border bg-muted px-2 py-0.5 font-mono text-[10px]">{key}</kbd>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 border-t pt-3 space-y-2">
-                <p className="text-xs text-muted-foreground">
-                  Need help? Click the sparkle icon at the bottom-right to ask the AI assistant, or send feedback using the message icon.
-                </p>
-                <a href="/dashboard/support" className="block text-xs text-primary hover:underline">
-                  Contact Support
-                </a>
-              </div>
-            </PopoverContent>
-          </Popover>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="sm" className="hidden md:inline-flex gap-1.5 text-text-secondary">
                 <MessageSquarePlus className="h-4 w-4" />
-                <span className="sr-only">Send feedback</span>
+                <span className="text-xs">Send Feedback</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-80 p-4 animate-popover-enter">
@@ -123,7 +185,26 @@ export const DashboardTopbar = memo(function DashboardTopbar() {
               <FeedbackCard />
             </PopoverContent>
           </Popover>
+
+          {/* Mobile feedback icon */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden" aria-label="Send feedback">
+                <MessageSquarePlus className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80 p-4 animate-popover-enter">
+              <h3 className="text-sm font-semibold mb-3">Send Feedback</h3>
+              <FeedbackCard />
+            </PopoverContent>
+          </Popover>
+
+          <RefreshButton />
+          <NotificationBell />
           <ThemeToggle />
+          <div className="ml-1">
+            <UserMenu />
+          </div>
         </div>
       </header>
       <SearchDropdown open={searchOpen} onOpenChange={setSearchOpen} />

@@ -12,7 +12,7 @@ const faqEntries = [
   {
     keywords: ["price", "pricing", "cost", "plan", "plans", "subscription"],
     response:
-      "BossBoard offers 4 plans:\n\n\u2022 Free: $0/mo (20 documents, 3 team members, 5 AI generations)\n\u2022 Starter: $19/mo (unlimited documents, 15 team members, 200 AI generations, API & MCP access)\n\u2022 Pro: $49/mo (unlimited documents & AI generations, 30 team members)\n\u2022 Business: $129/mo (everything in Pro + unlimited team members)\n\nNo credit card required for the free plan!",
+      "BossBoard offers 4 plans — all with flat team pricing (unlimited members on paid plans):\n\n\u2022 Free: $0/mo (3 members, 30 credits/mo + 10 bonus, 5 GB storage, full MCP + CLI + BYOK)\n\u2022 Starter: $19/mo (unlimited members, 500 credits/mo, 50 GB storage, 100 MB per file)\n\u2022 Pro: $49/mo (unlimited members, 1,500 credits/mo, 200 GB storage, 500 MB per file)\n\u2022 Business: $129/mo (unlimited members, 5,000 credits/mo, 1 TB storage, 1 GB per file)\n\nNo credit card required for Free!",
   },
   {
     keywords: ["cancel", "refund", "unsubscribe"],
@@ -22,12 +22,12 @@ const faqEntries = [
   {
     keywords: ["free", "trial", "try"],
     response:
-      "Our free plan includes 20 documents, 3 team members, and 5 AI generations per month \u2014 no credit card required! That\u2019s enough to create your first procedures and see how BossBoard works for your team.",
+      "Our free plan includes 3 team members, 30 AI credits per month (plus 10 signup bonus), 5 GB storage, and full MCP + CLI + BYOK access \u2014 no credit card required! Enough to build your first agents and see how BossBoard works.",
   },
   {
     keywords: ["credit", "credits", "generation", "generations"],
     response:
-      "AI generations are how BossBoard measures AI usage. Each SOP generation costs 3 credits. Free users get 5/month, Starter gets 200/month, and Pro/Business get unlimited.",
+      "AI credits power every AI action. Light actions (AI question, search, OCR) cost 1 credit. Standard actions (SOP generation, checklist, reformat) cost 3 credits. Heavy actions (onboarding templates, monthly report) cost 5 credits. Free gets 30/mo + 10 bonus, Starter 500/mo, Pro 1,500/mo, Business 5,000/mo. Running low? Buy credit packs (300/$15, 500/$20, 1,000/$35 — never expire) or bring your own key (BYOK) for zero credit cost.",
   },
   {
     keywords: ["feature", "features", "what can", "do", "does", "tool", "tools"],

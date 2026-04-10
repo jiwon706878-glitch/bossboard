@@ -4,6 +4,7 @@ export const revalidate = 3600;
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Brain, FileText, Activity } from "lucide-react";
+import { PricingToggle } from "@/components/marketing/pricing-toggle";
 
 export const metadata: Metadata = {
   title: "BossBoard — API & MCP for AI Agents",
@@ -313,58 +314,19 @@ export default function DevelopersPage() {
         </div>
       </section>
 
-      {/* ── Pricing ────────────────────────────────────────────────────── */}
+      {/* ── Pricing — all 4 plans ────────────────────────────────────── */}
       <section className="bg-gray-50/60 dark:bg-gray-900/20">
-        <div className="mx-auto max-w-[1080px] px-6 py-20 sm:py-24">
-          <div className="max-w-lg mb-12">
+        <div className="mx-auto max-w-[1200px] px-6 py-20 sm:py-24">
+          <div className="max-w-2xl mb-10">
             <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: f, letterSpacing: "0.08em" }}>Pricing</p>
-            <h2 className="mt-3" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>API access starts at $19/mo</h2>
-            <p className="mt-3 text-sm" style={{ color: "var(--foreground)", opacity: 0.6 }}>No per-seat charges for agents — they&apos;re just team members.</p>
+            <h2 className="mt-3 text-balance" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
+              Flat team pricing, from free to enterprise
+            </h2>
+            <p className="mt-3 text-sm" style={{ color: "var(--foreground)", opacity: 0.6 }}>
+              All plans include MCP, CLI, REST API, and BYOK. No per-seat charges for agents — they&apos;re just team members.
+            </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl">
-            {[
-              {
-                name: "Starter", price: "$19", features: [
-                  "API & MCP access",
-                  "200 AI generations/mo",
-                  "15 team members (people + agents)",
-                  "Unlimited documents",
-                  "10 GB storage",
-                ],
-                highlighted: true,
-              },
-              {
-                name: "Pro", price: "$49", features: [
-                  "Everything in Starter",
-                  "Agent activity dashboard",
-                  "Unlimited AI generations",
-                  "30 team members",
-                  "50 GB storage",
-                  "Priority support",
-                ],
-                highlighted: false,
-              },
-            ].map((plan) => (
-              <div key={plan.name} className={`rounded-xl p-8 ${plan.highlighted ? "border-2 shadow-md bg-blue-50/30 dark:bg-blue-900/10" : "border border-gray-200 dark:border-gray-700"}`} style={{ borderColor: plan.highlighted ? "#4A6CF7" : undefined, backgroundColor: plan.highlighted ? undefined : "var(--background)" }}>
-                <h3 style={{ fontFamily: f, fontSize: "20px", fontWeight: 800, color: "var(--foreground)" }}>{plan.name}</h3>
-                <div className="mt-2">
-                  <span style={{ fontFamily: m, fontSize: "2rem", fontWeight: 800, color: "var(--foreground)" }}>{plan.price}</span>
-                  <span className="text-sm" style={{ color: "var(--muted-foreground)" }}>/mo</span>
-                </div>
-                <ul className="mt-6 space-y-2.5">
-                  {plan.features.map((feat) => (
-                    <li key={feat} className="flex items-start gap-2 text-sm" style={{ color: "var(--foreground)", opacity: 0.7 }}>
-                      <span style={{ color: "#34D399" }}>&#10003;</span>
-                      {feat}
-                    </li>
-                  ))}
-                </ul>
-                <Link href="/signup" className="mt-6 block w-full rounded-lg px-4 py-3 text-center text-sm font-semibold transition-all duration-200 hover:brightness-110" style={{ backgroundColor: plan.highlighted ? "#4A6CF7" : "transparent", color: plan.highlighted ? "#fff" : "var(--foreground)", border: plan.highlighted ? "none" : "1px solid var(--border)", fontFamily: f }}>
-                  Get your API key
-                </Link>
-              </div>
-            ))}
-          </div>
+          <PricingToggle />
         </div>
       </section>
 

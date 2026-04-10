@@ -27,7 +27,7 @@ const faqs = [
   {
     question: "Can I try it for free?",
     answer:
-      "Yes. The free plan includes 20 documents, 3 team members, and 5 AI generations per month. No credit card required to sign up.",
+      "Yes. The free plan includes 3 team members, 30 AI credits per month (plus 10 bonus on signup), 5 GB storage, and the full MCP + CLI + REST API. No credit card required.",
   },
   {
     question: "How does Google Calendar sync work?",

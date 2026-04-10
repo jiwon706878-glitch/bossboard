@@ -153,7 +153,13 @@ export default function TodosPage() {
   async function handleAdd() {
     if (!newText.trim() || !currentBusiness?.id || !userId) return;
     setAdding(true);
-    try { await addMutation.mutateAsync(newText); setNewText(""); } catch {}
+    try {
+      await addMutation.mutateAsync(newText);
+      setNewText("");
+    } catch (err) {
+      console.error("Failed to add todo:", err);
+      toast.error("Couldn't add todo. Please try again.");
+    }
     setAdding(false);
     setTimeout(() => inputRef.current?.focus(), 0);
   }

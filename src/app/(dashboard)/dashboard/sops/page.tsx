@@ -220,6 +220,14 @@ export default function SOPsPage() {
 
   const isTrashView = selectedFolder === "trash";
 
+  if (!currentBusiness?.id) {
+    return (
+      <div className="mx-auto max-w-2xl p-8 text-center">
+        <p className="text-muted-foreground">Select a workspace to view documents.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="-m-4 lg:-m-6 flex h-[calc(100vh-4rem)] overflow-hidden animate-fade-in">
       {ctxMenu && (

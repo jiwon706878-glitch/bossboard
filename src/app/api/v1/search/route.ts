@@ -10,7 +10,9 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const query = searchParams.get("q");
-    const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 50);
+    const limitRaw = searchParams.get("limit");
+    const limitParsed = limitRaw ? Number.parseInt(limitRaw, 10) : 20;
+    const limit = Math.min(Number.isFinite(limitParsed) && limitParsed > 0 ? limitParsed : 20, 50);
 
     if (!query || query.trim().length === 0) {
       return NextResponse.json({ error: "Missing search query parameter: ?q=" }, { status: 400 });

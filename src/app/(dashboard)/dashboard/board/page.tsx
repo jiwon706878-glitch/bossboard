@@ -53,6 +53,8 @@ export default function BoardPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  // Tracks which post's comment load is currently active; prevents stale races
+  const loadingPostRef = useRef<string | null>(null);
   const [commentText, setCommentText] = useState("");
   const [commentAnon, setCommentAnon] = useState(false);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
@@ -162,7 +164,9 @@ export default function BoardPage() {
   });
 
   function invalidateBoard() {
-    queryClient.invalidateQueries({ queryKey: boardKeys.all(businessId!) });
+    if (businessId) {
+      queryClient.invalidateQueries({ queryKey: boardKeys.all(businessId) });
+    }
   }
 
   // ─── Create post ─────────────────────────────────────────────────────────
@@ -174,9 +178,23 @@ export default function BoardPage() {
 
     if (!currentUserId) { toast.error("Not logged in"); setSubmitting(false); return; }
 
+    // Validate poll has at least 2 non-empty options BEFORE creating the post
+    if (formType === "poll") {
+      const validOptions = pollInputs.filter((o) => o.trim());
+      if (validOptions.length < 2) {
+        toast.error("Polls need at least 2 options");
+        setSubmitting(false);
+        return;
+      }
+    }
+
     // Validate file sizes against plan limit
     const maxBytes = plan.limits.fileSizeMb * 1024 * 1024;
     for (const file of formAttachments) {
+      if (file.size === 0) {
+        toast.error(`${file.name} is empty`);
+        continue;
+      }
       if (file.size > maxBytes) {
         setOversizedFile({ size: file.size, limitMb: plan.limits.fileSizeMb });
         setSubmitting(false);
@@ -188,6 +206,7 @@ export default function BoardPage() {
     const uploadedFiles: Attachment[] = [];
     if (formAttachments.length > 0) {
       for (const file of formAttachments) {
+        if (file.size === 0) continue;
         const fileExt = file.name.split(".").pop() || "bin";
         const storageKey = `${currentBusiness.id}/board/${crypto.randomUUID()}.${fileExt}`;
         try {
@@ -263,10 +282,12 @@ export default function BoardPage() {
     if (!editTitle.trim()) return;
 
     // Optimistic update — show new content immediately
-    queryClient.setQueryData(boardKeys.all(businessId!), (old: Post[] | undefined) => {
-      if (!old) return old;
-      return old.map((p) => p.id === postId ? { ...p, title: editTitle.trim(), content: editContent.trim() || null, is_pinned: editPinned } : p);
-    });
+    if (businessId) {
+      queryClient.setQueryData(boardKeys.all(businessId), (old: Post[] | undefined) => {
+        if (!old) return old;
+        return old.map((p) => p.id === postId ? { ...p, title: editTitle.trim(), content: editContent.trim() || null, is_pinned: editPinned } : p);
+      });
+    }
     setEditingId(null);
 
     const { error } = await supabase
@@ -346,24 +367,26 @@ export default function BoardPage() {
     }
 
     // Optimistic update
-    queryClient.setQueryData(boardKeys.all(businessId!), (old: Post[] | undefined) => {
-      if (!old) return old;
-      return old.map((p) => {
-        if (p.id !== postId || !p.poll_options) return p;
-        return {
-          ...p,
-          poll_options: p.poll_options.map((o) => ({
-            ...o,
-            vote_count: o.id === optionId
-              ? o.vote_count + 1
-              : o.id === previousVoteId
-                ? Math.max(0, o.vote_count - 1)
-                : o.vote_count,
-          })),
-          user_voted_option_id: optionId,
-        };
+    if (businessId) {
+      queryClient.setQueryData(boardKeys.all(businessId), (old: Post[] | undefined) => {
+        if (!old) return old;
+        return old.map((p) => {
+          if (p.id !== postId || !p.poll_options) return p;
+          return {
+            ...p,
+            poll_options: p.poll_options.map((o) => ({
+              ...o,
+              vote_count: o.id === optionId
+                ? o.vote_count + 1
+                : o.id === previousVoteId
+                  ? Math.max(0, o.vote_count - 1)
+                  : o.vote_count,
+            })),
+            user_voted_option_id: optionId,
+          };
+        });
       });
-    });
+    }
 
     // Server update
     const optionIds = post.poll_options.map((o) => o.id);
@@ -387,6 +410,7 @@ export default function BoardPage() {
   // ─── Comments ────────────────────────────────────────────────────────────
 
   async function loadComments(postId: string) {
+    loadingPostRef.current = postId;
     setCommentsLoading(true);
     const { data } = await supabase
       .from("board_comments")
@@ -394,11 +418,18 @@ export default function BoardPage() {
       .eq("post_id", postId)
       .order("created_at");
 
+    // Bail out if user moved on to a different post while this query was in flight
+    if (loadingPostRef.current !== postId) return;
+
     if (data && data.length > 0) {
       const userIds = [...new Set(data.filter((c: any) => !c.is_anonymous).map((c: any) => c.user_id))];
       const { data: profiles } = userIds.length > 0
         ? await supabase.from("profiles").select("id, full_name").in("id", userIds)
         : { data: [] };
+
+      // Check again after the profiles round-trip
+      if (loadingPostRef.current !== postId) return;
+
       const nameMap = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
 
       setComments(data.map((c: any) => ({
@@ -413,6 +444,7 @@ export default function BoardPage() {
 
   function toggleExpand(postId: string) {
     if (expandedId === postId) {
+      loadingPostRef.current = null;
       setExpandedId(null);
       setComments([]);
     } else {
@@ -443,9 +475,11 @@ export default function BoardPage() {
       setReplyingTo(null);
       loadComments(postId);
       // Update comment count locally
-      queryClient.setQueryData(boardKeys.all(businessId!), (prev: Post[] | undefined) =>
-        (prev ?? []).map((p) => p.id === postId ? { ...p, comment_count: p.comment_count + 1 } : p)
-      );
+      if (businessId) {
+        queryClient.setQueryData(boardKeys.all(businessId), (prev: Post[] | undefined) =>
+          (prev ?? []).map((p) => p.id === postId ? { ...p, comment_count: p.comment_count + 1 } : p)
+        );
+      }
     }
     setCommentSubmitting(false);
   }
@@ -453,12 +487,22 @@ export default function BoardPage() {
   async function handleDeleteComment(commentId: string, postId: string) {
     await supabase.from("board_comments").delete().eq("id", commentId);
     loadComments(postId);
-    queryClient.setQueryData(boardKeys.all(businessId!), (prev: Post[] | undefined) =>
-      (prev ?? []).map((p) => p.id === postId ? { ...p, comment_count: Math.max(0, p.comment_count - 1) } : p)
-    );
+    if (businessId) {
+      queryClient.setQueryData(boardKeys.all(businessId), (prev: Post[] | undefined) =>
+        (prev ?? []).map((p) => p.id === postId ? { ...p, comment_count: Math.max(0, p.comment_count - 1) } : p)
+      );
+    }
   }
 
   // ─── Render ──────────────────────────────────────────────────────────────
+
+  if (!businessId) {
+    return (
+      <div className="mx-auto max-w-2xl p-8 text-center">
+        <p className="text-muted-foreground">Select a workspace to view the board.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">

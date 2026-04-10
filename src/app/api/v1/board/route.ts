@@ -15,7 +15,9 @@ export async function GET(req: NextRequest) {
     if (auth instanceof NextResponse) return auth;
 
     const { searchParams } = new URL(req.url);
-    const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
+    const limitRaw = searchParams.get("limit");
+    const limitParsed = limitRaw ? Number.parseInt(limitRaw, 10) : 50;
+    const limit = Math.min(Number.isFinite(limitParsed) && limitParsed > 0 ? limitParsed : 50, 100);
 
     const admin = createAdminClient();
     const { data, error } = await admin

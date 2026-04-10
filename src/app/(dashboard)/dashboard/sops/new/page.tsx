@@ -75,6 +75,11 @@ export default function NewSOPPage() {
   const importRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
 
+  // Immediate guards against double-invocation (state lag can allow rapid clicks through)
+  const generatingRef = useRef(false);
+  const reformattingRef = useRef(false);
+  const fileConvertingRef = useRef(false);
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
@@ -208,6 +213,8 @@ export default function NewSOPPage() {
   }
 
   async function handleGenerate() {
+    if (generatingRef.current) return;
+    generatingRef.current = true;
     setGenerating(true);
     setGeneratedText("");
     setEditorContent(null);
@@ -236,7 +243,6 @@ export default function NewSOPPage() {
 
       if (!text || !text.trim()) {
         toast.error("AI returned empty response. Please try again.");
-        setGenerating(false);
         return;
       }
 
@@ -246,6 +252,7 @@ export default function NewSOPPage() {
         error instanceof Error ? error.message : "Failed to generate SOP"
       );
     } finally {
+      generatingRef.current = false;
       setGenerating(false);
     }
   }
@@ -255,7 +262,8 @@ export default function NewSOPPage() {
       toast.error("Please paste or upload some text");
       return;
     }
-
+    if (reformattingRef.current) return;
+    reformattingRef.current = true;
     setReformatting(true);
     setGeneratedText("");
     setEditorContent(null);
@@ -278,7 +286,6 @@ export default function NewSOPPage() {
       const data = await res.json();
       if (!data.text || !data.text.trim()) {
         toast.error("AI returned empty response. Please try again.");
-        setReformatting(false);
         return;
       }
 
@@ -289,6 +296,7 @@ export default function NewSOPPage() {
         error instanceof Error ? error.message : "Failed to reformat SOP"
       );
     } finally {
+      reformattingRef.current = false;
       setReformatting(false);
     }
   }
@@ -341,6 +349,8 @@ export default function NewSOPPage() {
   }
 
   async function handleFileConvert(file: File) {
+    if (fileConvertingRef.current) return;
+    fileConvertingRef.current = true;
     setFileConverting(true);
     setGeneratedText("");
     setEditorContent(null);
@@ -367,7 +377,6 @@ export default function NewSOPPage() {
       const data = await res.json();
       if (!data.text?.trim()) {
         toast.error("AI returned empty response. Please try again.");
-        setFileConverting(false);
         return;
       }
 
@@ -383,6 +392,7 @@ export default function NewSOPPage() {
         error instanceof Error ? error.message : "Failed to convert file"
       );
     } finally {
+      fileConvertingRef.current = false;
       setFileConverting(false);
     }
   }

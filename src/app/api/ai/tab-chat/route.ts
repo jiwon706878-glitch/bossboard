@@ -113,6 +113,13 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!result.text || !result.text.trim()) {
+      return Response.json(
+        { error: "AI returned empty response. Please try again." },
+        { status: 500 }
+      );
+    }
+
     return Response.json({
       reply: result.text,
       provider: result.provider,

@@ -294,7 +294,7 @@ export default function SupportPage() {
                 placeholder="Type your reply..."
                 className="min-h-[44px] max-h-32 resize-none"
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
+                  if (e.key === "Enter" && !e.shiftKey && !sending) {
                     e.preventDefault();
                     handleSendReply();
                   }

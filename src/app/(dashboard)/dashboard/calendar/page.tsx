@@ -290,18 +290,28 @@ export default function CalendarPage() {
   }
 
   async function handleEventDrop(e: React.DragEvent, targetDate: string) {
-    e.preventDefault(); setDragOverDate(null); setDraggedEvent(null);
+    e.preventDefault();
     try {
       const data = JSON.parse(e.dataTransfer.getData("text/plain"));
-      if (data.originalDate === targetDate) return;
+      if (data.originalDate === targetDate) {
+        setDragOverDate(null);
+        setDraggedEvent(null);
+        return;
+      }
       if (data.eventType === "todo") { await supabase.from("todos").update({ due_date: targetDate }).eq("id", data.eventId); toast.success("Todo moved"); }
       else if (data.eventType === "google") {
         const res = await fetch("/api/calendar/google", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId: data.eventId, date: targetDate }) });
         if (!res.ok) throw new Error();
         toast.success("Event moved");
       }
+      setDragOverDate(null);
+      setDraggedEvent(null);
       invalidateCal();
-    } catch { toast.error("Failed to move event"); }
+    } catch {
+      toast.error("Failed to move event");
+      setDragOverDate(null);
+      setDraggedEvent(null);
+    }
   }
 
   // Global shortcut listeners — use refs to avoid re-attaching on every render
@@ -472,6 +482,14 @@ export default function CalendarPage() {
   ) : null;
 
   // ─── Render ───────────────────────────────────────────────────────────────
+
+  if (!businessId) {
+    return (
+      <div className="mx-auto max-w-2xl p-8 text-center">
+        <p className="text-muted-foreground">Select a workspace to view the calendar.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="-m-4 lg:-m-6 flex h-[calc(100vh-4rem)] overflow-hidden">

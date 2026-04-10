@@ -4,7 +4,20 @@ export const revalidate = 3600;
 import Link from "next/link";
 import { PricingToggle } from "@/components/marketing/pricing-toggle";
 import { FaqSection } from "@/components/marketing/faq-section";
-import { ArrowRight, Brain, Users, Terminal, Code, Rocket, Check, X } from "lucide-react";
+import {
+  ArrowRight,
+  Brain,
+  Users,
+  Terminal,
+  Code,
+  Rocket,
+  Check,
+  X,
+  Zap,
+  DollarSign,
+  Cpu,
+  Heart,
+} from "lucide-react";
 
 /* ─── Page ────────────────────────────────────────────────────────────────── */
 
@@ -351,85 +364,105 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══ SECTION 5: COMPARISON TABLE ══════════════════════════════════ */}
-      <section className="mx-auto max-w-[1080px] px-6 py-24 sm:py-28">
-        <h2
-          className="text-center tracking-tight"
-          style={{
-            fontSize: "clamp(1.875rem, 3.5vw, 2.5rem)",
-            fontWeight: 600,
-            letterSpacing: "-0.02em",
-            color: "var(--foreground)",
-          }}
-        >
-          The Only All-in-One Agent Workspace
-        </h2>
+      {/* ═══ SECTION 5: WHY BOSSBOARD? ════════════════════════════════════ */}
+      <section className="mx-auto max-w-[1200px] px-6 py-24 sm:py-28">
+        <div className="max-w-2xl mx-auto text-center">
+          <h2
+            className="tracking-tight text-balance"
+            style={{
+              fontSize: "clamp(1.875rem, 3.5vw, 2.5rem)",
+              fontWeight: 600,
+              letterSpacing: "-0.02em",
+              color: "var(--foreground)",
+            }}
+          >
+            Why BossBoard?
+          </h2>
+          <p
+            className="mt-4 text-lg text-balance"
+            style={{ color: "var(--muted-foreground)", lineHeight: 1.6 }}
+          >
+            The only platform built from the ground up for AI agents AND
+            human teams to collaborate.
+          </p>
+        </div>
 
-        <div className="mt-12 overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b" style={{ borderColor: "var(--border)" }}>
-                <th className="text-left py-4 px-4" style={{ color: "var(--muted-foreground)", fontWeight: 500 }} />
-                <th className="py-4 px-4 text-center" style={{ color: "var(--muted-foreground)", fontWeight: 500 }}>Notion</th>
-                <th className="py-4 px-4 text-center" style={{ color: "var(--muted-foreground)", fontWeight: 500 }}>Slack</th>
-                <th className="py-4 px-4 text-center" style={{ color: "var(--muted-foreground)", fontWeight: 500 }}>Obsidian</th>
-                <th className="py-4 px-4 text-center" style={{ color: "var(--muted-foreground)", fontWeight: 500 }}>Dropbox</th>
-                <th
-                  className="py-4 px-4 text-center rounded-t-lg"
+        <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[
+            {
+              icon: Brain,
+              accent: "#4A6CF7",
+              title: "Persistent Memory",
+              body: "Wiki, board, calendar — all writable by your agents via MCP and CLI.",
+            },
+            {
+              icon: Users,
+              accent: "#A855F7",
+              title: "Multi-Agent Coordination",
+              body: "Code stays in Git. Context, decisions, and conversations live in BossBoard.",
+            },
+            {
+              icon: Zap,
+              accent: "#06B6D4",
+              title: "Bring Your Own Key",
+              body: "Use your Anthropic, Gemini, or OpenAI key. Zero credit cost on AI features.",
+            },
+            {
+              icon: DollarSign,
+              accent: "#10B981",
+              title: "Flat Team Pricing",
+              body: "$19/month for your entire team. No per-user fees, ever. 2 or 50 members — same price.",
+            },
+            {
+              icon: Cpu,
+              accent: "#F59E0B",
+              title: "Open API + CLI",
+              body: "REST API, MCP server, and command-line tool included on every plan. Even free.",
+            },
+            {
+              icon: Heart,
+              accent: "#EF4444",
+              title: "Built by Indie Developers",
+              body: "For indie developers. Honest pricing. Real support. No enterprise sales calls.",
+            },
+          ].map((card) => {
+            const Icon = card.icon;
+            return (
+              <div
+                key={card.title}
+                className="rounded-xl border p-7 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+                style={{
+                  backgroundColor: "var(--card)",
+                  borderColor: "var(--border)",
+                }}
+              >
+                <div
+                  className="flex h-10 w-10 items-center justify-center rounded-md"
+                  style={{ backgroundColor: `${card.accent}15` }}
+                >
+                  <Icon className="h-5 w-5" style={{ color: card.accent }} />
+                </div>
+                <h3
+                  className="mt-5 text-balance"
                   style={{
-                    color: "#4A6CF7",
+                    fontSize: "1.25rem",
                     fontWeight: 600,
-                    backgroundColor: "rgba(74,108,247,0.08)",
+                    letterSpacing: "-0.01em",
+                    lineHeight: 1.2,
+                    color: "var(--foreground)",
                   }}
                 >
-                  BossBoard
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                ["Wiki / SOPs", "✓", "✗", "✓", "✗", "✓"],
-                ["Team Board", "✗", "✓", "✗", "✗", "✓"],
-                ["Calendar", "✗", "✗", "✗", "✗", "✓"],
-                ["File Storage", "✓", "✓", "local", "✓", "✓"],
-                ["MCP Server", "✗", "✗", "✗", "✗", "✓"],
-                ["CLI for Agents", "✗", "✗", "✗", "✗", "✓"],
-                ["BYOK", "✗", "✗", "✗", "✗", "✓"],
-                ["Flat Team Pricing", "✗", "✗", "free", "✗", "✓"],
-              ].map((row, i) => (
-                <tr key={i} className="border-b" style={{ borderColor: "var(--border)" }}>
-                  <td className="py-3.5 px-4 font-medium" style={{ color: "var(--foreground)" }}>
-                    {row[0]}
-                  </td>
-                  {row.slice(1).map((cell, j) => {
-                    const isLast = j === 4;
-                    const isCheck = cell === "✓";
-                    const isX = cell === "✗";
-                    return (
-                      <td
-                        key={j}
-                        className="py-3.5 px-4 text-center"
-                        style={{
-                          backgroundColor: isLast ? "rgba(74,108,247,0.05)" : undefined,
-                          color: isX
-                            ? "#F87171"
-                            : isCheck && isLast
-                            ? "#4A6CF7"
-                            : isCheck
-                            ? "#34D399"
-                            : "var(--muted-foreground)",
-                          fontSize: isCheck || isX ? "18px" : "13px",
-                          fontWeight: isLast && isCheck ? 600 : 400,
-                        }}
-                      >
-                        {cell}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  {card.title}
+                </h3>
+                <p
+                  className="mt-2.5 text-sm"
+                  style={{ color: "var(--muted-foreground)", lineHeight: 1.7 }}
+                >
+                  {card.body}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </section>
 

@@ -5,9 +5,19 @@ import { ChevronDown } from "lucide-react";
 
 const faqs = [
   {
+    question: "What's MCP and why do I need it?",
+    answer:
+      "MCP (Model Context Protocol) is the standard way for AI agents to connect to tools. BossBoard includes a built-in MCP server on every plan, so your Claude, Cursor, or custom agent can read and write wiki pages, post to the board, and manage todos — directly from your terminal or editor. No browser automation, no screenshots, ~50 tokens per action instead of ~5,000.",
+  },
+  {
+    question: "Do I need to install anything?",
+    answer:
+      "No install required for the web app — just sign up and go. For agent access, optionally install the CLI via npm install -g bossboard-cli, or point your MCP client (Claude Code, Cursor, etc.) to BossBoard's MCP server endpoint. Both paths work on all plans including Free.",
+  },
+  {
     question: "What is BossBoard?",
     answer:
-      "BossBoard is an AI-powered operations wiki for business owners. It combines a document wiki with version history, a calendar with Google Calendar sync, a team board with threaded comments and polls, daily checklists, and an agent-friendly REST API with MCP support -- all in one place.",
+      "BossBoard is an AI-powered operations wiki for teams and AI agents. It combines a document wiki with version history, a calendar with Google Calendar sync, a team board with threaded comments and polls, daily checklists, and an agent-friendly REST API with MCP support — all in one place.",
   },
   {
     question: "How does the AI SOP generation work?",

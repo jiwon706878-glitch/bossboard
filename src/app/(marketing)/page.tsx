@@ -314,7 +314,7 @@ export default function HomePage() {
                 accent: "#A855F7",
                 title: "Solo Founders",
                 description: "Indie hackers using AI as a force multiplier.",
-                features: ["5 GB storage, 30 credits", "BYOK for unlimited AI", "Full CLI + MCP access"],
+                features: ["5 GB storage, 30 credits + 10 bonus", "BYOK to bypass credit limits", "Full CLI + MCP access"],
                 price: "Free forever",
               },
             ].map((aud) => {
@@ -547,9 +547,6 @@ export default function HomePage() {
             <a href="mailto:jay@mybossboard.com" className="underline hover:opacity-80" style={{ color: "var(--foreground)" }}>
               jay@mybossboard.com
             </a>
-          </p>
-          <p className="mt-2 text-xs" style={{ color: "var(--muted-foreground)", opacity: 0.6 }}>
-            Built by a solo Korean indie developer (KST timezone)
           </p>
         </div>
       </section>

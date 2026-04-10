@@ -40,9 +40,8 @@ export default function HomePage() {
             {/* ── Left: text ── */}
             <div>
               <h1
-                className="tracking-tight text-balance"
+                className="tracking-tight text-balance text-3xl sm:text-4xl lg:text-5xl xl:text-6xl"
                 style={{
-                  fontSize: "clamp(3rem, 6vw, 5.5rem)",
                   fontWeight: 600,
                   letterSpacing: "-0.03em",
                   lineHeight: 1.05,

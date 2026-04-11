@@ -235,7 +235,7 @@ export default async function HomePage() {
             return (
               <div
                 key={card.title}
-                className="rounded-xl border p-8 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg group"
+                className="flex flex-col h-full rounded-xl border p-8 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg group"
                 style={{
                   backgroundColor: "var(--card)",
                   borderColor: "var(--border)",
@@ -283,7 +283,7 @@ export default async function HomePage() {
                 </ul>
                 <Link
                   href={card.href}
-                  className="mt-6 inline-flex items-center gap-1 text-sm font-medium transition-colors"
+                  className="mt-auto pt-6 inline-flex items-center gap-1 text-sm font-medium transition-colors"
                   style={{ color: card.accent }}
                 >
                   {card.cta} <ArrowRight className="h-3.5 w-3.5" />

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiKey, logApiCall } from "@/lib/api/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { scheduleIndexing } from "@/lib/ai/index-queue";
+import { getUserPlan } from "@/lib/agents";
 import type { JSONContent } from "@tiptap/react";
 
 function tiptapToMarkdown(content: JSONContent | null): string {
@@ -127,6 +129,27 @@ export async function PUT(
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // Queue auto-indexing if the caller's business owner is on a
+    // paid plan. Agents write via business-scoped API keys, so we
+    // look up the owning user's plan via the business row.
+    if (updates.content) {
+      const { data: biz } = await admin
+        .from("businesses")
+        .select("user_id")
+        .eq("id", auth.businessId)
+        .maybeSingle();
+      if (biz?.user_id) {
+        const plan = await getUserPlan(biz.user_id);
+        if (plan !== "free") {
+          scheduleIndexing(
+            id,
+            updates.content as JSONContent,
+            (updates.title as string) ?? data.title
+          );
+        }
+      }
+    }
 
     logApiCall(auth.businessId, auth.apiKeyId, `/api/v1/sops/${id}`, "PUT", 200, auth.keyName);
     return NextResponse.json(data);

@@ -175,6 +175,12 @@ export default function EditSOPPage() {
     }
 
     toast.success("Document updated!");
+
+    // Kick off the Gemini auto-indexer (Starter+ only). Fire-and-forget —
+    // the server queues the work on a 5-min debounce and responds
+    // quickly. We don't block the redirect on the response.
+    fetch(`/api/sops/${sopId}/reindex`, { method: "POST" }).catch(() => {});
+
     router.push(`/dashboard/sops/${sopId}`);
     if (currentBusiness?.id) {
       queryClient.invalidateQueries({ queryKey: sopKeys.all(currentBusiness.id) });

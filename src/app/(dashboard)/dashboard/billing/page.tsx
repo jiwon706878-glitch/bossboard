@@ -56,6 +56,22 @@ export default function BillingPage() {
       setLoading(priceId);
 
       try {
+        // Trusted server-side check: if the launch promo is still
+        // active, the API returns the Paddle discount code. Clients
+        // can't self-apply it after the counter has hit 100.
+        let discountCode: string | null = null;
+        try {
+          const res = await fetch("/api/launch-discount/state", {
+            cache: "no-store",
+          });
+          if (res.ok) {
+            const data = (await res.json()) as { discountCode: string | null };
+            discountCode = data.discountCode;
+          }
+        } catch {
+          // Fall through — checkout still proceeds without the promo.
+        }
+
         // Dynamically import Paddle.js to open checkout overlay
         const { getPaddleInstance } = await import("@paddle/paddle-js");
         const paddle = getPaddleInstance();
@@ -70,6 +86,7 @@ export default function BillingPage() {
           items: [{ priceId, quantity: 1 }],
           customData: { user_id: userId },
           ...(userEmail ? { customer: { email: userEmail } } : {}),
+          ...(discountCode ? { discountCode } : {}),
           settings: {
             successUrl: `${window.location.origin}/dashboard/billing?success=true`,
           },

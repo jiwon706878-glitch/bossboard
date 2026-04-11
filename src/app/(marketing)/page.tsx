@@ -7,6 +7,10 @@ import { FaqSection } from "@/components/marketing/faq-section";
 import { AnimatedSection } from "@/components/marketing/animated-section";
 import { HeroIntro } from "@/components/marketing/hero-intro";
 import {
+  getLaunchDiscountState,
+  LAUNCH_DISCOUNT_PERCENT,
+} from "@/lib/launch-discount";
+import {
   ArrowRight,
   Brain,
   Users,
@@ -23,7 +27,8 @@ import {
 
 /* ─── Page ────────────────────────────────────────────────────────────────── */
 
-export default function HomePage() {
+export default async function HomePage() {
+  const launchDiscount = await getLaunchDiscountState();
   return (
     <>
       {/* ═══ HERO ══════════════════════════════════════════════════════════ */}
@@ -483,17 +488,21 @@ export default function HomePage() {
       {/* ═══ SECTION 6: PRICING ═══════════════════════════════════════════ */}
       <section id="pricing" style={{ backgroundColor: "var(--card)" }}>
         <AnimatedSection className="mx-auto max-w-[1080px] px-6 py-24 sm:py-28">
-          <div className="text-center mb-4">
-            <p
-              className="inline-block px-4 py-1.5 rounded-full text-xs font-medium"
-              style={{
-                backgroundColor: "rgba(74,108,247,0.1)",
-                color: "#4A6CF7",
-              }}
-            >
-              🎉 Launch Special · First 100 users get 30% off forever
-            </p>
-          </div>
+          {launchDiscount.active && (
+            <div className="text-center mb-4">
+              <p
+                className="inline-block px-4 py-1.5 rounded-full text-xs font-medium"
+                style={{
+                  backgroundColor: "rgba(74,108,247,0.1)",
+                  color: "#4A6CF7",
+                }}
+              >
+                🎉 Launch Special · {launchDiscount.remaining} spot
+                {launchDiscount.remaining === 1 ? "" : "s"} left —{" "}
+                {LAUNCH_DISCOUNT_PERCENT}% lifetime discount
+              </p>
+            </div>
+          )}
           <h2
             className="text-center mt-4 tracking-tight"
             style={{
@@ -509,7 +518,12 @@ export default function HomePage() {
             You subscribe. Your whole team uses it free. Flat, not per-user.
           </p>
           <div className="mt-12">
-            <PricingToggle />
+            <PricingToggle
+              launchDiscount={{
+                active: launchDiscount.active,
+                percent: LAUNCH_DISCOUNT_PERCENT,
+              }}
+            />
           </div>
         </AnimatedSection>
       </section>

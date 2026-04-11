@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Webhooks } from "@paddle/paddle-node-sdk";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPlanByPaddlePriceId } from "@/config/plans";
+import { incrementPaidUserCount } from "@/lib/launch-discount";
 
 // Paddle sends webhooks as POST with JSON body + Paddle-Signature header
 export async function POST(req: Request) {
@@ -53,6 +54,15 @@ export async function POST(req: Request) {
         ends_at: string;
       } | null;
 
+      // Detect whether this is this user's first paid subscription —
+      // we only want to increment the launch-discount counter once per
+      // user, not on every upgrade or reactivation.
+      const { data: existingSub } = await supabase
+        .from("subscriptions")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
       await supabase.from("subscriptions").upsert({
         user_id: userId,
         paddle_subscription_id: data.id as string,
@@ -67,6 +77,13 @@ export async function POST(req: Request) {
         .from("profiles")
         .update({ plan_id: plan?.id || "pro" })
         .eq("id", userId);
+
+      // First paid subscription for this user → bump launch counter.
+      // This also calls revalidateTag('launch-discount') so the banner
+      // and pricing cards regenerate on the next request.
+      if (!existingSub && event.event_type === "subscription.created") {
+        await incrementPaidUserCount();
+      }
 
       break;
     }

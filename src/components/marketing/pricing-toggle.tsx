@@ -7,8 +7,19 @@ import { plans, type PlanId } from "@/config/plans";
 
 const planOrder: PlanId[] = ["free", "starter", "pro", "business"];
 
-export function PricingToggle() {
+interface LaunchDiscountProps {
+  active: boolean;
+  percent: number;
+}
+
+export function PricingToggle({
+  launchDiscount,
+}: {
+  launchDiscount?: LaunchDiscountProps;
+} = {}) {
   const [annual, setAnnual] = useState(false);
+  const discountActive = launchDiscount?.active ?? false;
+  const discountPercent = launchDiscount?.percent ?? 30;
 
   return (
     <div>
@@ -59,7 +70,12 @@ export function PricingToggle() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {planOrder.map((planId) => {
           const plan = plans[planId];
-          const price = annual ? plan.annualPrice : plan.monthlyPrice;
+          const basePrice = annual ? plan.annualPrice : plan.monthlyPrice;
+          // Apply launch discount only to paid plans while active.
+          const applyDiscount = discountActive && basePrice > 0;
+          const price = applyDiscount
+            ? Math.round(basePrice * (1 - discountPercent / 100))
+            : basePrice;
           const isRecommended = planId === "starter";
 
           return (
@@ -107,6 +123,22 @@ export function PricingToggle() {
                   {plan.description}
                 </p>
                 <div className="mt-4">
+                  {applyDiscount && (
+                    <div
+                      className="mb-1 text-xs"
+                      style={{ color: "var(--muted-foreground)" }}
+                    >
+                      <span className="line-through">
+                        ${annual ? Math.round(basePrice / 12) : basePrice}/mo
+                      </span>
+                      <span
+                        className="ml-2 font-semibold"
+                        style={{ color: "#34D399" }}
+                      >
+                        −{discountPercent}% launch
+                      </span>
+                    </div>
+                  )}
                   <span
                     className="text-3xl font-bold"
                     style={{

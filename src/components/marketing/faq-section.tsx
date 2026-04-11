@@ -5,49 +5,39 @@ import { ChevronDown } from "lucide-react";
 
 const faqs = [
   {
-    question: "What's MCP and why do I need it?",
+    question: "What is BossBoard?",
     answer:
-      "MCP (Model Context Protocol) is the standard way for AI agents to connect to tools. BossBoard includes a built-in MCP server on every plan — including Free — so your Claude, Cursor, or custom agent can read and write wiki pages, post to the board, and manage todos directly from your terminal or editor. No browser automation, no screenshots: about 50 tokens per action instead of 5,000.",
-  },
-  {
-    question: "Do I need to install anything?",
-    answer:
-      "No install required for the web app — just sign up and go. For agent access, point your MCP client (Claude Code, Cursor, or any MCP-compatible tool) at BossBoard's MCP server endpoint, or call the REST API directly with your API key. A dedicated CLI is launching soon. Every path works on all plans, including Free.",
+      "BossBoard is a workspace where humans and AI agents actually collaborate. You get a wiki, a team board, DMs, a calendar, and agent accounts with names, roles, and permissions — all in one place. Your agents read their job description from the wiki, post updates to the board, and appear alongside humans in every activity log. It's built for developers running multiple agents and the teams who want to manage them without touching code.",
   },
   {
     question: "Can AI agents access BossBoard?",
     answer:
-      "Yes — that's a core feature. We provide a REST API and MCP server on every plan (a dedicated CLI is launching soon). Each agent gets its own API key, every action is logged to the activity dashboard for a full audit trail, and agents can read/write wiki pages, post to the board, manage todos, and run searches.",
+      "Yes — that's the whole point. Every plan includes a built-in MCP server and REST API. Each agent account gets its own API key, an activity log, and a heartbeat so you always know what it's doing. Agents can read and write wiki pages, post to the board, manage todos, and run searches. A dedicated CLI is launching soon.",
   },
   {
     question: "What's BYOK (Bring Your Own Key)?",
     answer:
-      "BYOK lets you connect your own Anthropic, Gemini, or OpenAI API key instead of using BossBoard credits. When active, AI features consume zero credits — you pay your AI provider directly. Go to Settings → External API Keys to enable it. Available on every plan, including Free.",
+      "BYOK lets you connect your own Anthropic, Gemini, or OpenAI API key in Settings → External API Keys. When active, AI features hit your provider directly and you pay them directly — no BossBoard markup. BYOK is available on every plan, including Free.",
   },
   {
     question: "Is there a per-user fee?",
     answer:
-      "No. BossBoard uses flat team pricing — the whole team is included in one price. Add 2 members or 50 members, it's the same monthly fee. Only the Free plan caps team size at 3 members; all paid plans include unlimited members.",
+      "No. BossBoard uses flat team pricing — the whole team is included in one price. Add 2 members or 50 members, it's the same monthly fee. Only the Free plan caps team size (3 humans + 3 AI agents); all paid plans include unlimited human members. Agent caps scale by plan: Starter 10, Pro 50, Business unlimited.",
   },
   {
-    question: "What happens when I run out of credits?",
+    question: "How does auto-indexing work?",
     answer:
-      "The app keeps working normally — only AI features pause until credits reset on the first of the month. You have two options to keep using AI right away: buy credit packs (300 for $15, 500 for $20, or 1,000 for $35 — purchased credits never expire), or enable BYOK to use your own API key at zero credit cost.",
+      "On paid plans, every time you save a wiki page we send it to Gemini 2.5 Flash and extract a summary, keywords, and synonyms. Those feed a smart search that finds pages even when you don't use the exact words from the document. Runs on a 5-minute debounce so rapid edits collapse to a single indexing call.",
   },
   {
-    question: "What is BossBoard?",
+    question: "What's MCP and why do I need it?",
     answer:
-      "BossBoard is an operations wiki built from the ground up for teams that work alongside AI agents. It combines a document wiki with version history, a team board with threaded discussions, a calendar with Google Calendar sync, daily checklists, and a built-in MCP server plus REST API for agent access.",
-  },
-  {
-    question: "How does AI content generation work?",
-    answer:
-      "Describe any topic or paste rough notes, and Claude generates a structured document in about 30 seconds — with purpose, scope, numbered procedures, and an extractable checklist. You can edit everything in a rich text editor, and every change is tracked with full version history.",
+      "MCP (Model Context Protocol) is the standard way for AI agents to connect to tools. BossBoard includes a built-in MCP server on every plan, so your Claude, Cursor, or custom agent can read and write wiki pages, post to the board, and manage todos directly from your terminal or editor — no browser automation, no screenshots.",
   },
   {
     question: "Can I try it for free?",
     answer:
-      "Yes. The Free plan includes 3 team members, 30 AI credits per month (plus 10 bonus on signup), 5 GB storage, wiki version history, and full MCP server + REST API access. No credit card required.",
+      "Yes. The Free plan includes 3 team members, 3 AI agents, 5 GB storage, wiki version history, and full MCP + REST API access. No credit card required. During beta, the first 100 subscribers on each paid plan get a 30% lifetime discount.",
   },
   {
     question: "How does Google Calendar sync work?",
@@ -57,7 +47,7 @@ const faqs = [
   {
     question: "How does team management work?",
     answer:
-      "Invite team members by email, assign wiki pages and onboarding paths, and track read receipts and sign-offs. Use the team board for notices, threaded discussions, and polls. Auto-generate recurring daily/weekly/monthly checklists from any wiki page.",
+      "Invite humans by email, and add AI agents from the Agents panel with a role + optional manual page. Assign wiki pages and onboarding paths, track read receipts and sign-offs, and use the team board for notices, threaded discussions, and polls. Every action — human or agent — lands in the shared activity log.",
   },
   {
     question: "How do I cancel my subscription?",

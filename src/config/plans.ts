@@ -1,5 +1,12 @@
 export type PlanId = "free" | "starter" | "pro" | "business";
 
+/**
+ * Plan limits. The landing copy no longer surfaces `aiCredits` as a
+ * user-visible number (BB v2.0 positions BYOK-first), but the field
+ * stays here because /api/ai/chat, /api/ai/generate, the coupon
+ * system, and the admin dashboards all read it. A Day 4+ refactor
+ * can fully remove credits; Day 3 just hides them from marketing.
+ */
 export interface PlanConfig {
   id: PlanId;
   name: string;
@@ -9,12 +16,15 @@ export interface PlanConfig {
   paddlePriceIdMonthly: string;
   paddlePriceIdAnnual: string;
   limits: {
-    aiCredits: number; // per month, -1 = unlimited
-    sops: number; // -1 = unlimited
-    teamMembers: number; // -1 = unlimited
-    storageGb: number; // total storage in GB
-    fileSizeMb: number; // per-file upload limit in MB
-    egressGbPerMonth: number; // monthly download bandwidth in GB
+    aiCredits: number;            // per month, -1 = unlimited (internal only)
+    sops: number;                 // -1 = unlimited
+    teamMembers: number;          // -1 = unlimited humans
+    agentMembers: number;         // -1 = unlimited agents; BB v2.0 cap
+    storageGb: number;            // total storage in GB
+    fileSizeMb: number;           // per-file upload limit in MB
+    egressGbPerMonth: number;     // monthly download bandwidth in GB
+    autoIndexing: boolean;        // Gemini auto-index on save
+    aiChat: boolean;              // in-app AI chat with workspace
   };
   features: string[];
 }
@@ -23,7 +33,7 @@ export const plans: Record<PlanId, PlanConfig> = {
   free: {
     id: "free",
     name: "Free",
-    description: "Get started with BYOK",
+    description: "Get started with your AI agents",
     monthlyPrice: 0,
     annualPrice: 0,
     paddlePriceIdMonthly: "",
@@ -32,18 +42,21 @@ export const plans: Record<PlanId, PlanConfig> = {
       aiCredits: 30,
       sops: 20,
       teamMembers: 3,
+      agentMembers: 3,
       storageGb: 5,
       fileSizeMb: 50,
       egressGbPerMonth: 10,
+      autoIndexing: false,
+      aiChat: false,
     },
     features: [
-      "3 team members",
-      "30 AI credits/month (+10 signup bonus)",
+      "3 team members + 3 AI agents",
       "5 GB storage · 50 MB per file",
       "10 GB monthly downloads",
+      "Wiki, Board, Calendar, Todos",
       "MCP server + REST API",
-      "BYOK (use your own key)",
-      "Wiki version history",
+      "BYOK (use your own AI key)",
+      "Basic search (full-text)",
     ],
   },
   starter: {
@@ -58,18 +71,22 @@ export const plans: Record<PlanId, PlanConfig> = {
       aiCredits: 500,
       sops: -1,
       teamMembers: -1,
+      agentMembers: 10,
       storageGb: 50,
-      fileSizeMb: 100,
+      fileSizeMb: 200,
       egressGbPerMonth: 100,
+      autoIndexing: true,
+      aiChat: true,
     },
     features: [
       "Unlimited team members",
-      "500 AI credits/month",
-      "50 GB storage · 100 MB per file",
+      "Up to 10 AI agents",
+      "50 GB storage · 200 MB per file",
       "100 GB monthly downloads",
       "Everything in Free",
-      "Unlimited wiki pages",
-      "Daily / weekly / monthly recurring checklists",
+      "Smart search (AI-indexed)",
+      "AI Chat with workspace",
+      "Daily / weekly / monthly checklists",
     ],
   },
   pro: {
@@ -84,18 +101,21 @@ export const plans: Record<PlanId, PlanConfig> = {
       aiCredits: 1500,
       sops: -1,
       teamMembers: -1,
+      agentMembers: 50,
       storageGb: 200,
-      fileSizeMb: 500,
+      fileSizeMb: 2000,
       egressGbPerMonth: 500,
+      autoIndexing: true,
+      aiChat: true,
     },
     features: [
       "Unlimited team members",
-      "1,500 AI credits/month",
-      "200 GB storage · 500 MB per file",
+      "Up to 50 AI agents",
+      "200 GB storage · 2 GB per file",
       "500 GB monthly downloads",
       "Everything in Starter",
       "Read tracking & sign-off",
-      "Agent activity dashboard with charts",
+      "Agent activity dashboard",
       "Folder access control (basic)",
     ],
   },
@@ -111,18 +131,22 @@ export const plans: Record<PlanId, PlanConfig> = {
       aiCredits: 5000,
       sops: -1,
       teamMembers: -1,
-      storageGb: 1000,
-      fileSizeMb: 1024,
-      egressGbPerMonth: 2000,
+      agentMembers: -1,
+      storageGb: 1024,
+      fileSizeMb: 10240,
+      egressGbPerMonth: 2048,
+      autoIndexing: true,
+      aiChat: true,
     },
     features: [
       "Unlimited team members",
-      "5,000 AI credits/month",
-      "1 TB storage · 1 GB per file",
+      "Unlimited AI agents",
+      "1 TB storage · 10 GB per file",
       "2 TB monthly downloads",
       "Everything in Pro",
-      "Folder access control (advanced, per-role + API key scopes)",
+      "Folder access control (advanced)",
       "Onboarding paths with progress tracking",
+      "Priority email support",
     ],
   },
 };

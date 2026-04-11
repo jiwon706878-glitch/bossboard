@@ -3,8 +3,9 @@ import { Webhooks } from "@paddle/paddle-node-sdk";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPlanByPaddlePriceId } from "@/config/plans";
 import {
-  getActivePromotion,
+  getActivePromotionForPlan,
   incrementPromotionUses,
+  type PlanSlug,
 } from "@/lib/promotions";
 
 // Paddle sends webhooks as POST with JSON body + Paddle-Signature header
@@ -81,13 +82,20 @@ export async function POST(req: Request) {
         .update({ plan_id: plan?.id || "pro" })
         .eq("id", userId);
 
-      // First paid subscription for this user → bump the active
-      // promotion's counter (if any). The promotions RPC flips
-      // is_active false once max_uses is reached and the helper
-      // calls revalidateTag('promotions') so the banner and pricing
-      // cards regenerate on the next request.
-      if (!existingSub && event.event_type === "subscription.created") {
-        const promo = await getActivePromotion();
+      // First paid subscription for this user → bump the per-plan
+      // promotion counter (if any). BB v2.0 has separate 100-user
+      // promos for Starter and Pro, so we look up the promo that
+      // applies to *this* plan rather than the single active one.
+      // The promotions RPC flips is_active=false when max_uses is
+      // hit and revalidates the 'promotions' tag so the beta banner
+      // and pricing cards regenerate.
+      if (
+        !existingSub &&
+        event.event_type === "subscription.created" &&
+        plan?.id &&
+        plan.id !== "free"
+      ) {
+        const promo = await getActivePromotionForPlan(plan.id as PlanSlug);
         if (promo && promo.max_uses !== null) {
           await incrementPromotionUses(promo.id);
         }

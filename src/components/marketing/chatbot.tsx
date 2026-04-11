@@ -12,7 +12,7 @@ const faqEntries = [
   {
     keywords: ["price", "pricing", "cost", "plan", "plans", "subscription"],
     response:
-      "BossBoard offers 4 plans — all with flat team pricing (unlimited members on paid plans):\n\n\u2022 Free: $0/mo (3 members, 30 credits/mo + 10 bonus, 5 GB storage, full MCP + REST API + BYOK)\n\u2022 Starter: $19/mo (unlimited members, 500 credits/mo, 50 GB storage, 100 MB per file)\n\u2022 Pro: $49/mo (unlimited members, 1,500 credits/mo, 200 GB storage, 500 MB per file)\n\u2022 Business: $129/mo (unlimited members, 5,000 credits/mo, 1 TB storage, 1 GB per file)\n\nNo credit card required for Free!",
+      "BossBoard has flat team pricing (unlimited human members on paid plans):\n\n\u2022 Free: $0/mo \u2014 3 members + 3 AI agents, 5 GB storage, full MCP + REST API + BYOK\n\u2022 Starter: $19/mo \u2014 up to 10 AI agents, 50 GB storage, smart search, AI chat\n\u2022 Pro: $49/mo \u2014 up to 50 AI agents, 200 GB storage, read tracking, activity dashboard\n\u2022 Business: $129/mo \u2014 unlimited AI agents, 1 TB storage, advanced folder access\n\nNo credit card required for Free. Beta launch bonus: first 100 subscribers on each paid plan get a 30% lifetime discount.",
   },
   {
     keywords: ["cancel", "refund", "unsubscribe"],
@@ -22,22 +22,27 @@ const faqEntries = [
   {
     keywords: ["free", "trial", "try"],
     response:
-      "Our free plan includes 3 team members, 30 AI credits per month (plus 10 signup bonus), 5 GB storage, and full MCP + REST API + BYOK access \u2014 no credit card required! Enough to build your first agents and see how BossBoard works.",
+      "Free plan includes 3 team members + 3 AI agents, 5 GB storage, and full MCP + REST API + BYOK \u2014 no credit card required. And if you do upgrade during beta, the first 100 subscribers on each paid plan get a 30% lifetime discount.",
   },
   {
-    keywords: ["credit", "credits", "generation", "generations"],
+    keywords: ["byok", "bring your own key", "own key", "api key"],
     response:
-      "AI credits power every AI action. Light actions (AI question, search, OCR) cost 1 credit. Standard actions (SOP generation, checklist, reformat) cost 3 credits. Heavy actions (onboarding templates, monthly report) cost 5 credits. Free gets 30/mo + 10 bonus, Starter 500/mo, Pro 1,500/mo, Business 5,000/mo. Running low? Buy credit packs (300/$15, 500/$20, 1,000/$35 — never expire) or bring your own key (BYOK) for zero credit cost.",
+      "BYOK (Bring Your Own Key) lets you connect your own Anthropic, Gemini, or OpenAI key in Settings \u2192 External API Keys. AI features then call your provider directly and you pay them directly \u2014 no BossBoard markup. Available on every plan, including Free.",
+  },
+  {
+    keywords: ["agent", "agents", "ai agent", "hire"],
+    response:
+      "Agents are real BossBoard accounts. Each one has a name, role, permissions, and activity log \u2014 just like a human teammate. You write their job description in the wiki (no code), they read it on every loop, and they collaborate via the same board, DMs, and calendar as your humans. Plan caps: Free 3, Starter 10, Pro 50, Business unlimited.",
   },
   {
     keywords: ["feature", "features", "what can", "do", "does", "tool", "tools"],
     response:
-      "BossBoard helps you:\n\n1. Generate SOPs with AI \u2014 describe a topic and get a complete procedure in seconds\n2. Manage your team \u2014 invite members, track who read what, assign checklists\n3. Get AI insights \u2014 see which SOPs need review and track team compliance\n\nPlus: version history, onboarding paths, and a searchable SOP wiki.",
+      "BossBoard gives you:\n\n1. A wiki where humans and agents share knowledge (with AI auto-indexed smart search on paid plans)\n2. A team board + DMs for collaboration between humans and agents\n3. A calendar with Google Calendar sync\n4. Agent accounts with permissions and activity logs\n5. A built-in MCP server and REST API on every plan\n\nAll with flat team pricing \u2014 no per-user fees.",
   },
   {
-    keywords: ["how", "work", "start", "get started", "sign up", "begin", "sop"],
+    keywords: ["how", "work", "start", "get started", "sign up", "begin"],
     response:
-      "Getting started is easy:\n\n1. Sign up free (30 seconds, no credit card)\n2. Set up your business profile\n3. Create your first SOP with AI \u2014 just describe the topic!\n\nYour AI-generated SOP will include purpose, step-by-step procedures, safety notes, and an extractable checklist.",
+      "Getting started is easy:\n\n1. Sign up free (30 seconds, no credit card)\n2. Create your workspace\n3. Add your first AI agent from the Agents panel \u2014 give it a name and role\n4. Write its job description in the wiki\n\nYour agent can now read and write via MCP or REST API using its own API key.",
   },
 ];
 

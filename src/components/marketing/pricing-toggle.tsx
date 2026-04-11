@@ -8,13 +8,32 @@ import type { Promotion } from "@/lib/promotions";
 
 const planOrder: PlanId[] = ["free", "starter", "pro", "business"];
 
+/**
+ * Pricing toggle. `promotions` is a per-plan map so the Starter and
+ * Pro cards can each receive their own beta promotion independently
+ * (BB v2.0 has separate 100-user counters per plan). The legacy
+ * single `promotion` prop is still accepted for the admin/billing
+ * pages that use one global promo, but new callers should pass the
+ * map.
+ */
 export function PricingToggle({
   promotion,
+  promotions,
 }: {
   promotion?: Promotion | null;
+  promotions?: Partial<Record<PlanId, Promotion | null>>;
 } = {}) {
   const [annual, setAnnual] = useState(false);
-  const promoActive = !!promotion;
+  // Legacy `promotion` → treated as a single-plan override for starter/pro/business.
+  const perPlan: Partial<Record<PlanId, Promotion | null>> =
+    promotions ??
+    (promotion
+      ? {
+          starter: promotion.applies_to.includes("starter") ? promotion : null,
+          pro: promotion.applies_to.includes("pro") ? promotion : null,
+          business: promotion.applies_to.includes("business") ? promotion : null,
+        }
+      : {});
 
   return (
     <div>
@@ -66,30 +85,28 @@ export function PricingToggle({
         {planOrder.map((planId) => {
           const plan = plans[planId];
           const basePrice = annual ? plan.annualPrice : plan.monthlyPrice;
-          // Only paid plans covered by the promo get a discount.
-          const planCovered =
-            promoActive &&
-            promotion!.applies_to.includes(planId) &&
-            basePrice > 0;
-          const applyDiscount = planCovered;
+          // Look up the per-plan promotion for this specific card.
+          const planPromo = perPlan[planId] ?? null;
+          const applyDiscount = !!planPromo && basePrice > 0;
           let price = basePrice;
-          if (applyDiscount) {
-            if (promotion!.discount_type === "percent") {
+          if (applyDiscount && planPromo) {
+            if (planPromo.discount_type === "percent") {
               price = Math.round(
-                basePrice * (1 - promotion!.discount_value / 100)
+                basePrice * (1 - planPromo.discount_value / 100)
               );
             } else {
               price = Math.max(
                 0,
-                Math.round(basePrice - promotion!.discount_value)
+                Math.round(basePrice - planPromo.discount_value)
               );
             }
           }
-          const discountLabel = applyDiscount
-            ? promotion!.discount_type === "percent"
-              ? `−${promotion!.discount_value}%`
-              : `−$${promotion!.discount_value}`
-            : "";
+          const discountLabel =
+            applyDiscount && planPromo
+              ? planPromo.discount_type === "percent"
+                ? `−${planPromo.discount_value}%`
+                : `−$${planPromo.discount_value}`
+              : "";
           const isRecommended = planId === "starter";
 
           return (
@@ -230,42 +247,12 @@ export function PricingToggle({
         })}
       </div>
 
-      <div className="mt-16 max-w-3xl mx-auto">
-        <div className="text-center mb-8">
-          <h3 className="text-xl font-bold" style={{ color: "var(--foreground)" }}>
-            Need more AI credits?
-          </h3>
-          <p className="mt-2 text-sm" style={{ color: "var(--muted-foreground)" }}>
-            Top up anytime. Purchased credits never expire.
-          </p>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[
-            { credits: 300, price: 15, label: "Starter Pack" },
-            { credits: 500, price: 20, label: "Most Popular", popular: true },
-            { credits: 1000, price: 35, label: "Best Value" },
-          ].map((pack) => (
-            <div
-              key={pack.credits}
-              className={`rounded-lg border p-5 text-center ${pack.popular ? "border-primary/40" : ""}`}
-              style={{
-                backgroundColor: "var(--card)",
-                borderColor: pack.popular ? "#4F8BFF" : "var(--border)",
-              }}
-            >
-              {pack.popular && (
-                <span className="inline-block mb-2 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded" style={{ backgroundColor: "rgba(79,139,255,0.1)", color: "#4F8BFF" }}>
-                  Most Popular
-                </span>
-              )}
-              <div style={{ fontFamily: "'JetBrains Mono', monospace" }} className="text-2xl font-bold">
-                {pack.credits.toLocaleString()}
-              </div>
-              <div className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>credits</div>
-              <div className="mt-3 text-lg font-semibold">${pack.price}</div>
-            </div>
-          ))}
-        </div>
+      <div className="mt-16 max-w-2xl mx-auto text-center">
+        <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
+          Every plan includes MCP server, REST API, and BYOK. Bring your own
+          Anthropic, Gemini, or OpenAI key — your provider, your quota, no
+          BossBoard markup.
+        </p>
       </div>
     </div>
   );

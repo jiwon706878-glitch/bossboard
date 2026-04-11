@@ -3,20 +3,26 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 
-const LS_KEY = "bb_launch_banner_dismissed";
+const LS_KEY = "bb_beta_banner_dismissed";
 
 interface LaunchBannerClientProps {
-  text: string;
-  remaining: number | null;
+  /** Number of remaining Starter 30%-off slots, or null if not configured. */
+  starterLeft: number | null;
+  /** Number of remaining Pro 30%-off slots, or null if not configured. */
+  proLeft: number | null;
 }
 
 /**
- * Client half of the launch banner. Handles per-browser dismissal
- * via localStorage. The parent server component (LaunchBanner)
- * fetches the active promotion and only renders this when one is
- * live, so this component has nothing to check beyond dismissal.
+ * BB v2.0 beta banner — dismissible client component. Styled to the
+ * project's "Calm Command Center" design system (see CLAUDE.md):
+ * dark surface, thin accent border-bottom, no gradient, no emoji
+ * in the headline. The parent server component only renders this
+ * when there's something to announce.
  */
-export function LaunchBannerClient({ text, remaining }: LaunchBannerClientProps) {
+export function LaunchBannerClient({
+  starterLeft,
+  proLeft,
+}: LaunchBannerClientProps) {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -31,33 +37,52 @@ export function LaunchBannerClient({ text, remaining }: LaunchBannerClientProps)
 
   if (!show) return null;
 
-  const remainingLabel =
-    remaining !== null
-      ? ` · ${remaining} spot${remaining === 1 ? "" : "s"} left`
-      : "";
+  // Build the discount-slots sub-message. If neither counter is set
+  // (admin cleared them), fall back to a generic headline.
+  const slotsParts: string[] = [];
+  if (starterLeft !== null && starterLeft > 0) {
+    slotsParts.push(`Starter: ${starterLeft} left`);
+  }
+  if (proLeft !== null && proLeft > 0) {
+    slotsParts.push(`Pro: ${proLeft} left`);
+  }
+  const slotsMessage =
+    slotsParts.length > 0
+      ? slotsParts.join(" · ")
+      : "First 100 subscribers — limited slots";
 
   return (
     <div
-      className="relative px-4 py-2.5 text-center text-sm text-white"
+      className="relative px-4 py-2.5 text-center text-sm"
       style={{
-        background: "linear-gradient(90deg, #4A6CF7 0%, #A855F7 100%)",
+        backgroundColor: "var(--card)",
+        color: "var(--foreground)",
+        borderBottom: "1px solid var(--border)",
       }}
     >
-      <span className="font-medium">
-        🎉 {text}
-        {remainingLabel}{" "}
+      <span>
+        <strong style={{ color: "#4F8BFF" }}>Beta launch</strong>
+        <span style={{ color: "var(--muted-foreground)" }}>
+          {" · "}First 100 subscribers get 30% lifetime
+        </span>
+        <span style={{ color: "var(--muted-foreground)", opacity: 0.85 }}>
+          {" · "}
+          {slotsMessage}
+        </span>{" "}
       </span>
       <a
         href="/#pricing"
-        className="ml-1 font-semibold underline underline-offset-2 hover:opacity-90"
+        className="ml-1 font-semibold underline underline-offset-2 transition-opacity hover:opacity-80"
+        style={{ color: "var(--foreground)" }}
       >
-        Claim Now →
+        Claim →
       </a>
       <button
         type="button"
         onClick={dismiss}
         aria-label="Dismiss banner"
-        className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+        className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 transition-colors hover:bg-[var(--background)]"
+        style={{ color: "var(--muted-foreground)" }}
       >
         <X className="h-4 w-4" />
       </button>

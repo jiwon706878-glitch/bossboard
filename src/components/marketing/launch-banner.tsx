@@ -1,33 +1,34 @@
-import { getActivePromotion } from "@/lib/promotions";
+import { getRemainingDiscountSlots } from "@/lib/promotions";
+import { getBetaState } from "@/lib/beta";
 import { LaunchBannerClient } from "./launch-banner-client";
 
 /**
- * Server component. Fetches the active promotion (cached via
- * unstable_cache with the 'promotions' tag) and renders the
- * dismissible client banner only while a promo is active AND has
- * show_banner = true.
+ * BB v2.0 beta banner — server component.
  *
- * When the admin toggles a promotion off (or the Paddle webhook
- * increments past max_uses), the cache is invalidated via
- * revalidateTag('promotions') and this component returns null on
- * the next request — the banner disappears automatically.
+ * Reads the remaining Starter + Pro 100-user discount slots (from the
+ * promotions table) and the beta window (from beta_state), then hands
+ * counts to the dismissible client banner. The 14-day Pro trial claim
+ * was removed from the banner copy for Day 3 because `isInBetaTrial`
+ * is still a stub — Day 4 will wire up auto-enrollment and restore
+ * the trial headline. For now the banner only advertises what's
+ * actually backed by real counters.
+ *
+ * File kept as launch-banner.tsx so the marketing layout import
+ * doesn't need to change.
  */
 export async function LaunchBanner() {
-  const promotion = await getActivePromotion();
-  if (!promotion || !promotion.show_banner) return null;
+  const [slots, beta] = await Promise.all([
+    getRemainingDiscountSlots(),
+    getBetaState(),
+  ]);
 
-  // Banner text has sensible fallbacks so an admin can leave it
-  // blank and still get a usable message.
-  const baseText =
-    promotion.banner_text?.trim() ||
-    (promotion.discount_type === "percent"
-      ? `${promotion.discount_value}% off all paid plans`
-      : `$${promotion.discount_value} off all paid plans`);
+  const anySlots = (slots.starter ?? 0) > 0 || (slots.pro ?? 0) > 0;
+  if (!beta?.isActive && !anySlots) return null;
 
-  const remaining =
-    promotion.max_uses !== null
-      ? Math.max(0, promotion.max_uses - promotion.current_uses)
-      : null;
-
-  return <LaunchBannerClient text={baseText} remaining={remaining} />;
+  return (
+    <LaunchBannerClient
+      starterLeft={slots.starter}
+      proLeft={slots.pro}
+    />
+  );
 }

@@ -6,7 +6,7 @@ import { PricingToggle } from "@/components/marketing/pricing-toggle";
 import { FaqSection } from "@/components/marketing/faq-section";
 import { AnimatedSection } from "@/components/marketing/animated-section";
 import { HeroIntro } from "@/components/marketing/hero-intro";
-import { getActivePromotion } from "@/lib/promotions";
+import { getActivePromotionForPlan } from "@/lib/promotions";
 import {
   ArrowRight,
   Brain,
@@ -25,10 +25,24 @@ import {
 /* ─── Page ────────────────────────────────────────────────────────────────── */
 
 export default async function HomePage() {
-  const promotion = await getActivePromotion();
-  const promoRemaining =
-    promotion && promotion.max_uses !== null
-      ? Math.max(0, promotion.max_uses - promotion.current_uses)
+  // BB v2.0 has separate per-plan beta promos — fetch all three in
+  // parallel so the pricing section can show discounts per card.
+  const [starterPromo, proPromo, businessPromo] = await Promise.all([
+    getActivePromotionForPlan("starter"),
+    getActivePromotionForPlan("pro"),
+    getActivePromotionForPlan("business"),
+  ]);
+  const promotions = {
+    starter: starterPromo,
+    pro: proPromo,
+    business: businessPromo,
+  };
+  // Use any active promo to drive the pricing section pill banner
+  // headline — if multiple are active, starter takes priority.
+  const headlinePromo = starterPromo ?? proPromo ?? businessPromo;
+  const headlineRemaining =
+    headlinePromo && headlinePromo.max_uses !== null
+      ? Math.max(0, headlinePromo.max_uses - headlinePromo.current_uses)
       : null;
   return (
     <>
@@ -57,9 +71,9 @@ export default async function HomePage() {
                   color: "var(--foreground)",
                 }}
               >
-                The Office Where{" "}
+                Hire AI Agents.{" "}
                 <br className="hidden sm:block" />
-                AI Agents Work.
+                Manage Them Like a Pro.
               </h1>
 
               <p
@@ -71,8 +85,9 @@ export default async function HomePage() {
                   color: "var(--muted-foreground)",
                 }}
               >
-                Wiki · Board · Calendar · MCP · REST API — everything your
-                agents need to collaborate, learn, and deliver.
+                The workspace where humans and AI agents actually collaborate.
+                Wiki, Board, DM, Calendar — and your agents have names, roles,
+                and permissions.
               </p>
 
               <p className="mt-3 max-w-lg text-base" style={{ color: "var(--muted-foreground)", opacity: 0.75 }}>
@@ -86,7 +101,7 @@ export default async function HomePage() {
                   className="inline-flex items-center justify-center gap-2 rounded-md px-6 py-3 text-base font-semibold transition-all duration-200 hover:brightness-110 w-full sm:w-auto"
                   style={{ backgroundColor: "#4A6CF7", color: "#fff" }}
                 >
-                  Get Started Free <ArrowRight className="h-4 w-4" />
+                  Start Free <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
                   href="/developers"
@@ -101,7 +116,7 @@ export default async function HomePage() {
               </div>
 
               <p className="mt-4 text-sm" style={{ color: "var(--muted-foreground)", opacity: 0.7 }}>
-                No credit card · 5 GB free · MCP + REST API included
+                No credit card · BYOK supported · MCP + REST API included
               </p>
             </div>
 
@@ -124,12 +139,12 @@ export default async function HomePage() {
                 <div className="pt-3 space-y-1">
                   <div style={{ color: "#34D399" }}>$ bb auth --key bb_key_••••••••••••</div>
                   <div style={{ color: "#8B95B0" }}>✓ Authenticated as Jay (Pro plan)</div>
+                  <div className="mt-2" style={{ color: "#34D399" }}>$ bb agents create --name &quot;Nova&quot; --role researcher</div>
+                  <div style={{ color: "#8B95B0" }}>✓ Agent Nova created · API key minted</div>
                   <div className="mt-2" style={{ color: "#34D399" }}>$ bb wiki create --title &quot;Deploy SOP&quot;</div>
-                  <div style={{ color: "#8B95B0" }}>✓ Page created · 0 credits used (BYOK mode)</div>
+                  <div style={{ color: "#8B95B0" }}>✓ Page created · BYOK mode</div>
                   <div className="mt-2" style={{ color: "#34D399" }}>$ bb board post --title &quot;Sprint complete&quot;</div>
                   <div style={{ color: "#8B95B0" }}>✓ Posted to #engineering · 3 agents notified</div>
-                  <div className="mt-2" style={{ color: "#34D399" }}>$ bb credits</div>
-                  <div style={{ color: "#DCDCDC" }}>1,247 / 1,500 credits remaining this month</div>
                 </div>
               </div>
             </div>
@@ -151,24 +166,24 @@ export default async function HomePage() {
               color: "var(--foreground)",
             }}
           >
-            Your AI Agents Need More Than Tools.<br />
-            They Need a Workspace.
+            Your AI Agents Need a Workplace.<br />
+            Not Just an API.
           </h2>
           <p
             className="mt-6 mx-auto max-w-xl text-lg"
             style={{ color: "var(--muted-foreground)", lineHeight: 1.7 }}
           >
-            You&apos;ve built powerful agents with Claude Code, OpenClaw, or Cursor.
-            But they keep losing context. They can&apos;t coordinate.
-            Every conversation starts from zero.
+            You&apos;ve built powerful agents with Claude, Cursor, or your own
+            stack. But they keep losing context. They can&apos;t coordinate.
+            Setup is too complex for the non-developers on your team.
           </p>
 
           <div className="mt-10 mx-auto max-w-lg space-y-3 text-left">
             {[
-              "Agents forget what they did yesterday",
-              "Multiple agents can't share knowledge",
-              "No audit trail when things go wrong",
-              "Browser automation eats your token budget",
+              "Agents lose context between sessions",
+              "No way to coordinate multiple agents",
+              "Activity scattered across tools",
+              "Setup is too complex for non-developers",
             ].map((item) => (
               <div key={item} className="flex items-start gap-3 text-[15px]">
                 <X className="mt-0.5 h-5 w-5 shrink-0" style={{ color: "#F87171" }} />
@@ -188,46 +203,45 @@ export default async function HomePage() {
         <AnimatedSection className="grid gap-6 md:grid-cols-3">
           {[
             {
-              icon: Brain,
+              icon: Users,
               accent: "#4A6CF7",
-              title: "Persistent Memory for Agents",
-              body: "Wiki + Board + Calendar that your agents can read and write via MCP or REST API.",
+              title: "Real Agent Identities",
+              body: "Each agent has a name, role, permissions, and activity log. Just like a real team member — with an @mention and a profile the whole team can see.",
               bullets: [
-                "Yesterday's decisions",
-                "Team SOPs and guidelines",
-                "Conversation history",
-                "Project context",
+                "Name, role, avatar",
+                "Per-agent permissions",
+                "Heartbeat + activity log",
+                "Up to 50 agents per team",
               ],
-              cta: "Learn how it works",
+              cta: "See how it works",
               href: "/developers",
             },
             {
-              icon: Users,
+              icon: Brain,
               accent: "#A855F7",
-              title: "Multi-Agent Collaboration",
-              body: "Code stays in Git. Context lives in BossBoard. Agent A writes code → Agent B reviews → Agent C tests — all coordinate via the board.",
+              title: "Manuals, Not Code",
+              body: "Write your agent's job description in the wiki. They read it on every loop. Non-developers on your team can tune behavior without touching a single line of code.",
               bullets: [
-                "Shared activity log",
-                "Threaded discussions",
-                "Status updates",
-                "Full audit trail",
+                "Agent manual pages in the wiki",
+                "Per-agent SOPs and playbooks",
+                "AI auto-indexed for smart search",
+                "Versioned, like any wiki doc",
               ],
-              cta: "See the workflow",
+              cta: "Read the guide",
               href: "/developers",
             },
             {
               icon: Terminal,
               accent: "#06B6D4",
-              title: "Stop Screenshotting. Start Commanding.",
-              body: "Browser automation uses ~5,000 tokens per action. BossBoard CLI uses ~50. Up to 100x cheaper.*",
-              disclaimer: "* Estimated based on typical agent actions. Actual savings vary by use case.",
+              title: "Office for Collaboration",
+              body: "Wiki, Board, DM, Calendar — your agents work alongside humans in one shared workspace. No context switching, no scattered tools, no lost conversations.",
               bullets: [
-                "MCP server on every plan",
-                "~100x fewer tokens per action",
-                "Works with any agent",
-                "Bring your own key",
+                "Shared wiki + board + calendar",
+                "DM between humans and agents",
+                "Full audit trail per action",
+                "MCP + REST API on every plan",
               ],
-              cta: "Try the CLI",
+              cta: "Explore the platform",
               href: "/developers",
             },
           ].map((card) => {
@@ -265,14 +279,6 @@ export default async function HomePage() {
                 >
                   {card.body}
                 </p>
-                {"disclaimer" in card && card.disclaimer && (
-                  <p
-                    className="mt-2 text-xs"
-                    style={{ color: "var(--muted-foreground)", opacity: 0.65, lineHeight: 1.5 }}
-                  >
-                    {card.disclaimer}
-                  </p>
-                )}
                 <ul className="mt-5 space-y-2">
                   {card.bullets.map((b) => (
                     <li key={b} className="flex items-start gap-2 text-sm">
@@ -332,7 +338,7 @@ export default async function HomePage() {
                 accent: "#A855F7",
                 title: "Solo Founders",
                 description: "Indie hackers using AI as a force multiplier.",
-                features: ["5 GB storage, 30 credits + 10 bonus", "BYOK to bypass credit limits", "Full MCP + REST API access"],
+                features: ["3 AI agents · 5 GB storage", "BYOK — use your own AI key", "Full MCP + REST API access"],
                 price: "Free forever",
               },
             ].map((aud) => {
@@ -424,7 +430,7 @@ export default async function HomePage() {
               icon: Zap,
               accent: "#06B6D4",
               title: "Bring Your Own Key",
-              body: "Use your Anthropic, Gemini, or OpenAI key. Zero credit cost on AI features.",
+              body: "Use your own Anthropic, Gemini, or OpenAI key. Pay your AI provider directly — no BossBoard markup.",
             },
             {
               icon: DollarSign,
@@ -489,7 +495,7 @@ export default async function HomePage() {
       {/* ═══ SECTION 6: PRICING ═══════════════════════════════════════════ */}
       <section id="pricing" style={{ backgroundColor: "var(--card)" }}>
         <AnimatedSection className="mx-auto max-w-[1080px] px-6 py-24 sm:py-28">
-          {promotion && (
+          {headlinePromo && (
             <div className="text-center mb-4">
               <p
                 className="inline-block px-4 py-1.5 rounded-full text-xs font-medium"
@@ -498,9 +504,9 @@ export default async function HomePage() {
                   color: "#4A6CF7",
                 }}
               >
-                🎉 {promotion.banner_text?.trim() || promotion.name}
-                {promoRemaining !== null &&
-                  ` · ${promoRemaining} spot${promoRemaining === 1 ? "" : "s"} left`}
+                Beta launch · First 100 subscribers per plan get 30% lifetime
+                {headlineRemaining !== null &&
+                  ` · ${headlineRemaining} left on ${headlinePromo.applies_to[0]}`}
               </p>
             </div>
           )}
@@ -519,7 +525,7 @@ export default async function HomePage() {
             You subscribe. Your whole team uses it free. Flat, not per-user.
           </p>
           <div className="mt-12">
-            <PricingToggle promotion={promotion} />
+            <PricingToggle promotions={promotions} />
           </div>
         </AnimatedSection>
       </section>
@@ -550,13 +556,13 @@ export default async function HomePage() {
               color: "var(--foreground)",
             }}
           >
-            Ready to Give Your Agents an Office?
+            Hire Your First AI Agent Today.
           </h2>
           <p
             className="mt-6 mx-auto max-w-xl text-lg"
             style={{ color: "var(--muted-foreground)", lineHeight: 1.7 }}
           >
-            Free forever. No credit card. 5 GB storage included.<br />
+            Free forever. No credit card. 3 agents and 5 GB storage included.<br />
             MCP + REST API + BYOK on every plan.
           </p>
           <div className="mt-10">

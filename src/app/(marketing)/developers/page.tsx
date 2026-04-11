@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Brain, FileText, Activity } from "lucide-react";
 import { PricingToggle } from "@/components/marketing/pricing-toggle";
-import { getActivePromotion } from "@/lib/promotions";
+import { getActivePromotionForPlan } from "@/lib/promotions";
 
 export const metadata: Metadata = {
   title: "BossBoard — API & MCP for AI Agents",
@@ -17,7 +17,16 @@ const f = "'A2Z', sans-serif";
 const m = "'JetBrains Mono', monospace";
 
 export default async function DevelopersPage() {
-  const promotion = await getActivePromotion();
+  const [starterPromo, proPromo, businessPromo] = await Promise.all([
+    getActivePromotionForPlan("starter"),
+    getActivePromotionForPlan("pro"),
+    getActivePromotionForPlan("business"),
+  ]);
+  const promotions = {
+    starter: starterPromo,
+    pro: proPromo,
+    business: businessPromo,
+  };
   return (
     <>
       {/* ── Hero ───────────────────────────────────────────────────────── */}
@@ -110,7 +119,7 @@ export default async function DevelopersPage() {
               {[
                 "Agents access only what you grant via API key scopes",
                 "Every action logged to the activity board",
-                "Cost-capped via the credit system — no surprise bills",
+                "Cost-capped via BYOK — your key, your quota, no surprises",
                 "Instant restore if anything goes wrong",
                 "Your team stays informed via the board",
               ].map((item) => (
@@ -188,7 +197,7 @@ export default async function DevelopersPage() {
             <div style={{ color: "#34D399", marginTop: "8px" }}>$ bb board post --title &quot;Agent Report&quot;</div>
             <div style={{ color: "#8B95B0" }}>&#10003; Posted to board</div>
             <div style={{ color: "#34D399", marginTop: "8px" }}>$ bb search &quot;deployment procedures&quot; --ai</div>
-            <div style={{ color: "#8B95B0" }}>&#10003; Found 3 results &middot; 1 credit used</div>
+            <div style={{ color: "#8B95B0" }}>&#10003; Found 3 results &middot; smart search</div>
           </div>
           <p className="mt-6 text-sm" style={{ color: "var(--muted-foreground)" }}>
             Your agents don&apos;t need a browser. They need a command line. Today, point any MCP client (Claude Code, Cursor, etc.) at BossBoard&apos;s MCP server — a dedicated CLI is launching soon.
@@ -335,7 +344,7 @@ export default async function DevelopersPage() {
               All plans include MCP server, REST API, and BYOK (CLI launching soon). No per-seat charges for agents — they&apos;re just team members.
             </p>
           </div>
-          <PricingToggle promotion={promotion} />
+          <PricingToggle promotions={promotions} />
         </div>
       </section>
 

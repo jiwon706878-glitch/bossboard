@@ -12,7 +12,7 @@ const faqEntries = [
   {
     keywords: ["price", "pricing", "cost", "plan", "plans", "subscription"],
     response:
-      "BossBoard offers 4 plans — all with flat team pricing (unlimited members on paid plans):\n\n\u2022 Free: $0/mo (3 members, 30 credits/mo + 10 bonus, 5 GB storage, full MCP + CLI + BYOK)\n\u2022 Starter: $19/mo (unlimited members, 500 credits/mo, 50 GB storage, 100 MB per file)\n\u2022 Pro: $49/mo (unlimited members, 1,500 credits/mo, 200 GB storage, 500 MB per file)\n\u2022 Business: $129/mo (unlimited members, 5,000 credits/mo, 1 TB storage, 1 GB per file)\n\nNo credit card required for Free!",
+      "BossBoard offers 4 plans — all with flat team pricing (unlimited members on paid plans):\n\n\u2022 Free: $0/mo (3 members, 30 credits/mo + 10 bonus, 5 GB storage, full MCP + REST API + BYOK)\n\u2022 Starter: $19/mo (unlimited members, 500 credits/mo, 50 GB storage, 100 MB per file)\n\u2022 Pro: $49/mo (unlimited members, 1,500 credits/mo, 200 GB storage, 500 MB per file)\n\u2022 Business: $129/mo (unlimited members, 5,000 credits/mo, 1 TB storage, 1 GB per file)\n\nNo credit card required for Free!",
   },
   {
     keywords: ["cancel", "refund", "unsubscribe"],
@@ -22,7 +22,7 @@ const faqEntries = [
   {
     keywords: ["free", "trial", "try"],
     response:
-      "Our free plan includes 3 team members, 30 AI credits per month (plus 10 signup bonus), 5 GB storage, and full MCP + CLI + BYOK access \u2014 no credit card required! Enough to build your first agents and see how BossBoard works.",
+      "Our free plan includes 3 team members, 30 AI credits per month (plus 10 signup bonus), 5 GB storage, and full MCP + REST API + BYOK access \u2014 no credit card required! Enough to build your first agents and see how BossBoard works.",
   },
   {
     keywords: ["credit", "credits", "generation", "generations"],

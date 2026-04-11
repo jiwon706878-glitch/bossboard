@@ -12,14 +12,6 @@ export function PricingToggle() {
 
   return (
     <div>
-      <div className="mb-8 mx-auto max-w-md rounded-lg border-2 border-primary/30 bg-primary/5 p-4 text-center">
-        <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
-          🎉 Launch Special — First 100 users
-        </p>
-        <p className="mt-1 text-xs" style={{ color: "var(--muted-foreground)" }}>
-          30% lifetime discount on all paid plans
-        </p>
-      </div>
       {/* Billing toggle */}
       <div className="mb-10 flex items-center justify-center gap-4">
         <span

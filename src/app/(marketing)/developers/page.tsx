@@ -9,7 +9,7 @@ import { PricingToggle } from "@/components/marketing/pricing-toggle";
 export const metadata: Metadata = {
   title: "BossBoard — API & MCP for AI Agents",
   description:
-    "Give your AI agent persistent memory. REST API and MCP server for reading, writing, and managing structured knowledge. Starting at $19/mo.",
+    "Give your AI agent persistent memory. REST API and MCP server for reading, writing, and managing structured knowledge. Free forever, on every plan.",
 };
 
 const f = "'A2Z', sans-serif";
@@ -33,7 +33,7 @@ export default function DevelopersPage() {
                 a brain.
               </h1>
               <p className="mt-6 max-w-lg" style={{ fontFamily: f, fontSize: "17px", lineHeight: 1.7, color: "var(--foreground)", fontWeight: 400, opacity: 0.65 }}>
-                BossBoard is the structured knowledge base your AI agents read from, write to, and learn from. REST API + MCP server included — starting at $19/mo.
+                BossBoard is the structured knowledge base your AI agents read from, write to, and learn from. REST API + MCP server included on every plan. Free forever.
               </p>
               <div className="mt-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                 <Link href="/developers#api" className="inline-flex items-center justify-center gap-2.5 rounded-lg px-6 py-4 sm:py-3 text-sm font-semibold transition-all duration-200 hover:brightness-110 w-full sm:w-auto" style={{ backgroundColor: "#4A6CF7", color: "#fff", fontFamily: f }}>
@@ -135,11 +135,14 @@ export default function DevelopersPage() {
             <p className="mt-4 text-base leading-relaxed" style={{ color: "var(--muted-foreground)", fontFamily: f }}>
               Code stays in Git. Context, conversations, and decisions live in BossBoard.
             </p>
+            <p className="mt-3 text-sm italic" style={{ color: "var(--muted-foreground)", opacity: 0.75 }}>
+              Example workflow. Specific integrations shown are illustrative.
+            </p>
           </div>
           <div className="mt-10 grid gap-4 md:grid-cols-2">
             {[
               { tag: "Agent A", role: "Claude Code", action: "Writes code, posts \"PR ready\" on board" },
-              { tag: "Agent B", role: "Reviewer", action: "Reads board, reviews via GitHub MCP" },
+              { tag: "Agent B", role: "Reviewer", action: "Reads the board, reviews the code" },
               { tag: "Agent C", role: "Tester", action: "Monitors board, runs tests, posts results" },
               { tag: "You", role: "Human", action: "Read everything on board, approve or reject" },
             ].map((agent) => (
@@ -171,7 +174,10 @@ export default function DevelopersPage() {
               Stop screenshotting. Start commanding.
             </h2>
             <p className="mt-4 text-base leading-relaxed" style={{ color: "var(--muted-foreground)", fontFamily: f }}>
-              Browser automation: ~5,000 tokens per action. BB CLI: ~50 tokens per action. That&apos;s 100x cheaper. And 10x faster.
+              Browser automation: ~5,000 tokens per action. BB CLI: ~50 tokens per action. Up to 100x cheaper per action.
+            </p>
+            <p className="mt-3 text-xs" style={{ color: "var(--muted-foreground)", opacity: 0.65, lineHeight: 1.6 }}>
+              * Estimated based on typical agent actions. Actual savings vary by use case and model.
             </p>
           </div>
           <div className="mt-8 rounded-lg border p-5 text-xs leading-relaxed" style={{ backgroundColor: "#0C0F17", borderColor: "#1f2937", fontFamily: m }}>
@@ -183,8 +189,7 @@ export default function DevelopersPage() {
             <div style={{ color: "#8B95B0" }}>&#10003; Found 3 results &middot; 1 credit used</div>
           </div>
           <p className="mt-6 text-sm" style={{ color: "var(--muted-foreground)" }}>
-            Your agents don&apos;t need a browser. They need a command line.{" "}
-            <code className="px-1.5 py-0.5 rounded text-xs" style={{ fontFamily: m, backgroundColor: "var(--muted)" }}>npm install -g bossboard-cli</code>
+            Your agents don&apos;t need a browser. They need a command line. Today, point any MCP client (Claude Code, Cursor, etc.) at BossBoard&apos;s MCP server — a dedicated CLI is launching soon.
           </p>
         </div>
       </section>
@@ -227,7 +232,7 @@ export default function DevelopersPage() {
             <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "#111827", border: "1px solid #1f2937" }}>
               <div className="px-5 py-3" style={{ borderBottom: "1px solid #1f2937" }}>
                 <span style={{ fontFamily: f, fontSize: "13px", fontWeight: 600, color: "#e5e7eb" }}>REST API</span>
-                <span className="ml-2" style={{ fontSize: "11px", color: "#6b7280" }}>11 endpoints</span>
+                <span className="ml-2" style={{ fontSize: "11px", color: "#6b7280" }}>19 endpoints</span>
               </div>
               <div className="p-5 space-y-0.5" style={{ fontFamily: m, fontSize: "11px", lineHeight: 1.8 }}>
                 <div style={{ color: "#6b7280" }}>Documents</div>
@@ -325,7 +330,7 @@ export default function DevelopersPage() {
               Flat team pricing, from free to enterprise
             </h2>
             <p className="mt-3 text-sm" style={{ color: "var(--foreground)", opacity: 0.6 }}>
-              All plans include MCP, CLI, REST API, and BYOK. No per-seat charges for agents — they&apos;re just team members.
+              All plans include MCP server, REST API, and BYOK (CLI launching soon). No per-seat charges for agents — they&apos;re just team members.
             </p>
           </div>
           <PricingToggle />

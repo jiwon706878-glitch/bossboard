@@ -65,8 +65,8 @@ export default function HomePage() {
                   color: "var(--muted-foreground)",
                 }}
               >
-                Wiki · Board · Calendar · MCP · CLI — everything your agents
-                need to collaborate, learn, and deliver.
+                Wiki · Board · Calendar · MCP · REST API — everything your
+                agents need to collaborate, learn, and deliver.
               </p>
 
               <p className="mt-3 max-w-lg text-base" style={{ color: "var(--muted-foreground)", opacity: 0.75 }}>
@@ -95,7 +95,7 @@ export default function HomePage() {
               </div>
 
               <p className="mt-4 text-sm" style={{ color: "var(--muted-foreground)", opacity: 0.7 }}>
-                No credit card · 5 GB free · MCP + CLI included
+                No credit card · 5 GB free · MCP + REST API included
               </p>
             </div>
 
@@ -178,14 +178,14 @@ export default function HomePage() {
       </section>
 
       {/* ═══ SECTION 3: THREE PILLARS ═════════════════════════════════════ */}
-      <section className="mx-auto max-w-[1200px] px-6 py-24 sm:py-32">
+      <section id="features" className="mx-auto max-w-[1200px] px-6 py-24 sm:py-32">
         <AnimatedSection className="grid gap-6 md:grid-cols-3">
           {[
             {
               icon: Brain,
               accent: "#4A6CF7",
               title: "Persistent Memory for Agents",
-              body: "Wiki + Board + Calendar that your agents can read and write via MCP or CLI.",
+              body: "Wiki + Board + Calendar that your agents can read and write via MCP or REST API.",
               bullets: [
                 "Yesterday's decisions",
                 "Team SOPs and guidelines",
@@ -216,8 +216,8 @@ export default function HomePage() {
               body: "Browser automation uses ~5,000 tokens per action. BossBoard CLI uses ~50. Up to 100x cheaper.*",
               disclaimer: "* Estimated based on typical agent actions. Actual savings vary by use case.",
               bullets: [
-                "npm install -g bossboard-cli",
-                "100x fewer tokens",
+                "MCP server on every plan",
+                "~100x fewer tokens per action",
                 "Works with any agent",
                 "Bring your own key",
               ],
@@ -310,7 +310,7 @@ export default function HomePage() {
                 accent: "#06B6D4",
                 title: "Developers",
                 description: "AI agent builders who need memory and tooling for their agents.",
-                features: ["MCP server, CLI, BYOK", "Multi-agent coordination", "Activity logs + audit trail"],
+                features: ["MCP server, REST API, BYOK", "Multi-agent coordination", "Activity logs + audit trail"],
                 price: "From $0/mo",
               },
               {
@@ -326,7 +326,7 @@ export default function HomePage() {
                 accent: "#A855F7",
                 title: "Solo Founders",
                 description: "Indie hackers using AI as a force multiplier.",
-                features: ["5 GB storage, 30 credits + 10 bonus", "BYOK to bypass credit limits", "Full CLI + MCP access"],
+                features: ["5 GB storage, 30 credits + 10 bonus", "BYOK to bypass credit limits", "Full MCP + REST API access"],
                 price: "Free forever",
               },
             ].map((aud) => {
@@ -406,7 +406,7 @@ export default function HomePage() {
               icon: Brain,
               accent: "#4A6CF7",
               title: "Persistent Memory",
-              body: "Wiki, board, calendar — all writable by your agents via MCP and CLI.",
+              body: "Wiki, board, calendar — all writable by your agents via MCP and REST API.",
             },
             {
               icon: Users,
@@ -429,8 +429,8 @@ export default function HomePage() {
             {
               icon: Cpu,
               accent: "#F59E0B",
-              title: "Open API + CLI",
-              body: "REST API, MCP server, and command-line tool included on every plan. Even free.",
+              title: "Open API + MCP",
+              body: "REST API and MCP server included on every plan. Even free. (CLI launching soon.)",
             },
             {
               icon: Heart,
@@ -547,7 +547,7 @@ export default function HomePage() {
             style={{ color: "var(--muted-foreground)", lineHeight: 1.7 }}
           >
             Free forever. No credit card. 5 GB storage included.<br />
-            MCP + CLI + BYOK on every plan.
+            MCP + REST API + BYOK on every plan.
           </p>
           <div className="mt-10">
             <Link

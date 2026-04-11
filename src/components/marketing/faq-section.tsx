@@ -12,12 +12,12 @@ const faqs = [
   {
     question: "Do I need to install anything?",
     answer:
-      "No install required for the web app — just sign up and go. For agent access, optionally install the CLI via `npm install -g bossboard-cli`, or point your MCP client (Claude Code, Cursor, etc.) to BossBoard's MCP server endpoint. Both paths work on all plans, including Free.",
+      "No install required for the web app — just sign up and go. For agent access, point your MCP client (Claude Code, Cursor, or any MCP-compatible tool) at BossBoard's MCP server endpoint, or call the REST API directly with your API key. A dedicated CLI is launching soon. Every path works on all plans, including Free.",
   },
   {
     question: "Can AI agents access BossBoard?",
     answer:
-      "Yes — that's a core feature. We provide a REST API, MCP server, and the `bossboard-cli` npm package on every plan. Each agent gets its own API key, every action is logged to the activity dashboard for a full audit trail, and agents can read/write wiki pages, post to the board, manage todos, and run searches.",
+      "Yes — that's a core feature. We provide a REST API and MCP server on every plan (a dedicated CLI is launching soon). Each agent gets its own API key, every action is logged to the activity dashboard for a full audit trail, and agents can read/write wiki pages, post to the board, manage todos, and run searches.",
   },
   {
     question: "What's BYOK (Bring Your Own Key)?",
@@ -37,7 +37,7 @@ const faqs = [
   {
     question: "What is BossBoard?",
     answer:
-      "BossBoard is an operations wiki built from the ground up for teams that work alongside AI agents. It combines a document wiki with version history, a team board with threaded discussions, a calendar with Google Calendar sync, daily checklists, and a built-in MCP server plus REST API and CLI for agent access.",
+      "BossBoard is an operations wiki built from the ground up for teams that work alongside AI agents. It combines a document wiki with version history, a team board with threaded discussions, a calendar with Google Calendar sync, daily checklists, and a built-in MCP server plus REST API for agent access.",
   },
   {
     question: "How does AI content generation work?",
@@ -47,7 +47,7 @@ const faqs = [
   {
     question: "Can I try it for free?",
     answer:
-      "Yes. The Free plan includes 3 team members, 30 AI credits per month (plus 10 bonus on signup), 5 GB storage, wiki version history, and full MCP + CLI + REST API access. No credit card required.",
+      "Yes. The Free plan includes 3 team members, 30 AI credits per month (plus 10 bonus on signup), 5 GB storage, wiki version history, and full MCP server + REST API access. No credit card required.",
   },
   {
     question: "How does Google Calendar sync work?",

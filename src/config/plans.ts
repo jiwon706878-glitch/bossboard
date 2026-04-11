@@ -41,7 +41,7 @@ export const plans: Record<PlanId, PlanConfig> = {
       "30 AI credits/month (+10 signup bonus)",
       "5 GB storage · 50 MB per file",
       "10 GB monthly downloads",
-      "MCP + CLI + REST API",
+      "MCP server + REST API",
       "BYOK (use your own key)",
       "Wiki version history",
     ],
@@ -68,8 +68,8 @@ export const plans: Record<PlanId, PlanConfig> = {
       "50 GB storage · 100 MB per file",
       "100 GB monthly downloads",
       "Everything in Free",
+      "Unlimited wiki pages",
       "Daily / weekly / monthly recurring checklists",
-      "Priority MCP + CLI support",
     ],
   },
   pro: {
@@ -97,7 +97,6 @@ export const plans: Record<PlanId, PlanConfig> = {
       "Read tracking & sign-off",
       "Agent activity dashboard with charts",
       "Folder access control (basic)",
-      "Priority support",
     ],
   },
   business: {
@@ -124,7 +123,6 @@ export const plans: Record<PlanId, PlanConfig> = {
       "Everything in Pro",
       "Folder access control (advanced, per-role + API key scopes)",
       "Onboarding paths with progress tracking",
-      "Dedicated support",
     ],
   },
 };

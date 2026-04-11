@@ -54,7 +54,7 @@ Key features:
 - Operations Dashboard: Monitor team compliance, get AI-driven insights
 - SOP Wiki: Searchable library of all your procedures
 
-Plans (all include MCP, CLI, REST API, BYOK): Free ($0/mo, 3 members, 30 credits/mo + 10 bonus, 5 GB), Starter ($19/mo, unlimited members, 500 credits/mo, 50 GB), Pro ($49/mo, unlimited members, 1,500 credits/mo, 200 GB), Business ($129/mo, unlimited members, 5,000 credits/mo, 1 TB).
+Plans (all include MCP server, REST API, BYOK; dedicated CLI launching soon): Free ($0/mo, 3 members, 30 credits/mo + 10 bonus, 5 GB), Starter ($19/mo, unlimited members, 500 credits/mo, 50 GB), Pro ($49/mo, unlimited members, 1,500 credits/mo, 200 GB), Business ($129/mo, unlimited members, 5,000 credits/mo, 1 TB).
 Credit cost: light actions (AI question, search, OCR) = 1 credit; standard (SOP generation, checklist) = 3 credits; heavy (onboarding templates, monthly report) = 5 credits. Credit packs never expire (300/$15, 500/$20, 1,000/$35).
 
 Answer questions helpfully and concisely. If asked about features that don't exist, say they're on the roadmap.`,

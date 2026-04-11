@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import {
   fetchModelsForProvider,
+  sortModels,
   type ProviderId,
   type ProviderModel,
 } from "@/lib/ai/fetch-models";
@@ -91,12 +92,18 @@ export async function GET() {
     allModels.push(...models);
   }
 
+  // Sort once on the way into the cache so every downstream consumer
+  // gets the same order without re-sorting. Group by provider, then
+  // newest-first by API `created_at`, then natural ID fallback —
+  // see sortModels() docs.
+  const sorted = sortModels(allModels);
+
   cache.set(user.id, {
-    models: allModels,
+    models: sorted,
     expiresAt: Date.now() + TTL_MS,
   });
 
-  return NextResponse.json({ models: allModels, cached: false });
+  return NextResponse.json({ models: sorted, cached: false });
 }
 
 /**

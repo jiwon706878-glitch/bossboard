@@ -193,28 +193,103 @@ async function safeText(res: Response): Promise<string> {
 }
 
 /**
+ * Parse a Claude model ID into family + version. Handles both the
+ * post-2025 format (`claude-opus-4-5-20251101`) and the pre-2025
+ * format (`claude-3-5-sonnet-20241022`) where family + version are
+ * swapped. Returns null if the ID doesn't match either shape so the
+ * caller can fall back to the default sort.
+ *
+ * We need this because:
+ *   (a) Anthropic's API says `created_at` may be set to an epoch
+ *       value for models with an unknown release date, which makes
+ *       the timestamp path unreliable for older models.
+ *   (b) A natural string comparison of `claude-opus-4-6` vs
+ *       `claude-sonnet-4-6` puts sonnet first because 's' > 'o'.
+ *       Family priority (opus > sonnet > haiku) is a real product
+ *       requirement that natural sort can never express.
+ */
+interface ClaudeParsed {
+  family: "opus" | "sonnet" | "haiku";
+  major: number;
+  minor: number;
+}
+
+const FAMILY_RANK: Record<ClaudeParsed["family"], number> = {
+  opus: 3,
+  sonnet: 2,
+  haiku: 1,
+};
+
+function parseClaudeModel(id: string): ClaudeParsed | null {
+  // New format: claude-opus-4-5 or claude-opus-4-5-20251101
+  let m = id.match(/^claude-(opus|sonnet|haiku)-(\d+)-(\d+)/i);
+  if (m) {
+    return {
+      family: m[1].toLowerCase() as ClaudeParsed["family"],
+      major: parseInt(m[2], 10),
+      minor: parseInt(m[3], 10),
+    };
+  }
+  // Legacy format: claude-3-5-sonnet-20241022
+  m = id.match(/^claude-(\d+)-(\d+)-(opus|sonnet|haiku)/i);
+  if (m) {
+    return {
+      family: m[3].toLowerCase() as ClaudeParsed["family"],
+      major: parseInt(m[1], 10),
+      minor: parseInt(m[2], 10),
+    };
+  }
+  return null;
+}
+
+/**
  * Sort a heterogeneous model list by provider, then newest-first
- * within provider. Zero hardcoded model names or family priorities
- * — when a provider releases a new model, its `created_at` lands it
- * at the top automatically. Google (no timestamps) falls back to
- * natural ID ordering so "gemini-3-1-pro" ranks above "gemini-2-5-pro"
- * without us having to update a lookup table.
+ * within provider.
+ *
+ * Ordering rules (in priority order):
+ *   1. Group by provider so dropdowns can render <optgroup>s.
+ *   2. For Claude: if BOTH IDs parse as a Claude model, sort by
+ *      family priority (opus > sonnet > haiku), then major version
+ *      desc, then minor version desc. This rule beats the timestamp
+ *      path because Anthropic sometimes stamps older models with an
+ *      epoch `created_at` and we don't want that to scramble order.
+ *   3. For OpenAI/Grok: `created_at` (Unix ms) desc when both rows
+ *      have a non-zero value. This is the main path — when a new
+ *      model ships, its fresh timestamp lands it at the top.
+ *   4. Fallback: locale-aware numeric ID descending, so
+ *      "gemini-3-1-pro" > "gemini-2-5-pro" and the sort never
+ *      crashes on weird shapes.
  */
 export function sortModels(models: ProviderModel[]): ProviderModel[] {
   return [...models].sort((a, b) => {
-    // Group by provider first so dropdowns can render <optgroup>s.
     if (a.provider !== b.provider) {
       return a.provider.localeCompare(b.provider);
     }
 
-    // Within a provider: prefer the API-provided timestamp when
-    // both rows have one. Newest first.
+    // Anthropic-specific: family priority from parsed ID.
+    if (a.provider === "anthropic") {
+      const pa = parseClaudeModel(a.id);
+      const pb = parseClaudeModel(b.id);
+      if (pa && pb) {
+        const familyDiff = FAMILY_RANK[pb.family] - FAMILY_RANK[pa.family];
+        if (familyDiff !== 0) return familyDiff;
+        if (pa.major !== pb.major) return pb.major - pa.major;
+        if (pa.minor !== pb.minor) return pb.minor - pa.minor;
+        // Same family + version — fall through to ID sort for the
+        // date suffix (e.g. -20251101 > -20250701).
+      }
+      // If only one parses, put the parsed one first; the unparsed
+      // one is probably an experimental or test alias.
+      if (pa && !pb) return -1;
+      if (!pa && pb) return 1;
+    }
+
+    // Timestamp path (primary for OpenAI / Grok).
     if (a.created_at && b.created_at && a.created_at !== b.created_at) {
       return b.created_at - a.created_at;
     }
 
-    // Fallback: natural (locale-aware numeric) ID sort descending.
-    // "claude-opus-4-6" > "claude-opus-4-5", "gemini-3-1" > "gemini-2-5".
+    // Fallback: locale-aware numeric ID descending.
     return b.id.localeCompare(a.id, undefined, {
       numeric: true,
       sensitivity: "base",

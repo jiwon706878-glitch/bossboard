@@ -94,9 +94,28 @@ export async function GET() {
 
   // Sort once on the way into the cache so every downstream consumer
   // gets the same order without re-sorting. Group by provider, then
-  // newest-first by API `created_at`, then natural ID fallback —
+  // Claude family priority / API timestamps / natural ID fallback —
   // see sortModels() docs.
   const sorted = sortModels(allModels);
+
+  // Debug: one-shot structured log so Jay can verify ordering in
+  // Vercel logs / dashboard. Truncated to first 10 per provider so
+  // the line stays readable. Safe to leave in production — no key
+  // material is logged, just ids + timestamps.
+  const debugSummary = sorted.slice(0, 20).map((m) => ({
+    provider: m.provider,
+    id: m.id,
+    created_at: m.created_at,
+    created_at_iso: m.created_at
+      ? new Date(m.created_at).toISOString()
+      : null,
+  }));
+  console.log(
+    "[available-models] user=%s total=%d sample=%s",
+    user.id,
+    sorted.length,
+    JSON.stringify(debugSummary)
+  );
 
   cache.set(user.id, {
     models: sorted,

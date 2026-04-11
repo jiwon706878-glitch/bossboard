@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Bot, ArrowRight } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
@@ -21,6 +23,7 @@ import { GoogleCalendarCard } from "@/components/settings/google-calendar-card";
 import { ThemeCard } from "@/components/settings/theme-card";
 import { DeveloperModeCard } from "@/components/settings/developer-mode-card";
 import { StorageUsageCard } from "@/components/settings/storage-usage-card";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface NotificationSettings {
   [key: string]: boolean | undefined;
@@ -181,6 +184,11 @@ export default function SettingsPage() {
         <EmailChangeCard />
       </div>
 
+      {/* Card 2b: AI Agents — link to dedicated page */}
+      <div className="animate-stagger-in" style={{ animationDelay: "90ms" }}>
+        <AgentsLinkCard />
+      </div>
+
       {/* Card 3: Business — admin only */}
       {(!roleLoaded || isAdmin()) && <div className="animate-stagger-in" style={{ animationDelay: "120ms" }}><BusinessCard userId={userId!} initialName={currentBusiness?.name ?? ""} /></div>}
 
@@ -251,5 +259,31 @@ export default function SettingsPage() {
       {/* Card 9: BossBoard API Keys (developer mode + admin only) */}
       {(!roleLoaded || isAdmin()) && displayDevMode && <div className="animate-stagger-in" style={{ animationDelay: "570ms" }}><ApiKeysSection /></div>}
     </div>
+  );
+}
+
+// ─── Agents link card ──────────────────────────────────────────────────────
+// Small card that deep-links to /dashboard/settings/agents. The full
+// agent management UI lives on its own page because it has modals,
+// one-time secrets, and its own lifecycle — embedding it inline with
+// the other settings cards would bloat this page.
+function AgentsLinkCard() {
+  return (
+    <Link href="/dashboard/settings/agents" className="block">
+      <Card className="transition-colors hover:border-primary/50">
+        <CardContent className="py-4 flex items-center gap-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10">
+            <Bot className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold">AI Agents</h3>
+            <p className="text-sm text-muted-foreground">
+              Hire, edit, and monitor the AI agents on your team.
+            </p>
+          </div>
+          <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+        </CardContent>
+      </Card>
+    </Link>
   );
 }

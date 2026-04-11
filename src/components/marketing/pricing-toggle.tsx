@@ -4,22 +4,17 @@ import { useState } from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { plans, type PlanId } from "@/config/plans";
+import type { Promotion } from "@/lib/promotions";
 
 const planOrder: PlanId[] = ["free", "starter", "pro", "business"];
 
-interface LaunchDiscountProps {
-  active: boolean;
-  percent: number;
-}
-
 export function PricingToggle({
-  launchDiscount,
+  promotion,
 }: {
-  launchDiscount?: LaunchDiscountProps;
+  promotion?: Promotion | null;
 } = {}) {
   const [annual, setAnnual] = useState(false);
-  const discountActive = launchDiscount?.active ?? false;
-  const discountPercent = launchDiscount?.percent ?? 30;
+  const promoActive = !!promotion;
 
   return (
     <div>
@@ -71,11 +66,30 @@ export function PricingToggle({
         {planOrder.map((planId) => {
           const plan = plans[planId];
           const basePrice = annual ? plan.annualPrice : plan.monthlyPrice;
-          // Apply launch discount only to paid plans while active.
-          const applyDiscount = discountActive && basePrice > 0;
-          const price = applyDiscount
-            ? Math.round(basePrice * (1 - discountPercent / 100))
-            : basePrice;
+          // Only paid plans covered by the promo get a discount.
+          const planCovered =
+            promoActive &&
+            promotion!.applies_to.includes(planId) &&
+            basePrice > 0;
+          const applyDiscount = planCovered;
+          let price = basePrice;
+          if (applyDiscount) {
+            if (promotion!.discount_type === "percent") {
+              price = Math.round(
+                basePrice * (1 - promotion!.discount_value / 100)
+              );
+            } else {
+              price = Math.max(
+                0,
+                Math.round(basePrice - promotion!.discount_value)
+              );
+            }
+          }
+          const discountLabel = applyDiscount
+            ? promotion!.discount_type === "percent"
+              ? `−${promotion!.discount_value}%`
+              : `−$${promotion!.discount_value}`
+            : "";
           const isRecommended = planId === "starter";
 
           return (
@@ -135,7 +149,7 @@ export function PricingToggle({
                         className="ml-2 font-semibold"
                         style={{ color: "#34D399" }}
                       >
-                        −{discountPercent}% launch
+                        {discountLabel}
                       </span>
                     </div>
                   )}

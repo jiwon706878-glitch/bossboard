@@ -6,16 +6,17 @@ import { X } from "lucide-react";
 const LS_KEY = "bb_launch_banner_dismissed";
 
 interface LaunchBannerClientProps {
-  remaining: number;
+  text: string;
+  remaining: number | null;
 }
 
 /**
  * Client half of the launch banner. Handles per-browser dismissal
  * via localStorage. The parent server component (LaunchBanner)
- * fetches the discount state and only renders this when the promo
- * is still active, so there is nothing to check here beyond dismissal.
+ * fetches the active promotion and only renders this when one is
+ * live, so this component has nothing to check beyond dismissal.
  */
-export function LaunchBannerClient({ remaining }: LaunchBannerClientProps) {
+export function LaunchBannerClient({ text, remaining }: LaunchBannerClientProps) {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -30,6 +31,11 @@ export function LaunchBannerClient({ remaining }: LaunchBannerClientProps) {
 
   if (!show) return null;
 
+  const remainingLabel =
+    remaining !== null
+      ? ` · ${remaining} spot${remaining === 1 ? "" : "s"} left`
+      : "";
+
   return (
     <div
       className="relative px-4 py-2.5 text-center text-sm text-white"
@@ -38,8 +44,8 @@ export function LaunchBannerClient({ remaining }: LaunchBannerClientProps) {
       }}
     >
       <span className="font-medium">
-        🎉 Launch Special · {remaining} spot{remaining === 1 ? "" : "s"} left
-        {" "}— 30% lifetime discount on all paid plans{" "}
+        🎉 {text}
+        {remainingLabel}{" "}
       </span>
       <a
         href="/#pricing"

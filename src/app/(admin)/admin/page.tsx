@@ -1,24 +1,22 @@
+import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, DollarSign, Sparkles, Building2, MessageSquare } from "lucide-react";
+import { Users, DollarSign, Sparkles, Building2, MessageSquare, Tag } from "lucide-react";
 import { plans } from "@/config/plans";
 import { AdminPageTitle } from "@/components/admin/admin-page-title";
-import {
-  getLaunchDiscountState,
-  LAUNCH_DISCOUNT_LIMIT,
-} from "@/lib/launch-discount";
+import { getActivePromotion } from "@/lib/promotions";
 
 export default async function AdminOverviewPage() {
   const supabase = createAdminClient();
 
-  const [profilesRes, businessesRes, usageRes, subsRes, feedbackRes, unreadFeedbackRes, launchDiscount] = await Promise.all([
+  const [profilesRes, businessesRes, usageRes, subsRes, feedbackRes, unreadFeedbackRes, activePromo] = await Promise.all([
     supabase.from("profiles").select("id, plan_id, created_at", { count: "exact" }),
     supabase.from("businesses").select("id", { count: "exact", head: true }),
     supabase.from("ai_usage").select("credits_used"),
     supabase.from("subscriptions").select("plan_id, status").eq("status", "active"),
     supabase.from("feedback").select("id", { count: "exact", head: true }),
     supabase.from("feedback").select("id", { count: "exact", head: true }).eq("read", false),
-    getLaunchDiscountState(),
+    getActivePromotion(),
   ]);
 
   const totalUsers = profilesRes.count ?? 0;
@@ -78,48 +76,71 @@ export default async function AdminOverviewPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>Launch Discount</span>
-            <span className="text-xs font-normal text-muted-foreground">
-              {launchDiscount.active ? "🟢 Active" : "🔴 Ended"}
+            <span className="flex items-center gap-2">
+              <Tag className="h-4 w-4" /> Active Promotion
             </span>
+            <Link
+              href="/admin/promotions"
+              className="text-xs font-normal text-muted-foreground hover:text-foreground underline"
+            >
+              Manage →
+            </Link>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {launchDiscount.active ? (
+          {activePromo ? (
             <>
               <div className="flex items-baseline justify-between">
-                <span className="text-3xl font-bold">
-                  {launchDiscount.count}
-                  <span className="text-base text-muted-foreground">
-                    {" "}/ {LAUNCH_DISCOUNT_LIMIT}
-                  </span>
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  {launchDiscount.remaining} spot
-                  {launchDiscount.remaining === 1 ? "" : "s"} remaining
+                <span className="text-lg font-semibold">{activePromo.name}</span>
+                <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                  {activePromo.discount_type === "percent"
+                    ? `${activePromo.discount_value}% off`
+                    : `$${activePromo.discount_value} off`}
                 </span>
               </div>
-              <div className="mt-3 h-2 rounded-full bg-muted">
-                <div
-                  className="h-2 rounded-full bg-primary transition-all"
-                  style={{
-                    width: `${Math.min(100, (launchDiscount.count / LAUNCH_DISCOUNT_LIMIT) * 100)}%`,
-                  }}
-                />
-              </div>
-            </>
-          ) : (
-            <div>
-              <p className="text-sm">
-                {LAUNCH_DISCOUNT_LIMIT} users claimed the 30% lifetime discount.
-              </p>
-              {launchDiscount.expiredAt && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Ended on{" "}
-                  {new Date(launchDiscount.expiredAt).toLocaleDateString()}
+              {activePromo.max_uses !== null && (
+                <>
+                  <div className="mt-2 flex items-baseline justify-between text-sm">
+                    <span className="font-mono">
+                      {activePromo.current_uses}
+                      <span className="text-muted-foreground">
+                        {" "}/ {activePromo.max_uses}
+                      </span>
+                    </span>
+                    <span className="text-muted-foreground">
+                      {Math.max(
+                        0,
+                        activePromo.max_uses - activePromo.current_uses
+                      )}{" "}
+                      remaining
+                    </span>
+                  </div>
+                  <div className="mt-2 h-2 rounded-full bg-muted">
+                    <div
+                      className="h-2 rounded-full bg-primary transition-all"
+                      style={{
+                        width: `${Math.min(100, (activePromo.current_uses / activePromo.max_uses) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+              {activePromo.max_uses === null && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Unlimited uses · {activePromo.current_uses} redeemed
                 </p>
               )}
-            </div>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No active promotion.{" "}
+              <Link
+                href="/admin/promotions"
+                className="text-primary underline"
+              >
+                Create one →
+              </Link>
+            </p>
           )}
         </CardContent>
       </Card>

@@ -6,10 +6,7 @@ import { PricingToggle } from "@/components/marketing/pricing-toggle";
 import { FaqSection } from "@/components/marketing/faq-section";
 import { AnimatedSection } from "@/components/marketing/animated-section";
 import { HeroIntro } from "@/components/marketing/hero-intro";
-import {
-  getLaunchDiscountState,
-  LAUNCH_DISCOUNT_PERCENT,
-} from "@/lib/launch-discount";
+import { getActivePromotion } from "@/lib/promotions";
 import {
   ArrowRight,
   Brain,
@@ -28,7 +25,11 @@ import {
 /* ─── Page ────────────────────────────────────────────────────────────────── */
 
 export default async function HomePage() {
-  const launchDiscount = await getLaunchDiscountState();
+  const promotion = await getActivePromotion();
+  const promoRemaining =
+    promotion && promotion.max_uses !== null
+      ? Math.max(0, promotion.max_uses - promotion.current_uses)
+      : null;
   return (
     <>
       {/* ═══ HERO ══════════════════════════════════════════════════════════ */}
@@ -488,7 +489,7 @@ export default async function HomePage() {
       {/* ═══ SECTION 6: PRICING ═══════════════════════════════════════════ */}
       <section id="pricing" style={{ backgroundColor: "var(--card)" }}>
         <AnimatedSection className="mx-auto max-w-[1080px] px-6 py-24 sm:py-28">
-          {launchDiscount.active && (
+          {promotion && (
             <div className="text-center mb-4">
               <p
                 className="inline-block px-4 py-1.5 rounded-full text-xs font-medium"
@@ -497,9 +498,9 @@ export default async function HomePage() {
                   color: "#4A6CF7",
                 }}
               >
-                🎉 Launch Special · {launchDiscount.remaining} spot
-                {launchDiscount.remaining === 1 ? "" : "s"} left —{" "}
-                {LAUNCH_DISCOUNT_PERCENT}% lifetime discount
+                🎉 {promotion.banner_text?.trim() || promotion.name}
+                {promoRemaining !== null &&
+                  ` · ${promoRemaining} spot${promoRemaining === 1 ? "" : "s"} left`}
               </p>
             </div>
           )}
@@ -518,12 +519,7 @@ export default async function HomePage() {
             You subscribe. Your whole team uses it free. Flat, not per-user.
           </p>
           <div className="mt-12">
-            <PricingToggle
-              launchDiscount={{
-                active: launchDiscount.active,
-                percent: LAUNCH_DISCOUNT_PERCENT,
-              }}
-            />
+            <PricingToggle promotion={promotion} />
           </div>
         </AnimatedSection>
       </section>

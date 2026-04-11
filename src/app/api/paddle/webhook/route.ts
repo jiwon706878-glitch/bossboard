@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { Webhooks } from "@paddle/paddle-node-sdk";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPlanByPaddlePriceId } from "@/config/plans";
-import { incrementPaidUserCount } from "@/lib/launch-discount";
+import {
+  getActivePromotion,
+  incrementPromotionUses,
+} from "@/lib/promotions";
 
 // Paddle sends webhooks as POST with JSON body + Paddle-Signature header
 export async function POST(req: Request) {
@@ -78,11 +81,16 @@ export async function POST(req: Request) {
         .update({ plan_id: plan?.id || "pro" })
         .eq("id", userId);
 
-      // First paid subscription for this user → bump launch counter.
-      // This also calls revalidateTag('launch-discount') so the banner
-      // and pricing cards regenerate on the next request.
+      // First paid subscription for this user → bump the active
+      // promotion's counter (if any). The promotions RPC flips
+      // is_active false once max_uses is reached and the helper
+      // calls revalidateTag('promotions') so the banner and pricing
+      // cards regenerate on the next request.
       if (!existingSub && event.event_type === "subscription.created") {
-        await incrementPaidUserCount();
+        const promo = await getActivePromotion();
+        if (promo && promo.max_uses !== null) {
+          await incrementPromotionUses(promo.id);
+        }
       }
 
       break;

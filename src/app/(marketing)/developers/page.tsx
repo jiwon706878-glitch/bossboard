@@ -5,10 +5,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Brain, FileText, Activity } from "lucide-react";
 import { PricingToggle } from "@/components/marketing/pricing-toggle";
-import {
-  getLaunchDiscountState,
-  LAUNCH_DISCOUNT_PERCENT,
-} from "@/lib/launch-discount";
+import { getActivePromotion } from "@/lib/promotions";
 
 export const metadata: Metadata = {
   title: "BossBoard — API & MCP for AI Agents",
@@ -20,7 +17,7 @@ const f = "'A2Z', sans-serif";
 const m = "'JetBrains Mono', monospace";
 
 export default async function DevelopersPage() {
-  const launchDiscount = await getLaunchDiscountState();
+  const promotion = await getActivePromotion();
   return (
     <>
       {/* ── Hero ───────────────────────────────────────────────────────── */}
@@ -338,12 +335,7 @@ export default async function DevelopersPage() {
               All plans include MCP server, REST API, and BYOK (CLI launching soon). No per-seat charges for agents — they&apos;re just team members.
             </p>
           </div>
-          <PricingToggle
-            launchDiscount={{
-              active: launchDiscount.active,
-              percent: LAUNCH_DISCOUNT_PERCENT,
-            }}
-          />
+          <PricingToggle promotion={promotion} />
         </div>
       </section>
 

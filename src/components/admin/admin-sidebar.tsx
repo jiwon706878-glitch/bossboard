@@ -16,6 +16,7 @@ import {
   LogOut,
   PieChart,
   TrendingUp,
+  Tag,
 } from "lucide-react";
 import { useAdminLang } from "@/lib/admin-i18n";
 import { toast } from "sonner";
@@ -29,6 +30,7 @@ const linkConfigs = [
   { href: "/admin/usage", labelKey: "ai_usage" as const, icon: BarChart3 },
   { href: "/admin/analytics", labelKey: "analytics" as const, icon: PieChart },
   { href: "/admin/costs", labelKey: "costs" as const, icon: TrendingUp },
+  { href: "/admin/promotions", labelKey: "promotions" as const, icon: Tag },
   { href: "/admin/feedback", labelKey: "feedback" as const, icon: MessageSquare },
 ];
 

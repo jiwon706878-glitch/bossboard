@@ -4,11 +4,12 @@ export const revalidate = 3600;
 import Link from "next/link";
 import { PricingToggle } from "@/components/marketing/pricing-toggle";
 import { FaqSection } from "@/components/marketing/faq-section";
+import { AnimatedSection } from "@/components/marketing/animated-section";
+import { HeroIntro } from "@/components/marketing/hero-intro";
 import {
   ArrowRight,
   Brain,
   Users,
-  Terminal,
   Code,
   Rocket,
   Check,
@@ -17,6 +18,7 @@ import {
   DollarSign,
   Cpu,
   Heart,
+  Terminal,
 } from "lucide-react";
 
 /* ─── Page ────────────────────────────────────────────────────────────────── */
@@ -36,6 +38,7 @@ export default function HomePage() {
           }}
         />
         <div className="relative mx-auto max-w-[1200px] px-6 pt-20 pb-20 sm:pt-24 sm:pb-24 lg:pt-28 lg:pb-28">
+          <HeroIntro>
           <div className="grid gap-12 lg:grid-cols-[1.1fr_1fr] lg:items-center">
             {/* ── Left: text ── */}
             <div>
@@ -125,12 +128,13 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+          </HeroIntro>
         </div>
       </section>
 
       {/* ═══ SECTION 2: THE PROBLEM ═══════════════════════════════════════ */}
       <section style={{ backgroundColor: "var(--card)" }}>
-        <div className="mx-auto max-w-[900px] px-6 py-24 text-center">
+        <AnimatedSection className="mx-auto max-w-[900px] px-6 py-24 text-center">
           <h2
             className="tracking-tight text-balance"
             style={{
@@ -170,12 +174,12 @@ export default function HomePage() {
           <p className="mt-10 text-base font-medium" style={{ color: "#4A6CF7" }}>
             There&apos;s a better way. ↓
           </p>
-        </div>
+        </AnimatedSection>
       </section>
 
       {/* ═══ SECTION 3: THREE PILLARS ═════════════════════════════════════ */}
       <section className="mx-auto max-w-[1200px] px-6 py-24 sm:py-32">
-        <div className="grid gap-6 md:grid-cols-3">
+        <AnimatedSection className="grid gap-6 md:grid-cols-3">
           {[
             {
               icon: Brain,
@@ -209,7 +213,8 @@ export default function HomePage() {
               icon: Terminal,
               accent: "#06B6D4",
               title: "Stop Screenshotting. Start Commanding.",
-              body: "Browser automation uses ~5,000 tokens per action. BossBoard CLI uses ~50. 100x cheaper, 10x faster.",
+              body: "Browser automation uses ~5,000 tokens per action. BossBoard CLI uses ~50. Up to 100x cheaper.*",
+              disclaimer: "* Estimated based on typical agent actions. Actual savings vary by use case.",
               bullets: [
                 "npm install -g bossboard-cli",
                 "100x fewer tokens",
@@ -254,6 +259,14 @@ export default function HomePage() {
                 >
                   {card.body}
                 </p>
+                {"disclaimer" in card && card.disclaimer && (
+                  <p
+                    className="mt-2 text-xs"
+                    style={{ color: "var(--muted-foreground)", opacity: 0.65, lineHeight: 1.5 }}
+                  >
+                    {card.disclaimer}
+                  </p>
+                )}
                 <ul className="mt-5 space-y-2">
                   {card.bullets.map((b) => (
                     <li key={b} className="flex items-start gap-2 text-sm">
@@ -272,12 +285,12 @@ export default function HomePage() {
               </div>
             );
           })}
-        </div>
+        </AnimatedSection>
       </section>
 
       {/* ═══ SECTION 4: THREE AUDIENCES ═══════════════════════════════════ */}
       <section style={{ backgroundColor: "var(--card)" }}>
-        <div className="mx-auto max-w-[1200px] px-6 py-24 sm:py-28">
+        <AnimatedSection className="mx-auto max-w-[1200px] px-6 py-24 sm:py-28">
           <h2
             className="text-center tracking-tight text-balance"
             style={{
@@ -321,7 +334,7 @@ export default function HomePage() {
               return (
                 <div
                   key={aud.title}
-                  className="rounded-xl border p-8"
+                  className="rounded-xl border p-8 h-full flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
                   style={{
                     backgroundColor: "var(--background)",
                     borderColor: "var(--border)",
@@ -351,7 +364,7 @@ export default function HomePage() {
                     ))}
                   </ul>
                   <p
-                    className="mt-6 text-sm font-medium"
+                    className="mt-auto pt-6 text-sm font-medium"
                     style={{ color: aud.accent }}
                   >
                     {aud.price}
@@ -360,11 +373,12 @@ export default function HomePage() {
               );
             })}
           </div>
-        </div>
+        </AnimatedSection>
       </section>
 
       {/* ═══ SECTION 5: WHY BOSSBOARD? ════════════════════════════════════ */}
       <section className="mx-auto max-w-[1200px] px-6 py-24 sm:py-28">
+        <AnimatedSection>
         <div className="max-w-2xl mx-auto text-center">
           <h2
             className="tracking-tight text-balance"
@@ -463,11 +477,12 @@ export default function HomePage() {
             );
           })}
         </div>
+        </AnimatedSection>
       </section>
 
       {/* ═══ SECTION 6: PRICING ═══════════════════════════════════════════ */}
       <section id="pricing" style={{ backgroundColor: "var(--card)" }}>
-        <div className="mx-auto max-w-[1080px] px-6 py-24 sm:py-28">
+        <AnimatedSection className="mx-auto max-w-[1080px] px-6 py-24 sm:py-28">
           <div className="text-center mb-4">
             <p
               className="inline-block px-4 py-1.5 rounded-full text-xs font-medium"
@@ -496,11 +511,13 @@ export default function HomePage() {
           <div className="mt-12">
             <PricingToggle />
           </div>
-        </div>
+        </AnimatedSection>
       </section>
 
       {/* ═══ SECTION 7: FAQ ═══════════════════════════════════════════════ */}
-      <FaqSection />
+      <AnimatedSection>
+        <FaqSection />
+      </AnimatedSection>
 
       {/* ═══ SECTION 8: FINAL CTA ═════════════════════════════════════════ */}
       <section className="relative overflow-hidden">
@@ -512,7 +529,7 @@ export default function HomePage() {
             background: "radial-gradient(ellipse at center, rgba(74,108,247,0.1) 0%, transparent 70%)",
           }}
         />
-        <div className="relative mx-auto max-w-[900px] px-6 py-32 text-center">
+        <AnimatedSection className="relative mx-auto max-w-[900px] px-6 py-32 text-center">
           <h2
             className="tracking-tight text-balance"
             style={{
@@ -547,7 +564,7 @@ export default function HomePage() {
               jay@mybossboard.com
             </a>
           </p>
-        </div>
+        </AnimatedSection>
       </section>
     </>
   );

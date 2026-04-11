@@ -253,8 +253,11 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Card 8: External API Keys (developer mode + admin only) */}
-      {(!roleLoaded || isAdmin()) && displayDevMode && <div className="animate-stagger-in" style={{ animationDelay: "510ms" }}><ExternalApiKeysSection /></div>}
+      {/* Card 8: External API Keys — admin only.
+          Previously gated behind developer mode, but BB v2.0 makes
+          BYOK AI keys mandatory for creating agents, so every admin
+          needs access to this card regardless of dev mode. */}
+      {(!roleLoaded || isAdmin()) && <div id="external-api-keys" className="animate-stagger-in scroll-mt-20" style={{ animationDelay: "510ms" }}><ExternalApiKeysSection /></div>}
 
       {/* Card 9: BossBoard API Keys (developer mode + admin only) */}
       {(!roleLoaded || isAdmin()) && displayDevMode && <div className="animate-stagger-in" style={{ animationDelay: "570ms" }}><ApiKeysSection /></div>}

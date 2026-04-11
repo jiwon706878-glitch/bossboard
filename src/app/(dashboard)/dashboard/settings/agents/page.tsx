@@ -32,11 +32,22 @@ import {
   Bot,
   ArrowLeft,
   Check,
+  IdCard,
+  Zap,
+  RefreshCw,
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 type AgentStatus = "working" | "resting" | "standby" | "offline";
+
+type ProviderId = "anthropic" | "google" | "openai" | "grok";
+
+interface ProviderModel {
+  id: string;
+  name: string;
+  provider: ProviderId;
+}
 
 interface AgentRow {
   id: string;
@@ -62,6 +73,16 @@ interface WikiOption {
   id: string;
   title: string;
 }
+
+// Display label for grouped dropdown headers. Kept here so the
+// dropdown doesn't accidentally show raw provider IDs ("grok" →
+// "Grok (xAI)").
+const PROVIDER_LABELS: Record<ProviderId, string> = {
+  anthropic: "Anthropic",
+  google: "Google Gemini",
+  openai: "OpenAI",
+  grok: "Grok (xAI)",
+};
 
 const OFFLINE_THRESHOLD_MS = 5 * 60 * 1000;
 
@@ -126,6 +147,12 @@ export default function AgentsSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [wikiOptions, setWikiOptions] = useState<WikiOption[]>([]);
 
+  // Live model discovery state. Fetched on mount so both Create and
+  // Edit modals can receive the same list without duplicate calls.
+  // The server-side route caches per user for 24h.
+  const [availableModels, setAvailableModels] = useState<ProviderModel[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
+
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<AgentRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AgentRow | null>(null);
@@ -150,6 +177,41 @@ export default function AgentsSettingsPage() {
   useEffect(() => {
     loadAgents();
   }, [loadAgents]);
+
+  const loadModels = useCallback(async (forceRefresh = false) => {
+    setLoadingModels(true);
+    // Run the cache-bust POST in its own try so a failure there
+    // doesn't prevent the follow-up GET from attempting to read
+    // whatever cached or fresh data is available. Worst case: the
+    // refresh doesn't actually refresh, but the user still sees
+    // their current model list.
+    if (forceRefresh) {
+      try {
+        await fetch("/api/ai/available-models", { method: "POST" });
+      } catch {
+        // Ignore — fall through to the GET.
+      }
+    }
+    try {
+      const res = await fetch("/api/ai/available-models", {
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        setAvailableModels([]);
+        return;
+      }
+      const data = await res.json();
+      setAvailableModels((data.models ?? []) as ProviderModel[]);
+    } catch {
+      setAvailableModels([]);
+    } finally {
+      setLoadingModels(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadModels();
+  }, [loadModels]);
 
   // Load wiki pages for the "manual" dropdown — filtered to the current
   // business, non-deleted. Uses the Supabase client directly since it's
@@ -208,7 +270,13 @@ export default function AgentsSettingsPage() {
           )}
         </div>
         <Button
-          onClick={() => setCreateOpen(true)}
+          onClick={() => {
+            // Force-refresh the model list so a user who just added a
+            // provider key in settings sees the new models without
+            // waiting for the 24h cache to expire.
+            loadModels(true);
+            setCreateOpen(true);
+          }}
           disabled={atLimit}
           className="gap-2 w-full sm:w-auto"
         >
@@ -293,6 +361,8 @@ export default function AgentsSettingsPage() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         wikiOptions={wikiOptions}
+        availableModels={availableModels}
+        loadingModels={loadingModels}
         onCreated={loadAgents}
       />
 
@@ -300,6 +370,9 @@ export default function AgentsSettingsPage() {
         <EditAgentDialog
           agent={editTarget}
           wikiOptions={wikiOptions}
+          availableModels={availableModels}
+          loadingModels={loadingModels}
+          onRefreshModels={() => loadModels(true)}
           onClose={() => setEditTarget(null)}
           onUpdated={loadAgents}
         />
@@ -408,20 +481,19 @@ function AgentCard({
 
 // ─── Create dialog ──────────────────────────────────────────────────────────
 
-const MODEL_OPTIONS = [
-  { value: "", label: "BYOK (use your own key — recommended)" },
-  { value: "gemini-2.5-flash", label: "BossBoard default (Gemini Flash)" },
-];
-
 function CreateAgentDialog({
   open,
   onOpenChange,
   wikiOptions,
+  availableModels,
+  loadingModels,
   onCreated,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   wikiOptions: WikiOption[];
+  availableModels: ProviderModel[];
+  loadingModels: boolean;
   onCreated: () => void;
 }) {
   const [step, setStep] = useState<"form" | "show-key">("form");
@@ -432,6 +504,19 @@ function CreateAgentDialog({
   const [saving, setSaving] = useState(false);
   const [createdKey, setCreatedKey] = useState<string>("");
   const [createdAgentName, setCreatedAgentName] = useState<string>("");
+
+  // Group models by provider so the dropdown shows header labels
+  // ("Anthropic", "Google Gemini", ...) instead of a flat mix.
+  const groupedModels = availableModels.reduce<
+    Record<ProviderId, ProviderModel[]>
+  >(
+    (acc, m) => {
+      (acc[m.provider] ??= []).push(m);
+      return acc;
+    },
+    {} as Record<ProviderId, ProviderModel[]>
+  );
+  const noModels = !loadingModels && availableModels.length === 0;
 
   function resetForm() {
     setStep("form");
@@ -549,19 +634,74 @@ function CreateAgentDialog({
                 />
               </div>
               <div>
-                <Label htmlFor="agent-model">Preferred model</Label>
-                <select
-                  id="agent-model"
-                  value={preferredModel}
-                  onChange={(e) => setPreferredModel(e.target.value)}
-                  className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  {MODEL_OPTIONS.map((m) => (
-                    <option key={m.value} value={m.value}>
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
+                <Label htmlFor="agent-model">AI model</Label>
+                {loadingModels ? (
+                  <div className="mt-1 rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">
+                    Loading available models...
+                  </div>
+                ) : noModels ? (
+                  <div
+                    className="mt-1 rounded-md border p-3 text-sm"
+                    style={{
+                      borderColor: "#FBBF24",
+                      backgroundColor: "rgba(251, 191, 36, 0.08)",
+                    }}
+                  >
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle
+                        className="h-4 w-4 shrink-0 mt-0.5"
+                        style={{ color: "#FBBF24" }}
+                      />
+                      <div className="flex-1">
+                        <p className="font-semibold">
+                          No AI providers connected
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Agents need an AI model to function. Connect at
+                          least one provider (Anthropic, Google, OpenAI, or
+                          Grok) in Settings.
+                        </p>
+                        <Link
+                          href="/dashboard/settings#external-api-keys"
+                          className="mt-2 inline-block text-xs font-medium underline"
+                          style={{ color: "#FBBF24" }}
+                        >
+                          Connect a provider →
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <select
+                      id="agent-model"
+                      value={preferredModel}
+                      onChange={(e) => setPreferredModel(e.target.value)}
+                      required
+                      className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                    >
+                      <option value="">Select a model...</option>
+                      {(Object.keys(groupedModels) as ProviderId[]).map(
+                        (provider) => (
+                          <optgroup
+                            key={provider}
+                            label={PROVIDER_LABELS[provider]}
+                          >
+                            {groupedModels[provider].map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )
+                      )}
+                    </select>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Powered by your BYOK. This agent uses your API key and
+                      your billing whenever it thinks.
+                    </p>
+                  </>
+                )}
               </div>
               <div>
                 <Label htmlFor="agent-manual">Manual wiki page (optional)</Label>
@@ -593,7 +733,17 @@ function CreateAgentDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={saving || !name.trim() || !role.trim()}>
+              <Button
+                type="submit"
+                disabled={
+                  saving ||
+                  loadingModels ||
+                  noModels ||
+                  !name.trim() ||
+                  !role.trim() ||
+                  !preferredModel
+                }
+              >
                 {saving ? "Creating..." : "Create agent"}
               </Button>
             </DialogFooter>
@@ -602,18 +752,61 @@ function CreateAgentDialog({
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Check className="h-5 w-5 text-green-500" />
-                {createdAgentName} is ready
+                <IdCard className="h-5 w-5 text-primary" />
+                Agent ID key created
               </DialogTitle>
               <DialogDescription>
-                Copy the API key below. <strong>This is the only time
-                it will be shown</strong> — we store a hash, not the key
-                itself, so you can&apos;t retrieve it later.
+                This key is like an ID card for{" "}
+                <strong>{createdAgentName}</strong> — it identifies the
+                agent to BossBoard&apos;s servers. It is <em>not</em> the
+                key that powers the agent&apos;s thinking.
               </DialogDescription>
             </DialogHeader>
+
             <div className="space-y-4 py-2">
+              {/* Two-key explainer */}
+              <div
+                className="rounded-md border p-3 text-sm"
+                style={{
+                  borderColor: "var(--border)",
+                  backgroundColor: "var(--muted)",
+                }}
+              >
+                <p className="font-semibold flex items-center gap-1.5">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  Two different keys, two different jobs
+                </p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-md border bg-background p-3">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold">
+                      <IdCard className="h-3.5 w-3.5 text-primary" />
+                      This key (<code className="font-mono">bb_…</code>)
+                    </div>
+                    <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+                      Proves who the agent is when talking to BossBoard.
+                      Like an ID card. Zero AI cost.
+                    </p>
+                  </div>
+                  <div className="rounded-md border bg-background p-3">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold">
+                      <Zap className="h-3.5 w-3.5 text-amber-500" />
+                      Your AI provider key
+                    </div>
+                    <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+                      <code className="font-mono">sk-ant-…</code>,{" "}
+                      <code className="font-mono">AIza…</code>, etc. Powers
+                      the agent&apos;s thinking. Your billing, your quota.
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Your agent uses <strong>both</strong> when running.
+                </p>
+              </div>
+
+              {/* The key */}
               <div>
-                <Label>Agent API key</Label>
+                <Label>Agent key</Label>
                 <div className="mt-1 flex gap-2">
                   <Input
                     value={createdKey}
@@ -631,10 +824,15 @@ function CreateAgentDialog({
                     Copy
                   </Button>
                 </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Shown once. BossBoard stores a hash, not the key. If
+                  lost, delete the agent and create a new one.
+                </p>
               </div>
 
+              {/* Aspirational CLI quick start */}
               <div>
-                <Label>Quick start</Label>
+                <Label>Quick start (CLI launching soon)</Label>
                 <div
                   className="mt-1 rounded-md border p-3 font-mono text-xs overflow-x-auto"
                   style={{
@@ -646,13 +844,13 @@ function CreateAgentDialog({
                   {cliPreview}
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  The dedicated CLI is launching soon. In the meantime, use
-                  the key with any MCP client or REST API call.
+                  The dedicated CLI is launching soon. In the meantime,
+                  use the agent key with any MCP client or REST API call.
                 </p>
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={handleClose}>Done</Button>
+              <Button onClick={handleClose}>I&apos;ve saved the key</Button>
             </DialogFooter>
           </>
         )}
@@ -666,11 +864,17 @@ function CreateAgentDialog({
 function EditAgentDialog({
   agent,
   wikiOptions,
+  availableModels,
+  loadingModels,
+  onRefreshModels,
   onClose,
   onUpdated,
 }: {
   agent: AgentRow;
   wikiOptions: WikiOption[];
+  availableModels: ProviderModel[];
+  loadingModels: boolean;
+  onRefreshModels: () => void;
   onClose: () => void;
   onUpdated: () => void;
 }) {
@@ -746,19 +950,79 @@ function EditAgentDialog({
               />
             </div>
             <div>
-              <Label htmlFor="edit-model">Preferred model</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="edit-model">AI model</Label>
+                <button
+                  type="button"
+                  onClick={onRefreshModels}
+                  disabled={loadingModels}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+                  title="Refresh available models from your providers"
+                >
+                  <RefreshCw
+                    className={`h-3 w-3 ${loadingModels ? "animate-spin" : ""}`}
+                  />
+                  Refresh
+                </button>
+              </div>
               <select
                 id="edit-model"
                 value={preferredModel}
                 onChange={(e) => setPreferredModel(e.target.value)}
                 className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                disabled={loadingModels}
               >
-                {MODEL_OPTIONS.map((m) => (
-                  <option key={m.value} value={m.value}>
-                    {m.label}
-                  </option>
-                ))}
+                {/*
+                 * If the agent's current model isn't in the fetched
+                 * list (provider removed it, or the user rotated
+                 * keys), preserve it as a first option so the user
+                 * can see what's set and choose a replacement.
+                 */}
+                {preferredModel &&
+                  !availableModels.some((m) => m.id === preferredModel) && (
+                    <option value={preferredModel}>
+                      {preferredModel} (current)
+                    </option>
+                  )}
+                <option value="">Select a model...</option>
+                {(Object.keys(
+                  availableModels.reduce<Record<ProviderId, ProviderModel[]>>(
+                    (acc, m) => {
+                      (acc[m.provider] ??= []).push(m);
+                      return acc;
+                    },
+                    {} as Record<ProviderId, ProviderModel[]>
+                  )
+                ) as ProviderId[]).map((provider) => {
+                  const models = availableModels.filter(
+                    (m) => m.provider === provider
+                  );
+                  return (
+                    <optgroup
+                      key={provider}
+                      label={PROVIDER_LABELS[provider]}
+                    >
+                      {models.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
               </select>
+              {availableModels.length === 0 && !loadingModels && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  No AI providers connected.{" "}
+                  <Link
+                    href="/dashboard/settings#external-api-keys"
+                    className="underline"
+                  >
+                    Connect one in Settings
+                  </Link>{" "}
+                  to see models here.
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="edit-manual">Manual wiki page</Label>

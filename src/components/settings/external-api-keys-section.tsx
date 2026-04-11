@@ -20,13 +20,29 @@ const KEY_FIELDS = [
     key: "anthropic",
     label: "Anthropic API Key",
     placeholder: "sk-ant-api03-...",
-    description: "Use your own Anthropic key for AI features instead of BossBoard credits.",
+    description:
+      "Powers Claude-based agents. BossBoard fetches your available Claude models live from Anthropic when you create an agent.",
+  },
+  {
+    key: "google",
+    label: "Google Gemini API Key",
+    placeholder: "AIza...",
+    description:
+      "Powers Gemini-based agents. BossBoard fetches your available Gemini models live from Google when you create an agent.",
   },
   {
     key: "openai",
     label: "OpenAI API Key",
     placeholder: "sk-...",
-    description: "Connect OpenAI models for alternative AI generation.",
+    description:
+      "Powers GPT- and o-series agents. BossBoard fetches your available OpenAI models live when you create an agent.",
+  },
+  {
+    key: "grok",
+    label: "Grok (xAI) API Key",
+    placeholder: "xai-...",
+    description:
+      "Powers Grok-based agents. BossBoard fetches your available Grok models live from xAI when you create an agent.",
   },
   {
     key: "custom_webhook",

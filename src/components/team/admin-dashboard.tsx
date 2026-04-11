@@ -20,8 +20,6 @@ interface AdminDashboardProps {
   noteCount: number;
   policyCount: number;
   sopLimit: number;
-  aiUsed: number;
-  aiLimit: number;
   teamLimit: number;
   planName: string;
   userId: string | undefined;
@@ -37,8 +35,6 @@ export function AdminDashboard({
   noteCount,
   policyCount,
   sopLimit,
-  aiUsed,
-  aiLimit,
   teamLimit,
   planName,
   userId,
@@ -71,18 +67,14 @@ export function AdminDashboard({
         </CollapsibleTrigger>
         <CollapsibleContent>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-3">
+            {/* Day 5: removed the AI Generations / credit usage tile.
+                Credits no longer exist; BYOK drives AI on paid plans. */}
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-md border p-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2"><FileText className="h-4 w-4 text-primary" />Documents</div>
                 <div className="font-mono text-2xl font-bold">{totalDocs}{sopLimit !== -1 && <span className="text-sm font-normal text-muted-foreground">/{sopLimit}</span>}</div>
                 <div className="mt-1 flex gap-3 text-xs text-muted-foreground"><span>{sopCount} SOPs</span><span>{noteCount} Notes</span><span>{policyCount} Policies</span></div>
                 {sopLimit !== -1 && <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted"><div className={cn("h-full rounded-full", barColor(pctBar(totalDocs, sopLimit)))} style={{ width: `${pctBar(totalDocs, sopLimit)}%` }} /></div>}
-              </div>
-              <div className="rounded-md border p-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2"><Zap className="h-4 w-4 text-primary" />AI Generations</div>
-                <div className="font-mono text-2xl font-bold">{aiUsed}{aiLimit !== -1 && <span className="text-sm font-normal text-muted-foreground">/{aiLimit}</span>}</div>
-                <p className="mt-1 text-xs text-muted-foreground">this month</p>
-                {aiLimit !== -1 && <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted"><div className={cn("h-full rounded-full", barColor(pctBar(aiUsed, aiLimit)))} style={{ width: `${pctBar(aiUsed, aiLimit)}%` }} /></div>}
               </div>
               <div className="rounded-md border p-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2"><Users className="h-4 w-4 text-primary" />Team Members</div>

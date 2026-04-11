@@ -9,10 +9,8 @@ import { plans, type PlanId } from "@/config/plans";
 import {
   fetchCurrentUser,
   fetchProfile,
-  fetchMonthlyUsage,
   userKeys,
   todoKeys,
-  usageKeys,
 } from "@/lib/queries";
 import { toast } from "sonner";
 
@@ -156,12 +154,7 @@ export function useDashboard() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: monthlyUsage = 0 } = useQuery({
-    queryKey: usageKeys.monthly(userId ?? ""),
-    queryFn: () => fetchMonthlyUsage(userId!),
-    enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
-  });
+  // Day 5: credit monthly usage query removed (credits no longer exist)
 
   // Dashboard-specific queries
   const { data: checklists = [], isLoading: checklistsLoading } = useQuery({
@@ -193,9 +186,11 @@ export function useDashboard() {
   // Derived data
   const userName = profile?.full_name || user?.email?.split("@")[0] || "";
   const planId = (profile?.plan_id as PlanId) ?? "free";
-  const plan = plans[planId];
-  const creditsLimit = plan.limits.aiCredits;
-  const unlimitedCredits = creditsLimit === -1;
+  // Note: `plan` is still imported for agent/member/storage limits
+  // used elsewhere in the dashboard. Day 5 removed aiCredits so the
+  // old creditsUsed/creditsLimit fields are gone — consumers
+  // (sidebar widget, usage page) were updated in the same commit.
+  void plans[planId];
 
   const overdueChecklists = useMemo(
     () => checklists.filter((cl: ChecklistRow) => cl.due_date && cl.due_date < getTodayStr()),
@@ -346,9 +341,9 @@ export function useDashboard() {
     publishedSops: sopStats?.published ?? 0,
     staleSops: sopStats?.stale ?? 0,
     teamCount: 1,
-    creditsUsed: monthlyUsage,
-    creditsLimit: unlimitedCredits ? -1 : creditsLimit,
-    unlimitedCredits,
+    // Day 5: credit fields removed — sidebar widget was removed in
+    // the same commit. Kept the method signatures stable so other
+    // dashboard consumers don't break.
     handleAddTodo,
     handleToggleTodo,
     handleDeleteTodo,

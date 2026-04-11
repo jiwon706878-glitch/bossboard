@@ -40,14 +40,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
+  // Day 5 dropped credit-type coupons; only 'discount' is accepted.
   const couponType = body.coupon_type;
-  if (couponType !== "discount" && couponType !== "credits") {
+  if (couponType !== "discount") {
     return NextResponse.json({ error: "invalid_coupon_type" }, { status: 400 });
   }
 
-  // Either use the admin-supplied code or generate one. We retry
-  // generation up to 3 times in case of UNIQUE collision on the
-  // freshly-generated code.
   const suppliedCode =
     typeof body.code === "string" && body.code.trim()
       ? body.code.trim().toUpperCase()
@@ -63,50 +61,39 @@ export async function POST(req: Request) {
       ? body.expires_at
       : null;
 
+  const discountType = body.discount_type;
+  const discountValue = Number(body.discount_value);
+  if (discountType !== "percent" && discountType !== "fixed") {
+    return NextResponse.json(
+      { error: "invalid_discount_type" },
+      { status: 400 }
+    );
+  }
+  if (!Number.isFinite(discountValue) || discountValue < 0) {
+    return NextResponse.json(
+      { error: "invalid_discount_value" },
+      { status: 400 }
+    );
+  }
+
   const base: Record<string, unknown> = {
-    coupon_type: couponType,
+    coupon_type: "discount",
     max_uses: maxUses,
     expires_at: expiresAt,
     created_by: auth.userId,
-  };
-
-  if (couponType === "discount") {
-    const discountType = body.discount_type;
-    const discountValue = Number(body.discount_value);
-    if (discountType !== "percent" && discountType !== "fixed") {
-      return NextResponse.json(
-        { error: "invalid_discount_type" },
-        { status: 400 }
-      );
-    }
-    if (!Number.isFinite(discountValue) || discountValue < 0) {
-      return NextResponse.json(
-        { error: "invalid_discount_value" },
-        { status: 400 }
-      );
-    }
-    base.discount_type = discountType;
-    base.discount_value = discountValue;
-    base.applies_to = Array.isArray(body.applies_to)
+    discount_type: discountType,
+    discount_value: discountValue,
+    applies_to: Array.isArray(body.applies_to)
       ? (body.applies_to as unknown[]).filter(
           (p): p is string =>
             typeof p === "string" && ["starter", "pro", "business"].includes(p)
         )
-      : ["starter", "pro", "business"];
-    base.paddle_discount_id =
+      : ["starter", "pro", "business"],
+    paddle_discount_id:
       typeof body.paddle_discount_id === "string" && body.paddle_discount_id
         ? body.paddle_discount_id
-        : null;
-  } else {
-    const creditAmount = Number(body.credit_amount);
-    if (!Number.isFinite(creditAmount) || creditAmount <= 0) {
-      return NextResponse.json(
-        { error: "invalid_credit_amount" },
-        { status: 400 }
-      );
-    }
-    base.credit_amount = Math.floor(creditAmount);
-  }
+        : null,
+  };
 
   const supabase = createAdminClient();
 

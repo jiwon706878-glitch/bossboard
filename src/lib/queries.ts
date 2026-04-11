@@ -125,23 +125,6 @@ export async function fetchSopStats(businessId: string) {
   };
 }
 
-// ─── AI Usage ─────────────────────────────────────
-export const usageKeys = {
-  monthly: (userId: string) => ["usage", "monthly", userId] as const,
-};
-
-export async function fetchMonthlyUsage(userId: string) {
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const { data, error } = await supabase
-    .from("ai_usage")
-    .select("credits_used")
-    .eq("user_id", userId)
-    .gte("created_at", startOfMonth.toISOString());
-  if (error) throw error;
-  return data?.reduce((sum: number, r: { credits_used: number }) => sum + r.credits_used, 0) ?? 0;
-}
-
 // ─── Team ─────────────────────────────────────────
 export const teamKeys = {
   all: (businessId: string) => ["team", businessId] as const,

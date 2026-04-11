@@ -2,25 +2,23 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Coupons = individual redeemable codes managed from /admin/promotions
- * (Coupons tab). Two shapes:
- *   - 'discount': applied at Paddle checkout via paddle_discount_id
- *   - 'credits' : adds to credit_balances.credits_purchased on redeem
+ * (Coupons tab). BB v2.0 Day 5 removed the credit system entirely,
+ * so coupons now only support the 'discount' shape (applied at Paddle
+ * checkout via paddle_discount_id). The orphaned `credit_amount`
+ * column on the coupons table is kept for archival reasons but no
+ * new coupon uses it — a DB-side CHECK constraint enforces discount-only.
  *
- * Redemption is atomic via the SQL function redeem_coupon_atomic,
- * which locks the coupon row, checks expiry/uses, records the
- * redemption, and (for credit coupons) tops up the balance in a
- * single transaction.
+ * Redemption is atomic via the SQL function redeem_coupon_atomic.
  */
 
 export interface CouponRow {
   id: string;
   code: string;
-  coupon_type: "discount" | "credits";
+  coupon_type: "discount";
   discount_type: "percent" | "fixed" | null;
   discount_value: number | null;
   applies_to: string[] | null;
   paddle_discount_id: string | null;
-  credit_amount: number | null;
   max_uses: number;
   current_uses: number;
   expires_at: string | null;
@@ -52,10 +50,9 @@ export type RedeemResult =
   | {
       success: true;
       couponId: string;
-      type: "discount" | "credits";
+      type: "discount";
       discountType: "percent" | "fixed" | null;
       discountValue: number | null;
-      creditAmount: number | null;
       paddleDiscountId: string | null;
       appliesTo: string[] | null;
     }
@@ -86,10 +83,9 @@ export async function redeemCouponAtomic(
     success: boolean;
     error_code: string | null;
     coupon_id: string | null;
-    coupon_type: "discount" | "credits" | null;
+    coupon_type: "discount" | null;
     discount_type: "percent" | "fixed" | null;
     discount_value: number | null;
-    credit_amount: number | null;
     paddle_discount_id: string | null;
     applies_to: string[] | null;
   };
@@ -104,10 +100,9 @@ export async function redeemCouponAtomic(
   return {
     success: true,
     couponId: row.coupon_id!,
-    type: row.coupon_type!,
+    type: "discount",
     discountType: row.discount_type,
     discountValue: row.discount_value,
-    creditAmount: row.credit_amount,
     paddleDiscountId: row.paddle_discount_id,
     appliesTo: row.applies_to,
   };

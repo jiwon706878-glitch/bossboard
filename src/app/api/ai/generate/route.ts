@@ -1,8 +1,7 @@
 import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { checkCredits, deductCredit, CREDIT_COSTS } from "@/lib/ai/credits";
+import { resolveAnthropicModel, byokErrorResponse } from "@/lib/ai/byok";
 import { buildBusinessContext, BUSINESS_PROFILE_SELECT } from "@/lib/ai/business-context";
 import { checkRateLimit } from "@/lib/rate-limit";
 
@@ -66,22 +65,13 @@ export async function POST(req: Request) {
     .replace(/\bignore\b.*\binstructions?\b/gi, "")
     .trim();
 
-  // Get user plan
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("plan_id")
-    .eq("id", user.id)
-    .single();
-
-  const planId = (profile?.plan_id as "free" | "starter" | "pro" | "business") ?? "free";
-
-  const cost = CREDIT_COSTS.sop_generate;
-  const creditCheck = await checkCredits(user.id, planId, cost);
-  if (!creditCheck.allowed) {
-    return NextResponse.json(
-      { error: "AI credit limit reached. Please upgrade your plan." },
-      { status: 429 }
-    );
+  // BYOK resolver — returns a user-key-backed Anthropic model or
+  // the shape of an error response if the user is free-plan or
+  // hasn't registered a key. See src/lib/ai/byok.ts.
+  const byok = await resolveAnthropicModel("claude-sonnet-4-20250514");
+  if (!byok.ok) {
+    const err = byokErrorResponse(byok.reason);
+    return NextResponse.json(err.body, { status: err.status });
   }
 
   const { data: business } = await supabase
@@ -95,7 +85,7 @@ export async function POST(req: Request) {
 
   try {
     const result = await generateText({
-      model: anthropic("claude-sonnet-4-20250514"),
+      model: byok.model,
       system: `${businessContext}
 
 You are an expert operations consultant. Generate a detailed, actionable Standard Operating Procedure (SOP).
@@ -115,8 +105,6 @@ Do NOT use markdown headers with #. Use plain numbered sections.
 Write the SOP content directly without any preamble.`,
       prompt: `Topic: ${sanitizedTopic}\n\nGenerate the SOP:`,
     });
-
-    deductCredit(user.id, resolvedBusinessId, "sop_generate", cost).catch(console.error);
 
     return NextResponse.json({ text: result.text });
   } catch (error) {

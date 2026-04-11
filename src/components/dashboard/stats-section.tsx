@@ -1,15 +1,12 @@
 "use client";
 
-import { BookOpen, ListTodo, Users, Zap, TrendingUp } from "lucide-react";
+import { BookOpen, ListTodo, Users } from "lucide-react";
 
 interface StatsSectionProps {
   totalSops: number;
   publishedSops: number;
   draftSops: number;
   teamCount: number;
-  creditsUsed: number;
-  creditsLimit: number;
-  unlimitedCredits: boolean;
   activeTodos?: number;
 }
 
@@ -19,10 +16,9 @@ interface StatCardProps {
   hint: string;
   icon: React.ComponentType<{ className?: string }>;
   hintColor?: "success" | "warning" | "secondary";
-  hintIcon?: React.ComponentType<{ className?: string }>;
 }
 
-function StatCard({ label, value, hint, icon: Icon, hintColor = "secondary", hintIcon: HintIcon }: StatCardProps) {
+function StatCard({ label, value, hint, icon: Icon, hintColor = "secondary" }: StatCardProps) {
   const hintColorClass =
     hintColor === "success"
       ? "text-success"
@@ -40,27 +36,26 @@ function StatCard({ label, value, hint, icon: Icon, hintColor = "secondary", hin
         {value}
       </div>
       <div className={`mt-2 flex items-center gap-1 text-xs ${hintColorClass}`}>
-        {HintIcon && <HintIcon className="h-3.5 w-3.5" />}
         <span>{hint}</span>
       </div>
     </div>
   );
 }
 
+/**
+ * Dashboard stats row. Day 5 dropped the "Credits Left" card — credits
+ * no longer exist; BYOK drives AI features on paid plans. Kept the
+ * grid as 3 cards (Wiki / Todos / Team).
+ */
 export function StatsSection({
   totalSops,
   publishedSops,
   draftSops,
   teamCount,
-  creditsUsed,
-  creditsLimit,
-  unlimitedCredits,
   activeTodos = 0,
 }: StatsSectionProps) {
-  const creditsRemaining = unlimitedCredits ? "∞" : Math.max(0, creditsLimit - creditsUsed).toLocaleString();
-
   return (
-    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 stagger-children">
+    <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 stagger-children">
       <StatCard
         label="Wiki Pages"
         value={totalSops}
@@ -79,20 +74,6 @@ export function StatsSection({
         value={teamCount}
         hint={teamCount === 1 ? "Just you" : `${teamCount} members`}
         icon={Users}
-      />
-      <StatCard
-        label="Credits Left"
-        value={creditsRemaining}
-        hint={unlimitedCredits ? "Unlimited" : `${creditsUsed.toLocaleString()} used this month`}
-        icon={Zap}
-        hintColor={
-          unlimitedCredits
-            ? "success"
-            : creditsUsed / creditsLimit > 0.8
-            ? "warning"
-            : "secondary"
-        }
-        hintIcon={!unlimitedCredits && creditsUsed / creditsLimit < 0.5 ? TrendingUp : undefined}
       />
     </div>
   );

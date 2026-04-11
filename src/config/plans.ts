@@ -1,11 +1,11 @@
 export type PlanId = "free" | "starter" | "pro" | "business";
 
 /**
- * Plan limits. The landing copy no longer surfaces `aiCredits` as a
- * user-visible number (BB v2.0 positions BYOK-first), but the field
- * stays here because /api/ai/chat, /api/ai/generate, the coupon
- * system, and the admin dashboards all read it. A Day 4+ refactor
- * can fully remove credits; Day 3 just hides them from marketing.
+ * Plan limits. BB v2.0 Day 5 removed `aiCredits` entirely — BYOK is
+ * the only path for AI features on paid plans, and Free is blocked
+ * from AI features with an upgrade prompt. The guide chatbot and
+ * auto-indexer are BB-funded (Gemini Flash) and don't need a credit
+ * quota because they're fixed-surface features, not per-action.
  */
 export interface PlanConfig {
   id: PlanId;
@@ -16,7 +16,6 @@ export interface PlanConfig {
   paddlePriceIdMonthly: string;
   paddlePriceIdAnnual: string;
   limits: {
-    aiCredits: number;            // per month, -1 = unlimited (internal only)
     sops: number;                 // -1 = unlimited
     teamMembers: number;          // -1 = unlimited humans
     agentMembers: number;         // -1 = unlimited agents; BB v2.0 cap
@@ -39,7 +38,6 @@ export const plans: Record<PlanId, PlanConfig> = {
     paddlePriceIdMonthly: "",
     paddlePriceIdAnnual: "",
     limits: {
-      aiCredits: 30,
       sops: 20,
       teamMembers: 3,
       agentMembers: 3,
@@ -68,7 +66,6 @@ export const plans: Record<PlanId, PlanConfig> = {
     paddlePriceIdMonthly: process.env.PADDLE_STARTER_MONTHLY_PRICE_ID || "",
     paddlePriceIdAnnual: process.env.PADDLE_STARTER_ANNUAL_PRICE_ID || "",
     limits: {
-      aiCredits: 500,
       sops: -1,
       teamMembers: -1,
       agentMembers: 10,
@@ -98,7 +95,6 @@ export const plans: Record<PlanId, PlanConfig> = {
     paddlePriceIdMonthly: process.env.PADDLE_PRO_MONTHLY_PRICE_ID || "",
     paddlePriceIdAnnual: process.env.PADDLE_PRO_ANNUAL_PRICE_ID || "",
     limits: {
-      aiCredits: 1500,
       sops: -1,
       teamMembers: -1,
       agentMembers: 50,
@@ -128,7 +124,6 @@ export const plans: Record<PlanId, PlanConfig> = {
     paddlePriceIdMonthly: process.env.PADDLE_BUSINESS_MONTHLY_PRICE_ID || "",
     paddlePriceIdAnnual: process.env.PADDLE_BUSINESS_ANNUAL_PRICE_ID || "",
     limits: {
-      aiCredits: 5000,
       sops: -1,
       teamMembers: -1,
       agentMembers: -1,

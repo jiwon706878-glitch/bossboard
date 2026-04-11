@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRawKey, logApiCall, type ApiKeyContext } from "@/lib/api/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { CREDIT_COSTS } from "@/lib/ai/credits";
-import { plans, type PlanId } from "@/config/plans";
 import type { JSONContent } from "@tiptap/react";
 
 // ─── MCP Tool Definitions ──────────────────────────────────────────────────
@@ -239,7 +237,11 @@ async function handleToolCall(
 
       if (mode !== "ai") return { results: searchResults ?? [] };
 
-      // Credit check before AI generation
+      // BYOK-or-skip for AI answer synthesis. The MCP tool is agent-
+      // authenticated, so we look up the owning business's user and
+      // their Anthropic key from profiles.external_api_keys. No key
+      // → return search results without AI synthesis and an
+      // explanatory aiError hint.
       const { data: bizOwner } = await admin
         .from("businesses")
         .select("user_id")
@@ -250,31 +252,21 @@ async function handleToolCall(
 
       const { data: ownerProfile } = await admin
         .from("profiles")
-        .select("plan_id")
+        .select("external_api_keys")
         .eq("id", bizOwner.user_id)
         .single();
 
-      const ownerPlanId = (ownerProfile?.plan_id as PlanId) ?? "free";
-      const plan = plans[ownerPlanId];
-      const creditLimit = plan.limits.aiCredits;
-
-      if (creditLimit !== -1) {
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const { data: usageRows } = await admin
-          .from("ai_usage")
-          .select("credits_used")
-          .eq("user_id", bizOwner.user_id)
-          .gte("created_at", startOfMonth.toISOString());
-
-        const totalUsed = usageRows?.reduce((sum, row) => sum + row.credits_used, 0) ?? 0;
-        const cost = CREDIT_COSTS.chat ?? 1;
-        if (totalUsed + cost > creditLimit) {
-          return { results: searchResults ?? [], aiAnswer: null, aiError: "AI credit limit reached. Please upgrade your plan." };
-        }
+      const keys = (ownerProfile?.external_api_keys ?? {}) as Record<string, string | undefined>;
+      const anthropicKey = keys.anthropic;
+      if (!anthropicKey) {
+        return {
+          results: searchResults ?? [],
+          aiAnswer: null,
+          aiError:
+            "No Anthropic key connected. Add one in BossBoard Settings → External API Keys to enable AI search synthesis.",
+        };
       }
 
-      // AI answer
       if (!searchResults || searchResults.length === 0) {
         return { results: [], aiAnswer: "No relevant documents found." };
       }
@@ -286,9 +278,10 @@ async function handleToolCall(
 
       try {
         const { generateText } = await import("ai");
-        const { anthropic } = await import("@ai-sdk/anthropic");
+        const { createAnthropic } = await import("@ai-sdk/anthropic");
+        const byokProvider = createAnthropic({ apiKey: anthropicKey });
         const result = await generateText({
-          model: anthropic("claude-sonnet-4-20250514"),
+          model: byokProvider("claude-sonnet-4-20250514"),
           system: "Answer based ONLY on the provided document context. Be concise (2-4 sentences). Reference document titles.",
           prompt: `Question: ${query}\n\nContext:\n${context}`,
         });

@@ -1,7 +1,7 @@
+import { generateText } from "ai";
 import { createClient } from "@/lib/supabase/server";
-import { checkCredits, deductCredit, CREDIT_COSTS } from "@/lib/ai/credits";
+import { resolveAnthropicModel, byokErrorResponse } from "@/lib/ai/byok";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { callAI } from "@/lib/ai/provider";
 
 const TAB_SYSTEM_PROMPTS: Record<string, string> = {
   wiki: "You are a Wiki AI assistant. Help users create/edit SOPs and documents. Respond concisely.",
@@ -16,6 +16,12 @@ const TAB_SYSTEM_PROMPTS: Record<string, string> = {
 
 const VALID_TABS = new Set(Object.keys(TAB_SYSTEM_PROMPTS));
 
+/**
+ * Tab AI chat — BB v2.0 Day 5 made this BYOK-only. The old flow
+ * credit-deducted on BossBoard's Anthropic key; now we require a
+ * user-registered key and return 402 otherwise. The guide chatbot
+ * at /api/ai/chat remains BB-funded for zero-friction onboarding.
+ */
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
@@ -27,7 +33,6 @@ export async function POST(req: Request) {
       return new Response("Unauthorized", { status: 401 });
     }
 
-    // Rate limit: 20 requests per minute per user
     if (!checkRateLimit(`tab-chat:${user.id}`, 20, 60_000)) {
       return new Response("Too many requests. Please wait a minute.", {
         status: 429,
@@ -44,47 +49,12 @@ export async function POST(req: Request) {
       return Response.json({ error: "Message is required" }, { status: 400 });
     }
 
-    // Get user profile and plan
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("plan_id")
-      .eq("id", user.id)
-      .single();
-
-    const planId =
-      (profile?.plan_id as "free" | "starter" | "pro" | "business") ?? "free";
-
-    if (planId === "free") {
-      return new Response("Upgrade to use Tab AI chat.", { status: 403 });
-    }
-
-    // Get user's business
-    const { data: businesses } = await supabase
-      .from("businesses")
-      .select("id, ai_provider")
-      .eq("user_id", user.id)
-      .limit(1);
-
-    const businessId = businesses?.[0]?.id ?? "";
-
-    // Check if BYOK is active
-    const aiConfig = businesses?.[0]?.ai_provider as {
-      provider: string;
-      keys: Record<string, string>;
-    } | null;
-    const isByok =
-      aiConfig?.provider === "anthropic" && !!aiConfig.keys?.anthropic;
-
-    // Credit check (skip if BYOK)
-    if (!isByok) {
-      const cost = CREDIT_COSTS.chat;
-      const creditCheck = await checkCredits(user.id, planId, cost);
-      if (!creditCheck.allowed) {
-        return new Response(
-          "AI credit limit reached. Please upgrade your plan.",
-          { status: 429 }
-        );
-      }
+    // BYOK resolver — blocks Free plan and users without an
+    // Anthropic key with 402 + action hint.
+    const byok = await resolveAnthropicModel("claude-haiku-4-5-20251001");
+    if (!byok.ok) {
+      const err = byokErrorResponse(byok.reason);
+      return Response.json(err.body, { status: err.status });
     }
 
     // Build system prompt with optional context
@@ -98,20 +68,12 @@ export async function POST(req: Request) {
       }
     }
 
-    const result = await callAI({
-      businessId,
+    const result = await generateText({
+      model: byok.model,
       system: systemPrompt,
       prompt: message,
-      model: "claude-haiku-4-5-20251001",
       maxOutputTokens: 1024,
     });
-
-    // Deduct credit after success (skip if BYOK)
-    if (result.provider !== "anthropic_byok") {
-      deductCredit(user.id, businessId, "chat", CREDIT_COSTS.chat).catch(
-        console.error
-      );
-    }
 
     if (!result.text || !result.text.trim()) {
       return Response.json(
@@ -122,7 +84,7 @@ export async function POST(req: Request) {
 
     return Response.json({
       reply: result.text,
-      provider: result.provider,
+      provider: "anthropic_byok",
     });
   } catch (error) {
     console.error("Tab AI chat error:", error);

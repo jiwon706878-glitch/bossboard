@@ -9,13 +9,10 @@ import {
   LayoutDashboard,
   Users,
   DollarSign,
-  BarChart3,
   MessageSquare,
   Inbox,
   ArrowLeft,
   LogOut,
-  PieChart,
-  TrendingUp,
   Tag,
 } from "lucide-react";
 import { useAdminLang } from "@/lib/admin-i18n";
@@ -27,9 +24,6 @@ const linkConfigs = [
   { href: "/admin/inbox", labelKey: "inbox" as const, icon: Inbox },
   { href: "/admin/users", labelKey: "users" as const, icon: Users },
   { href: "/admin/revenue", labelKey: "revenue" as const, icon: DollarSign },
-  { href: "/admin/usage", labelKey: "ai_usage" as const, icon: BarChart3 },
-  { href: "/admin/analytics", labelKey: "analytics" as const, icon: PieChart },
-  { href: "/admin/costs", labelKey: "costs" as const, icon: TrendingUp },
   { href: "/admin/promotions", labelKey: "promotions" as const, icon: Tag },
   { href: "/admin/feedback", labelKey: "feedback" as const, icon: MessageSquare },
 ];

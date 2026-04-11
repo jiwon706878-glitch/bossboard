@@ -23,7 +23,6 @@ export default function DashboardPage() {
     activeTodos,
     todoText, setTodoText, addingTodo,
     totalSops, draftSops, publishedSops, teamCount,
-    creditsUsed, creditsLimit, unlimitedCredits,
     handleAddTodo, handleToggleTodo, handleDeleteTodo,
   } = useDashboard();
 
@@ -62,16 +61,13 @@ export default function DashboardPage() {
         <QuickActions onSearch={() => setSearchOpen(true)} />
       </div>
 
-      {/* ── 4 stat cards ──────────────────────────────────── */}
+      {/* ── Stat cards (3 after Day 5: wiki, todos, team) ─── */}
       {isAdmin() && (
         <StatsSection
           totalSops={totalSops}
           publishedSops={publishedSops}
           draftSops={draftSops}
           teamCount={teamCount}
-          creditsUsed={creditsUsed}
-          creditsLimit={creditsLimit}
-          unlimitedCredits={unlimitedCredits}
           activeTodos={activeTodos}
         />
       )}

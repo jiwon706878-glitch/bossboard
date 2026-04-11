@@ -4,10 +4,16 @@ import { plans, type PlanId } from "@/config/plans";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ArrowUpRight } from "lucide-react";
+import { Key, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
-import { UsageChart } from "@/components/dashboard/usage-chart";
 
+/**
+ * AI Usage page — Day 5 replaced the credit dashboard with a BYOK
+ * status summary. Credits no longer exist; paid plans use the
+ * caller's own Anthropic/Gemini/OpenAI key and pay their provider
+ * directly. This page confirms the BYOK connection and surfaces
+ * plan limits that still matter (SOPs, team, storage).
+ */
 export default async function UsagePage() {
   const supabase = await createClient();
   const {
@@ -18,190 +24,104 @@ export default async function UsagePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("plan_id")
+    .select("plan_id, external_api_keys")
     .eq("id", user.id)
     .single();
 
   const planId = (profile?.plan_id ?? "free") as PlanId;
   const plan = plans[planId];
-  const limit = plan.limits.aiCredits;
 
-  // Get monthly usage
-  const startOfMonth = new Date(
-    new Date().getFullYear(),
-    new Date().getMonth(),
-    1
-  );
+  const keys = (profile?.external_api_keys ?? {}) as Record<
+    string,
+    string | undefined
+  >;
+  const connectedProviders = (
+    ["anthropic", "google", "openai", "grok"] as const
+  ).filter((p) => typeof keys[p] === "string" && keys[p]!.length > 0);
 
-  const { data: usageData } = await supabase
-    .from("ai_usage")
-    .select("credits_used, feature, created_at")
-    .eq("user_id", user.id)
-    .gte("created_at", startOfMonth.toISOString())
-    .order("created_at");
-
-  const totalUsed =
-    usageData?.reduce((sum, r) => sum + r.credits_used, 0) ?? 0;
-  const remaining = limit === -1 ? Infinity : limit - totalUsed;
-  const percentage = limit === -1 ? 0 : Math.round((totalUsed / limit) * 100);
-
-  // Usage by feature
-  const byFeature =
-    usageData?.reduce(
-      (acc, row) => {
-        acc[row.feature] = (acc[row.feature] || 0) + row.credits_used;
-        return acc;
-      },
-      {} as Record<string, number>
-    ) ?? {};
-
-  // Daily usage for chart
-  const dailyUsage =
-    usageData?.reduce(
-      (acc, row) => {
-        const day = new Date(row.created_at).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        });
-        acc[day] = (acc[day] || 0) + row.credits_used;
-        return acc;
-      },
-      {} as Record<string, number>
-    ) ?? {};
-
-  const chartData = Object.entries(dailyUsage).map(([date, credits]) => ({
-    date,
-    credits,
-  }));
-
-  const featureLabels: Record<string, string> = {
-    sop_generate: "SOP Generation",
-    chat: "AI Chat",
-    review_reply: "Review Reply",
-    caption: "Caption",
-    script: "Script",
-    email_marketing: "Email",
-    translation: "Translation",
-    image_analysis: "Image Analysis",
-    report: "Report",
-    review_insights: "Review Insights",
-    business_plan: "Business Plan",
-  };
+  const isFree = planId === "free";
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">AI Usage</h1>
         <p className="text-muted-foreground">
-          Track your AI credit consumption this month.
+          BossBoard is BYOK-first — connect your own AI provider key and
+          the bill comes from them, not us.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3 animate-fade-in">
-        {/* Credit Gauge */}
-        <Card className="md:col-span-1">
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Credits Used
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Key className="h-4 w-4" />
+              BYOK status
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center">
-              <div className="relative h-32 w-32">
-                <svg className="h-32 w-32 -rotate-90" viewBox="0 0 120 120">
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="50"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="10"
-                    className="text-muted"
-                  />
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="50"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="10"
-                    strokeDasharray={`${(percentage / 100) * 314} 314`}
-                    className="text-primary transition-all"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl font-bold">{totalUsed}</span>
-                  <span className="text-xs text-muted-foreground">
-                    / {limit === -1 ? "∞" : limit}
-                  </span>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center gap-2">
-                <Badge variant="secondary">{plan.name} Plan</Badge>
-                {remaining <= 5 && limit !== -1 && (
-                  <Badge variant="destructive">Low credits</Badge>
-                )}
-              </div>
-              {remaining <= 5 && limit !== -1 && (
-                <Link href="/dashboard/billing" className="mt-3">
+            {isFree ? (
+              <div>
+                <p className="text-sm">
+                  AI features require a paid plan. Upgrade to Starter or
+                  higher to connect your own AI key and unlock SOP
+                  generation, tab chat, receipt OCR, and file convert.
+                </p>
+                <Link href="/dashboard/billing" className="mt-4 inline-block">
                   <Button size="sm" variant="outline" className="gap-1">
-                    Upgrade <ArrowUpRight className="h-3 w-3" />
+                    View plans <ArrowUpRight className="h-3 w-3" />
                   </Button>
                 </Link>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Feature Breakdown */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              By Feature
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {Object.entries(byFeature).length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No usage data yet. Start generating content!
-              </p>
+              </div>
+            ) : connectedProviders.length === 0 ? (
+              <div>
+                <p className="text-sm">
+                  No AI provider connected yet. Add at least one key to use
+                  AI features on your {plan.name} plan.
+                </p>
+                <Link
+                  href="/dashboard/settings#external-api-keys"
+                  className="mt-4 inline-block"
+                >
+                  <Button size="sm" variant="outline" className="gap-1">
+                    Connect a provider <ArrowUpRight className="h-3 w-3" />
+                  </Button>
+                </Link>
+              </div>
             ) : (
-              Object.entries(byFeature).map(([feature, count]) => (
-                <div key={feature} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2">
-                      <Sparkles className="h-3 w-3 text-primary" />
-                      {featureLabels[feature] || feature}
-                    </span>
-                    <span className="font-medium">{count}</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-muted">
-                    <div
-                      className="h-2 rounded-full bg-primary transition-all"
-                      style={{
-                        width: `${Math.min(100, (count / totalUsed) * 100)}%`,
-                      }}
-                    />
-                  </div>
+              <div>
+                <p className="text-sm">
+                  Connected: {connectedProviders.length} provider
+                  {connectedProviders.length === 1 ? "" : "s"}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {connectedProviders.map((p) => (
+                    <Badge key={p} variant="secondary" className="capitalize">
+                      {p}
+                    </Badge>
+                  ))}
                 </div>
-              ))
+                <Link
+                  href="/dashboard/settings#external-api-keys"
+                  className="mt-4 inline-block text-xs text-muted-foreground underline"
+                >
+                  Manage keys
+                </Link>
+              </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Plan Info */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Plan Limits
+              Plan limits
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">AI Credits</span>
-              <span className="font-medium">
-                {limit === -1 ? "Unlimited" : `${limit}/mo`}
-              </span>
+              <span className="text-muted-foreground">Plan</span>
+              <Badge variant="secondary">{plan.name}</Badge>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">SOPs</span>
@@ -210,30 +130,34 @@ export default async function UsagePage() {
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Team Members</span>
+              <span className="text-muted-foreground">Team members</span>
               <span className="font-medium">
                 {plan.limits.teamMembers === -1
                   ? "Unlimited"
                   : plan.limits.teamMembers}
               </span>
             </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">AI agents</span>
+              <span className="font-medium">
+                {plan.limits.agentMembers === -1
+                  ? "Unlimited"
+                  : plan.limits.agentMembers}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Storage</span>
+              <span className="font-medium">{plan.limits.storageGb} GB</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Auto-indexing</span>
+              <span className="font-medium">
+                {plan.limits.autoIndexing ? "Enabled" : "Disabled"}
+              </span>
+            </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Daily Chart */}
-      {chartData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Daily Usage
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <UsageChart data={chartData} />
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

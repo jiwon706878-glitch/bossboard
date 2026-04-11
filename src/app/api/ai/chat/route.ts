@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { checkCredits, deductCredit, CREDIT_COSTS } from "@/lib/ai/credits";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { callAIWithFallback } from "@/lib/ai/router";
 
@@ -28,17 +27,13 @@ export async function POST(req: Request) {
     const planId =
       (profile?.plan_id as "free" | "starter" | "pro" | "business") ?? "free";
 
-    // Only Pro and Business can use AI chat
+    // The guide chatbot is BB-funded on Gemini Flash (via the router
+    // below). Paid plans only — free-plan users see an upgrade prompt.
     if (planId === "free") {
-      return new Response("Upgrade to Pro to use AI Assistant", { status: 403 });
-    }
-
-    const cost = CREDIT_COSTS.chat;
-    const creditCheck = await checkCredits(user.id, planId, cost);
-    if (!creditCheck.allowed) {
-      return new Response("AI usage limit reached for this billing period. Please upgrade your plan.", {
-        status: 429,
-      });
+      return new Response(
+        "Upgrade to Starter or higher to use the AI chat assistant.",
+        { status: 402 }
+      );
     }
 
     const { message } = await req.json();
@@ -66,22 +61,12 @@ Beta launch bonus: the first 100 subscribers on each paid plan get a 30% lifetim
 
 Answer questions helpfully and concisely. If asked about features that don't exist, say they're on the roadmap. Do not mention internal credit balances or credit pack pricing to prospects — BossBoard is positioned as BYOK-first.`;
 
-    // Gemini Flash primary, Claude Haiku fallback. System prompt is
-    // passed through the dedicated system channel of each provider.
+    // Gemini Flash primary, Claude Haiku fallback. BB-funded — the
+    // guide chatbot is a fixed-surface helper, not a metered API, so
+    // it has no credit deduction after Day 5.
     const text = await callAIWithFallback<string>(message, {
       system: systemPrompt,
     });
-
-    // Deduct credit after successful generation
-    // Use first business or empty string
-    const { data: businesses } = await supabase
-      .from("businesses")
-      .select("id")
-      .eq("user_id", user.id)
-      .limit(1);
-
-    const businessId = businesses?.[0]?.id ?? "";
-    deductCredit(user.id, businessId, "chat", cost).catch(console.error);
 
     return Response.json({ reply: text });
   } catch (error) {

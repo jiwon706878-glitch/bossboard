@@ -32,12 +32,11 @@ interface Promotion {
 interface Coupon {
   id: string;
   code: string;
-  coupon_type: "discount" | "credits";
+  coupon_type: "discount";
   discount_type: "percent" | "fixed" | null;
   discount_value: number | null;
   applies_to: string[] | null;
   paddle_discount_id: string | null;
-  credit_amount: number | null;
   max_uses: number;
   current_uses: number;
   expires_at: string | null;
@@ -503,19 +502,13 @@ function CouponsTab({ initial }: { initial: Coupon[] }) {
                       <code className="rounded bg-muted px-2 py-1 text-sm font-mono">
                         {c.code}
                       </code>
-                      <Badge variant="outline">
-                        {c.coupon_type === "discount"
-                          ? "Discount"
-                          : "Credits"}
-                      </Badge>
+                      <Badge variant="outline">Discount</Badge>
                       <span className="text-xs text-muted-foreground">
                         {c.current_uses} / {c.max_uses} used
                       </span>
                     </div>
                     <div className="mt-1 text-xs text-muted-foreground">
-                      {c.coupon_type === "discount"
-                        ? `${c.discount_value}${c.discount_type === "percent" ? "%" : "$"} off ${c.applies_to?.join(", ") ?? "all plans"}`
-                        : `+${c.credit_amount} credits`}
+                      {`${c.discount_value}${c.discount_type === "percent" ? "%" : "$"} off ${c.applies_to?.join(", ") ?? "all plans"}`}
                       {c.expires_at &&
                         ` · expires ${new Date(c.expires_at).toLocaleDateString()}`}
                     </div>
@@ -549,12 +542,11 @@ function CouponsTab({ initial }: { initial: Coupon[] }) {
 }
 
 function CreateCouponForm({ onCreated }: { onCreated: () => void }) {
-  const [type, setType] = useState<"discount" | "credits">("discount");
+  // Day 5 dropped credit-type coupons; only discount coupons remain.
   const [customCode, setCustomCode] = useState("");
   const [maxUses, setMaxUses] = useState("1");
   const [expiresAt, setExpiresAt] = useState("");
 
-  // discount fields
   const [discountType, setDiscountType] = useState<"percent" | "fixed">(
     "percent"
   );
@@ -564,28 +556,21 @@ function CreateCouponForm({ onCreated }: { onCreated: () => void }) {
     new Set(["starter", "pro", "business"])
   );
 
-  // credit fields
-  const [creditAmount, setCreditAmount] = useState("100");
-
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     const body: Record<string, unknown> = {
-      coupon_type: type,
+      coupon_type: "discount",
       code: customCode || undefined,
       max_uses: Number(maxUses),
       expires_at: expiresAt || null,
+      discount_type: discountType,
+      discount_value: Number(discountValue),
+      applies_to: Array.from(appliesTo),
+      paddle_discount_id: paddleDiscountId || null,
     };
-    if (type === "discount") {
-      body.discount_type = discountType;
-      body.discount_value = Number(discountValue);
-      body.applies_to = Array.from(appliesTo);
-      body.paddle_discount_id = paddleDiscountId || null;
-    } else {
-      body.credit_amount = Number(creditAmount);
-    }
     const res = await fetch("/api/admin/coupons", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -618,89 +603,58 @@ function CreateCouponForm({ onCreated }: { onCreated: () => void }) {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Discount type</Label>
+              <select
+                value={discountType}
+                onChange={(e) =>
+                  setDiscountType(e.target.value as "percent" | "fixed")
+                }
+                className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="percent">Percent (%)</option>
+                <option value="fixed">Fixed ($)</option>
+              </select>
+            </div>
+            <div>
+              <Label>Value</Label>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={discountValue}
+                onChange={(e) => setDiscountValue(e.target.value)}
+                required
+              />
+            </div>
+          </div>
           <div>
-            <Label>Type</Label>
-            <div className="mt-2 flex gap-4">
-              {(["discount", "credits"] as const).map((t) => (
-                <label key={t} className="flex items-center gap-2 text-sm">
+            <Label>Applies to plans</Label>
+            <div className="mt-2 flex gap-3">
+              {PLANS.map((p) => (
+                <label
+                  key={p}
+                  className="flex items-center gap-2 text-sm capitalize"
+                >
                   <input
-                    type="radio"
-                    checked={type === t}
-                    onChange={() => setType(t)}
+                    type="checkbox"
+                    checked={appliesTo.has(p)}
+                    onChange={() => toggleApplies(p)}
                   />
-                  {t === "discount" ? "Discount" : "Credits"}
+                  {p}
                 </label>
               ))}
             </div>
           </div>
-
-          {type === "discount" ? (
-            <>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Discount type</Label>
-                  <select
-                    value={discountType}
-                    onChange={(e) =>
-                      setDiscountType(e.target.value as "percent" | "fixed")
-                    }
-                    className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    <option value="percent">Percent (%)</option>
-                    <option value="fixed">Fixed ($)</option>
-                  </select>
-                </div>
-                <div>
-                  <Label>Value</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={discountValue}
-                    onChange={(e) => setDiscountValue(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-              <div>
-                <Label>Applies to plans</Label>
-                <div className="mt-2 flex gap-3">
-                  {PLANS.map((p) => (
-                    <label
-                      key={p}
-                      className="flex items-center gap-2 text-sm capitalize"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={appliesTo.has(p)}
-                        onChange={() => toggleApplies(p)}
-                      />
-                      {p}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <Label>Paddle discount ID (optional)</Label>
-                <Input
-                  value={paddleDiscountId}
-                  onChange={(e) => setPaddleDiscountId(e.target.value)}
-                  placeholder="dsc_01abc..."
-                />
-              </div>
-            </>
-          ) : (
-            <div>
-              <Label>Credit amount</Label>
-              <Input
-                type="number"
-                min={1}
-                value={creditAmount}
-                onChange={(e) => setCreditAmount(e.target.value)}
-                required
-              />
-            </div>
-          )}
+          <div>
+            <Label>Paddle discount ID (optional)</Label>
+            <Input
+              value={paddleDiscountId}
+              onChange={(e) => setPaddleDiscountId(e.target.value)}
+              placeholder="dsc_01abc..."
+            />
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>

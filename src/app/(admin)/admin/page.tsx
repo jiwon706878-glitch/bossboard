@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, DollarSign, Sparkles, Building2, MessageSquare, Tag } from "lucide-react";
+import { Users, DollarSign, Building2, MessageSquare, Tag } from "lucide-react";
 import { plans } from "@/config/plans";
 import { AdminPageTitle } from "@/components/admin/admin-page-title";
 import { getActivePromotion } from "@/lib/promotions";
@@ -9,10 +9,9 @@ import { getActivePromotion } from "@/lib/promotions";
 export default async function AdminOverviewPage() {
   const supabase = createAdminClient();
 
-  const [profilesRes, businessesRes, usageRes, subsRes, feedbackRes, unreadFeedbackRes, activePromo] = await Promise.all([
+  const [profilesRes, businessesRes, subsRes, feedbackRes, unreadFeedbackRes, activePromo] = await Promise.all([
     supabase.from("profiles").select("id, plan_id, created_at", { count: "exact" }),
     supabase.from("businesses").select("id", { count: "exact", head: true }),
-    supabase.from("ai_usage").select("credits_used"),
     supabase.from("subscriptions").select("plan_id, status").eq("status", "active"),
     supabase.from("feedback").select("id", { count: "exact", head: true }),
     supabase.from("feedback").select("id", { count: "exact", head: true }).eq("read", false),
@@ -21,7 +20,6 @@ export default async function AdminOverviewPage() {
 
   const totalUsers = profilesRes.count ?? 0;
   const totalBusinesses = businessesRes.count ?? 0;
-  const totalAiCalls = usageRes.data?.reduce((s, r) => s + r.credits_used, 0) ?? 0;
   const totalFeedback = feedbackRes.count ?? 0;
   const unreadFeedback = unreadFeedbackRes.count ?? 0;
 
@@ -44,10 +42,10 @@ export default async function AdminOverviewPage() {
     (p) => p.created_at >= weekAgo
   ).length;
 
+  // Day 5: dropped "Total AI Calls" stat — credits no longer tracked.
   const stats = [
     { title: "Total Users", value: totalUsers, sub: `${recentSignups} this week`, icon: Users, color: "text-blue-500" },
     { title: "MRR", value: `$${mrr}`, sub: `${activeSubs.length} active subscriptions`, icon: DollarSign, color: "text-green-500" },
-    { title: "Total AI Calls", value: totalAiCalls.toLocaleString(), sub: "All time", icon: Sparkles, color: "text-purple-500" },
     { title: "Businesses", value: totalBusinesses, sub: "Registered", icon: Building2, color: "text-amber-500" },
     { title: "Feedback", value: totalFeedback, sub: `${unreadFeedback} unread`, icon: MessageSquare, color: "text-pink-500" },
   ];

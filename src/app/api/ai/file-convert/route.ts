@@ -1,9 +1,8 @@
 import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { uploadFile } from "@/lib/storage";
-import { checkCredits, deductCredit, CREDIT_COSTS } from "@/lib/ai/credits";
+import { resolveAnthropicModel, byokErrorResponse } from "@/lib/ai/byok";
 import { buildBusinessContext, BUSINESS_PROFILE_SELECT } from "@/lib/ai/business-context";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { plans, type PlanId } from "@/config/plans";
@@ -143,7 +142,7 @@ export async function POST(req: Request) {
     }
   }
 
-  // Credit check
+  // Plan check: still needed for file size gate (uses plans.ts limits).
   const { data: profile } = await supabase
     .from("profiles")
     .select("plan_id")
@@ -153,7 +152,6 @@ export async function POST(req: Request) {
   const planId: PlanId = (profile?.plan_id as PlanId) ?? "free";
   const planConfig = plans[planId];
 
-  // Plan-based file size enforcement
   const maxFileSize = planConfig.limits.fileSizeMb * 1024 * 1024;
   if (file.size > maxFileSize) {
     return NextResponse.json(
@@ -162,13 +160,12 @@ export async function POST(req: Request) {
     );
   }
 
-  const cost = CREDIT_COSTS.file_convert;
-  const creditCheck = await checkCredits(user.id, planId, cost);
-  if (!creditCheck.allowed) {
-    return NextResponse.json(
-      { error: "AI credit limit reached. Please upgrade your plan." },
-      { status: 429 }
-    );
+  // BYOK resolver — file convert requires the caller's own Anthropic
+  // key. Free plan is blocked here (byok.reason === 'free_plan').
+  const byok = await resolveAnthropicModel("claude-sonnet-4-20250514");
+  if (!byok.ok) {
+    const err = byokErrorResponse(byok.reason);
+    return NextResponse.json(err.body, { status: err.status });
   }
 
   // Read file buffer
@@ -206,7 +203,7 @@ export async function POST(req: Request) {
       // Vision: send image directly to Claude
       const base64 = buffer.toString("base64");
       const result = await generateText({
-        model: anthropic("claude-sonnet-4-20250514"),
+        model: byok.model,
         messages: [
           {
             role: "user",
@@ -246,7 +243,7 @@ export async function POST(req: Request) {
         .trim();
 
       const result = await generateText({
-        model: anthropic("claude-sonnet-4-20250514"),
+        model: byok.model,
         system: `${businessContext}\n\n${SYSTEM_PROMPT_TEXT}`,
         prompt: `Here is the uploaded document content. Detect its type and convert accordingly:\n\n${sanitizedText}`,
       });
@@ -267,9 +264,6 @@ export async function POST(req: Request) {
     } else if (/policy statement|compliance|effective date|regulation/i.test(resultText)) {
       suggestedDocType = "policy";
     }
-
-    // Deduct credits (fire-and-forget)
-    deductCredit(user.id, resolvedBusinessId!, "file_convert", cost).catch(console.error);
 
     return NextResponse.json({
       text: resultText,

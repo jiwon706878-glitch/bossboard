@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
 import { useRoleStore } from "@/hooks/use-role";
 import { plans, type PlanId } from "@/config/plans";
-import { fetchCurrentUser, fetchProfile, fetchTeamMembers, fetchPendingInvites, fetchSopStats, fetchMonthlyUsage, fetchUserBusinesses, userKeys, teamKeys, sopKeys, usageKeys, businessKeys } from "@/lib/queries";
+import { fetchCurrentUser, fetchProfile, fetchTeamMembers, fetchPendingInvites, fetchSopStats, fetchUserBusinesses, userKeys, teamKeys, sopKeys, businessKeys } from "@/lib/queries";
 import { toast } from "sonner";
 import { MembersCard } from "@/components/team/members-card";
 import { WorkspacesCard } from "@/components/team/workspaces-card";
@@ -64,11 +64,8 @@ export default function TeamPage() {
     enabled: !!businessId,
   });
 
-  const { data: aiUsed = 0 } = useQuery({
-    queryKey: usageKeys.monthly(userId ?? ""),
-    queryFn: () => fetchMonthlyUsage(userId!),
-    enabled: !!userId,
-  });
+  // Day 5: AI credit usage query removed. The admin dashboard widget
+  // was updated to drop credit-based stats; see below.
 
   const { data: allBusinesses = [] } = useQuery({
     queryKey: businessKeys.all(userId ?? ""),
@@ -293,8 +290,6 @@ export default function TeamPage() {
             noteCount={noteCount}
             policyCount={policyCount}
             sopLimit={plan.limits.sops}
-            aiUsed={aiUsed}
-            aiLimit={plan.limits.aiCredits}
             teamLimit={plan.limits.teamMembers}
             planName={plan.name}
             userId={userId}

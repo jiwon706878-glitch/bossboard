@@ -1,8 +1,7 @@
 import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { checkCredits, deductCredit, CREDIT_COSTS } from "@/lib/ai/credits";
+import { resolveAnthropicModel, byokErrorResponse } from "@/lib/ai/byok";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 const ALLOWED_TYPES = new Set([
@@ -102,23 +101,11 @@ export async function POST(req: Request) {
     }
   }
 
-  // Credit check
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("plan_id")
-    .eq("id", user.id)
-    .single();
-
-  const planId =
-    (profile?.plan_id as "free" | "starter" | "pro" | "business") ?? "free";
-
-  const cost = CREDIT_COSTS.receipt_ocr;
-  const creditCheck = await checkCredits(user.id, planId, cost);
-  if (!creditCheck.allowed) {
-    return NextResponse.json(
-      { error: "AI credit limit reached. Please upgrade your plan." },
-      { status: 429 }
-    );
+  // BYOK resolver
+  const byok = await resolveAnthropicModel("claude-sonnet-4-20250514");
+  if (!byok.ok) {
+    const err = byokErrorResponse(byok.reason);
+    return NextResponse.json(err.body, { status: err.status });
   }
 
   // Convert image to buffer
@@ -127,7 +114,7 @@ export async function POST(req: Request) {
 
   try {
     const result = await generateText({
-      model: anthropic("claude-sonnet-4-20250514"),
+      model: byok.model,
       messages: [
         {
           role: "user",
@@ -197,11 +184,6 @@ Use null for unreadable or missing fields. Return an empty items array if indivi
         { status: 500 }
       );
     }
-
-    // Deduct credit on success
-    deductCredit(user.id, resolvedBusinessId!, "receipt_ocr", cost).catch(
-      console.error
-    );
 
     return NextResponse.json({ receipt });
   } catch (error) {

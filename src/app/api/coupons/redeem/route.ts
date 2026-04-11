@@ -7,12 +7,11 @@ import { redeemCouponAtomic } from "@/lib/coupons";
  * POST /api/coupons/redeem
  * Body: { code: string }
  *
- * - 'credits' coupon: adds to the caller's credit_balances and returns
- *   { success: true, type: 'credits', creditAmount }.
- * - 'discount' coupon: validates + records the redemption and returns
- *   { success: true, type: 'discount', paddleDiscountId, ... }.
- *   The dashboard billing page stashes paddleDiscountId and passes it
- *   to Paddle.Checkout.open() on the next upgrade click.
+ * Day 5 made coupons discount-only (the credit system is gone).
+ * Validates + records the redemption and returns
+ * { success: true, type: 'discount', paddleDiscountId, ... }.
+ * The dashboard billing page stashes paddleDiscountId and passes
+ * it to Paddle.Checkout.open() on the next upgrade click.
  */
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -37,9 +36,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "code_required" }, { status: 400 });
   }
 
-  // Find the caller's business — credit coupons need somewhere to
-  // deposit the credits. For discount coupons we still want the
-  // redemption recorded against a business for reporting.
+  // Record the redemption against the caller's business for reporting.
   const admin = createAdminClient();
   const { data: business } = await admin
     .from("businesses")
@@ -70,7 +67,6 @@ export async function POST(req: Request) {
     type: result.type,
     discountType: result.discountType,
     discountValue: result.discountValue,
-    creditAmount: result.creditAmount,
     paddleDiscountId: result.paddleDiscountId,
     appliesTo: result.appliesTo,
   });

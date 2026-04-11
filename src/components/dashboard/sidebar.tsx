@@ -9,11 +9,9 @@ import { plans, type PlanId } from "@/config/plans";
 import {
   fetchCurrentUser,
   fetchProfile,
-  fetchMonthlyUsage,
   fetchAllChecklists,
   fetchUserBusinesses,
   userKeys,
-  usageKeys,
   checklistKeys,
   businessKeys,
 } from "@/lib/queries";
@@ -150,13 +148,6 @@ export function DashboardSidebar({ className }: { className?: string }) {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: monthlyUsage = 0 } = useQuery({
-    queryKey: usageKeys.monthly(userId ?? ""),
-    queryFn: () => fetchMonthlyUsage(userId!),
-    enabled: !!userId,
-    staleTime: 60 * 1000,
-  });
-
   const { data: businesses = [] } = useQuery({
     queryKey: businessKeys.all(userId ?? ""),
     queryFn: () => fetchUserBusinesses(userId!),
@@ -179,17 +170,8 @@ export function DashboardSidebar({ className }: { className?: string }) {
   const userName = profile?.full_name || user?.email?.split("@")[0] || "";
   const planId = (profile?.plan_id as PlanId) ?? "free";
   const plan = plans[planId];
-  const creditsLimit = plan.limits.aiCredits;
-  const unlimited = creditsLimit === -1;
-  const creditsUsed = monthlyUsage;
-  const remaining = (unlimited ? 0 : creditsLimit) - creditsUsed;
-  const progressPct = unlimited ? 0 : Math.min(100, (creditsUsed / creditsLimit) * 100);
   const initial = userName ? userName.charAt(0).toUpperCase() : "";
   const developerMode = profile?.developer_mode ?? false;
-
-  // Progress bar color tier
-  const progressColor =
-    progressPct > 80 ? "bg-error" : progressPct > 50 ? "bg-warning" : "bg-success";
 
   const handleSwitchWorkspace = useCallback(
     (biz: Business) => {
@@ -223,7 +205,9 @@ export function DashboardSidebar({ className }: { className?: string }) {
         <span className="text-base font-bold tracking-tight text-text-primary">BossBoard</span>
       </div>
 
-      {/* ── User profile + credits ──────────────────────── */}
+      {/* ── User profile ────────────────────────────────── */}
+      {/* Day 5 removed the credit usage bar — credits no longer
+          exist; BYOK drives AI features on paid plans. */}
       <div className="border-b border-border px-5 py-4">
         {!profileLoaded ? (
           <div className="flex items-center gap-3">
@@ -234,39 +218,23 @@ export function DashboardSidebar({ className }: { className?: string }) {
             </div>
           </div>
         ) : (
-          <>
-            <div className="flex items-center gap-3">
-              {profile?.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt="Avatar"
-                  className="h-8 w-8 shrink-0 rounded-full object-cover"
-                />
-              ) : (
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
-                  {initial}
-                </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-text-primary">{userName}</p>
-                <p className="truncate text-[11px] text-text-secondary">
-                  {plan.name}
-                  {!unlimited && ` · ${remaining.toLocaleString()}/${creditsLimit.toLocaleString()} cr`}
-                  {unlimited && " · Unlimited"}
-                </p>
-              </div>
-            </div>
-            {!unlimited && (
-              <div className="mt-2.5">
-                <div className="h-1 w-full overflow-hidden rounded-full bg-surface">
-                  <div
-                    className={cn("h-full rounded-full transition-all", progressColor)}
-                    style={{ width: `${progressPct}%` }}
-                  />
-                </div>
+          <div className="flex items-center gap-3">
+            {profile?.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt="Avatar"
+                className="h-8 w-8 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
+                {initial}
               </div>
             )}
-          </>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-text-primary">{userName}</p>
+              <p className="truncate text-[11px] text-text-secondary">{plan.name} plan</p>
+            </div>
+          </div>
         )}
       </div>
 

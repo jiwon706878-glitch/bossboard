@@ -140,24 +140,21 @@ export default function BillingPage() {
         toast.error(msg);
         return;
       }
-      if (data.type === "credits") {
-        toast.success(`+${data.creditAmount} credits added!`);
-        setCouponCode("");
-      } else {
-        // discount — stash for the next checkout click
-        if (!data.paddleDiscountId) {
-          toast.error("Coupon is not configured for checkout");
-          return;
-        }
-        setCouponDiscountCode(data.paddleDiscountId);
-        const label =
-          data.discountType === "percent"
-            ? `${data.discountValue}% off`
-            : `$${data.discountValue} off`;
-        setCouponLabel(label);
-        setCouponCode("");
-        toast.success(`Coupon applied: ${label}`);
+      // Day 5: all coupons are discount-type. Stash the Paddle discount
+      // id in local state so the next upgrade click passes it through
+      // to Paddle.Checkout.open().
+      if (!data.paddleDiscountId) {
+        toast.error("Coupon is not configured for checkout");
+        return;
       }
+      setCouponDiscountCode(data.paddleDiscountId);
+      const label =
+        data.discountType === "percent"
+          ? `${data.discountValue}% off`
+          : `$${data.discountValue} off`;
+      setCouponLabel(label);
+      setCouponCode("");
+      toast.success(`Coupon applied: ${label}`);
     } catch {
       toast.error("Failed to redeem");
     } finally {
@@ -232,8 +229,7 @@ export default function BillingPage() {
             </form>
           )}
           <p className="mt-2 text-xs text-muted-foreground">
-            Credit coupons add to your balance instantly. Discount coupons
-            apply automatically on your next upgrade.
+            Discount coupons apply automatically on your next upgrade.
           </p>
         </CardContent>
       </Card>

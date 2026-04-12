@@ -24,6 +24,7 @@ import {
   ListTodo,
   CalendarDays,
   MessageSquare,
+  Send,
   Settings,
   Activity,
   Code2,
@@ -42,6 +43,7 @@ const navLinks = [
   { key: "checklists", href: "/dashboard/checklists", label: "Checklists", icon: CheckSquare },
   { key: "todos", href: "/dashboard/todos", label: "Todos", icon: ListTodo },
   { key: "board", href: "/dashboard/board", label: "Board", icon: MessageSquare },
+  { key: "dm", href: "/dashboard/dm", label: "Direct Messages", icon: Send },
   { key: "calendar", href: "/dashboard/calendar", label: "Calendar", icon: CalendarDays },
 ];
 
@@ -53,6 +55,7 @@ const TAB_IDS: Record<string, string> = {
   "/dashboard/todos": "todos",
   "/dashboard/calendar": "calendar",
   "/dashboard/board": "board",
+  "/dashboard/dm": "dm",
   "/dashboard/team": "team",
   "/dashboard/settings": "settings",
   "/dashboard/agent-activity": "agent-activity",

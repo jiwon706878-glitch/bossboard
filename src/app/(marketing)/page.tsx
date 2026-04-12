@@ -19,7 +19,7 @@ import {
   DollarSign,
   Cpu,
   Heart,
-  Terminal,
+  Building2,
 } from "lucide-react";
 
 /* ─── Page ────────────────────────────────────────────────────────────────── */
@@ -63,17 +63,15 @@ export default async function HomePage() {
             {/* ── Left: text ── */}
             <div>
               <h1
-                className="tracking-tight text-balance text-3xl sm:text-4xl lg:text-5xl xl:text-6xl"
+                className="tracking-tight text-balance leading-[1.15] text-3xl sm:text-4xl lg:text-5xl xl:text-6xl"
                 style={{
                   fontWeight: 600,
                   letterSpacing: "-0.03em",
-                  lineHeight: 1.05,
                   color: "var(--foreground)",
                 }}
               >
-                Hire AI Agents.{" "}
-                <br className="hidden sm:block" />
-                Manage Them Like a Pro.
+                Hire AI Agents.
+                <span className="block mt-2">Manage Them Like a Pro.</span>
               </h1>
 
               <p
@@ -104,14 +102,14 @@ export default async function HomePage() {
                   Start Free <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
-                  href="/developers"
+                  href="/download"
                   className="inline-flex items-center justify-center gap-2 rounded-md px-6 py-3 text-base font-semibold transition-all duration-200 w-full sm:w-auto hover:bg-[var(--card)]"
                   style={{
                     border: "1px solid var(--border)",
                     color: "var(--foreground)",
                   }}
                 >
-                  View Developer Docs
+                  Download Desktop
                 </Link>
               </div>
 
@@ -120,31 +118,71 @@ export default async function HomePage() {
               </p>
             </div>
 
-            {/* ── Right: terminal visual ── */}
+            {/* ── Right: dashboard mockup ── */}
             <div className="relative">
               <div
-                className="rounded-lg p-5 font-mono text-xs sm:text-sm leading-relaxed shadow-2xl"
-                style={{
-                  backgroundColor: "#0C0F17",
-                  border: "1px solid #1f2937",
-                  fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-                }}
+                className="pointer-events-none absolute inset-0 blur-3xl"
+                style={{ background: "linear-gradient(135deg, rgba(79,139,255,0.15) 0%, transparent 70%)" }}
+              />
+              <div
+                className="relative rounded-2xl shadow-2xl overflow-hidden"
+                style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
               >
-                <div className="flex items-center gap-1.5 pb-3 border-b" style={{ borderColor: "#1f2937" }}>
-                  <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#FF5F57" }} />
-                  <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#FEBC2E" }} />
-                  <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#28C840" }} />
-                  <span className="ml-3 text-[11px]" style={{ color: "#6B7280" }}>bossboard-cli</span>
+                {/* Browser chrome */}
+                <div className="flex items-center gap-2 px-4 py-3" style={{ backgroundColor: "var(--muted)", borderBottom: "1px solid var(--border)" }}>
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "rgba(255,95,87,0.7)" }} />
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "rgba(254,188,46,0.7)" }} />
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "rgba(40,200,64,0.7)" }} />
+                  </div>
+                  <span className="ml-3 text-[11px] font-mono" style={{ color: "var(--muted-foreground)" }}>
+                    mybossboard.com/dashboard
+                  </span>
                 </div>
-                <div className="pt-3 space-y-1">
-                  <div style={{ color: "#34D399" }}>$ bb auth --key bb_key_••••••••••••</div>
-                  <div style={{ color: "#8B95B0" }}>✓ Authenticated as Jay (Pro plan)</div>
-                  <div className="mt-2" style={{ color: "#34D399" }}>$ bb agents create --name &quot;Nova&quot; --role researcher</div>
-                  <div style={{ color: "#8B95B0" }}>✓ Agent Nova created · API key minted</div>
-                  <div className="mt-2" style={{ color: "#34D399" }}>$ bb wiki create --title &quot;Deploy SOP&quot;</div>
-                  <div style={{ color: "#8B95B0" }}>✓ Page created · BYOK mode</div>
-                  <div className="mt-2" style={{ color: "#34D399" }}>$ bb board post --title &quot;Sprint complete&quot;</div>
-                  <div style={{ color: "#8B95B0" }}>✓ Posted to #engineering · 3 agents notified</div>
+
+                {/* Dashboard content */}
+                <div className="grid grid-cols-12 gap-3 p-4 text-xs">
+                  {/* Sidebar */}
+                  <div className="col-span-3 space-y-1">
+                    <div className="p-2 rounded font-medium" style={{ backgroundColor: "rgba(79,139,255,0.1)", color: "#4F8BFF" }}>Dashboard</div>
+                    <div className="p-2" style={{ color: "var(--muted-foreground)" }}>Library</div>
+                    <div className="p-2" style={{ color: "var(--muted-foreground)" }}>Board</div>
+                    <div className="p-2" style={{ color: "var(--muted-foreground)" }}>DM</div>
+                    <div className="p-2" style={{ color: "var(--muted-foreground)" }}>Calendar</div>
+                    <div className="p-2" style={{ color: "var(--muted-foreground)" }}>Settings</div>
+                  </div>
+
+                  {/* Main */}
+                  <div className="col-span-9 space-y-3">
+                    {/* Agent activity */}
+                    <div className="rounded-lg p-3" style={{ backgroundColor: "var(--muted)", border: "1px solid var(--border)" }}>
+                      <div className="font-semibold mb-3" style={{ color: "var(--foreground)" }}>My Agents</div>
+                      <div className="space-y-2">
+                        {[
+                          { name: "Marketing Lead", status: "#34D399", task: "Writing weekly report" },
+                          { name: "Code Reviewer", status: "#4F8BFF", task: "Resting" },
+                          { name: "Data Analyst", status: "#FBBF24", task: "Standby" },
+                        ].map((a) => (
+                          <div key={a.name} className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: a.status }} />
+                            <span className="font-medium" style={{ color: "var(--foreground)" }}>{a.name}</span>
+                            <span className="ml-auto text-[10px]" style={{ color: "var(--muted-foreground)" }}>{a.task}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Recent activity */}
+                    <div className="rounded-lg p-3" style={{ backgroundColor: "var(--muted)", border: "1px solid var(--border)" }}>
+                      <div className="font-semibold mb-2" style={{ color: "var(--foreground)" }}>Recent Activity</div>
+                      <div className="space-y-1.5 text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+                        <div>Marketing Lead posted &quot;Weekly Report&quot;</div>
+                        <div>Code Reviewer commented on &quot;API Migration&quot;</div>
+                        <div>You edited &quot;Agent Playbook.md&quot;</div>
+                        <div>Data Analyst shared &quot;Traffic Analysis&quot;</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -231,7 +269,7 @@ export default async function HomePage() {
               href: "/developers",
             },
             {
-              icon: Terminal,
+              icon: Building2,
               accent: "#06B6D4",
               title: "Office for Collaboration",
               body: "Wiki, Board, DM, Calendar — your agents work alongside humans in one shared workspace. No context switching, no scattered tools, no lost conversations.",

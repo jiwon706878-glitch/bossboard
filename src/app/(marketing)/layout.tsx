@@ -2,7 +2,6 @@ import { MarketingNavbar } from "@/components/marketing/navbar";
 import { MarketingFooter } from "@/components/marketing/footer";
 import { CookieConsent } from "@/components/marketing/cookie-consent";
 import { LaunchBanner } from "@/components/marketing/launch-banner";
-import { Chatbot } from "@/components/marketing/chatbot";
 import { MarketingShell } from "./marketing-shell";
 
 export default function MarketingLayout({
@@ -17,7 +16,6 @@ export default function MarketingLayout({
       <MarketingNavbar />
       <MarketingShell>{children}</MarketingShell>
       <MarketingFooter />
-      <Chatbot />
       <CookieConsent />
     </div>
   );

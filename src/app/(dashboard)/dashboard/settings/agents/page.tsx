@@ -36,8 +36,10 @@ import {
   Zap,
   RefreshCw,
   Shield,
+  Send,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { useDmPanel } from "@/hooks/use-dm-panel";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -425,6 +427,7 @@ function AgentCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { openPanel } = useDmPanel();
   const status = displayStatus(agent);
   const color = statusColor(status);
   const manualTitle =
@@ -479,6 +482,14 @@ function AgentCard({
             </div>
           </div>
           <div className="flex gap-1 shrink-0">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => openPanel({ targetId: agent.id })}
+              title="Message agent"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
             <Button
               size="icon"
               variant="ghost"

@@ -221,8 +221,13 @@ const FAMILY_RANK: Record<ClaudeParsed["family"], number> = {
 };
 
 function parseClaudeModel(id: string): ClaudeParsed | null {
-  // New format: claude-opus-4-5 or claude-opus-4-5-20251101
-  let m = id.match(/^claude-(opus|sonnet|haiku)-(\d+)-(\d+)/i);
+  // Strip trailing date suffix (-YYYYMMDD) before parsing so
+  // "claude-opus-4-20251101" doesn't accidentally treat the date
+  // as a minor version.
+  const stripped = id.replace(/-\d{8}$/, "");
+
+  // New format: claude-opus-4-6 (family-major-minor)
+  let m = stripped.match(/^claude-(opus|sonnet|haiku)-(\d+)-(\d+)$/i);
   if (m) {
     return {
       family: m[1].toLowerCase() as ClaudeParsed["family"],
@@ -230,13 +235,31 @@ function parseClaudeModel(id: string): ClaudeParsed | null {
       minor: parseInt(m[3], 10),
     };
   }
-  // Legacy format: claude-3-5-sonnet-20241022
-  m = id.match(/^claude-(\d+)-(\d+)-(opus|sonnet|haiku)/i);
+  // Bare major: claude-opus-4 (no minor version)
+  m = stripped.match(/^claude-(opus|sonnet|haiku)-(\d+)$/i);
+  if (m) {
+    return {
+      family: m[1].toLowerCase() as ClaudeParsed["family"],
+      major: parseInt(m[2], 10),
+      minor: 0,
+    };
+  }
+  // Legacy format: claude-3-5-sonnet-20241022 or claude-3-5-sonnet
+  m = stripped.match(/^claude-(\d+)-(\d+)-(opus|sonnet|haiku)$/i);
   if (m) {
     return {
       family: m[3].toLowerCase() as ClaudeParsed["family"],
       major: parseInt(m[1], 10),
       minor: parseInt(m[2], 10),
+    };
+  }
+  // Legacy bare: claude-3-sonnet
+  m = stripped.match(/^claude-(\d+)-(opus|sonnet|haiku)$/i);
+  if (m) {
+    return {
+      family: m[2].toLowerCase() as ClaudeParsed["family"],
+      major: parseInt(m[1], 10),
+      minor: 0,
     };
   }
   return null;

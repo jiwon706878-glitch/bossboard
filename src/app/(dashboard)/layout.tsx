@@ -8,6 +8,7 @@ import { ContextMenuBlocker } from "@/components/dashboard/context-menu-blocker"
 import { GlobalShortcuts } from "@/components/dashboard/global-shortcuts";
 import { TabAIChat } from "@/components/ai/tab-ai-chat";
 import { TrialBanner } from "@/components/dashboard/trial-banner";
+import { DmPanelProvider } from "@/components/dm/dm-panel-provider";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -31,6 +32,7 @@ export default function DashboardLayout({
         <DashboardPrefetcher />
         <GlobalShortcuts />
         <TabAIChat tab="wiki" context={{}} />
+        <DmPanelProvider />
       </div>
     </ContextMenuBlocker>
   );

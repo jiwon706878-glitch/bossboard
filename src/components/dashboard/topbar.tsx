@@ -2,7 +2,8 @@
 
 import { memo, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Menu, Search, MessageSquarePlus, LogOut, User as UserIcon, Settings as SettingsIcon } from "lucide-react";
+import { Menu, Search, MessageSquarePlus, LogOut, User as UserIcon, Settings as SettingsIcon, Send } from "lucide-react";
+import { useDmPanel } from "@/hooks/use-dm-panel";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -114,6 +115,15 @@ function UserMenu() {
 
 // ─── Topbar ──────────────────────────────────────────────────────────────────
 
+function DmButton() {
+  const { openPanel } = useDmPanel();
+  return (
+    <Button variant="ghost" size="icon" onClick={() => openPanel()} title="Messages">
+      <Send className="h-4 w-4" />
+    </Button>
+  );
+}
+
 export const DashboardTopbar = memo(function DashboardTopbar() {
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -201,6 +211,7 @@ export const DashboardTopbar = memo(function DashboardTopbar() {
           </Popover>
 
           <RefreshButton />
+          <DmButton />
           <NotificationBell />
           <LocaleSwitcher />
           <ThemeToggle />

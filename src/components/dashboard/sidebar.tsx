@@ -39,7 +39,7 @@ const supabase = createClient();
 
 const navLinks = [
   { key: "dashboard", href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { key: "library", href: "/dashboard/sops", label: "Library", icon: LibraryIcon },
+  { key: "library", href: "/dashboard/library", label: "Library", icon: LibraryIcon },
   { key: "checklists", href: "/dashboard/checklists", label: "Checklists", icon: CheckSquare },
   { key: "todos", href: "/dashboard/todos", label: "Todos", icon: ListTodo },
   { key: "board", href: "/dashboard/board", label: "Board", icon: MessageSquare },
@@ -50,6 +50,7 @@ const navLinks = [
 // Tab IDs map href → tab id for instant switching
 const TAB_IDS: Record<string, string> = {
   "/dashboard": "dashboard",
+  "/dashboard/library": "sops",
   "/dashboard/sops": "sops",
   "/dashboard/checklists": "checklists",
   "/dashboard/todos": "todos",

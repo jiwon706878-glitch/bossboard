@@ -196,7 +196,7 @@ export default async function HomePage() {
       </section>
 
       {/* ═══ SECTION 2: THE PROBLEM ═══════════════════════════════════════ */}
-      <section style={{ backgroundColor: "var(--card)" }}>
+      <section id="how-it-works" style={{ backgroundColor: "var(--card)" }}>
         <AnimatedSection className="mx-auto max-w-[900px] px-6 py-24 text-center">
           <h2
             className="tracking-tight text-balance"

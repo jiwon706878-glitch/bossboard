@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/shared/theme-provider";
 import { PaddleProvider } from "@/components/shared/paddle-provider";
 import { QueryProvider } from "@/providers/query-provider";
+import { I18nProvider } from "@/lib/i18n";
 import { ThemeLoader } from "@/components/theme-loader";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "sonner";
@@ -53,14 +54,16 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <ThemeLoader />
-          <QueryProvider>
-            <PaddleProvider>
-              <TooltipProvider>
-                {children}
-                <Toaster richColors position="bottom-right" closeButton />
-              </TooltipProvider>
-            </PaddleProvider>
-          </QueryProvider>
+          <I18nProvider>
+            <QueryProvider>
+              <PaddleProvider>
+                <TooltipProvider>
+                  {children}
+                  <Toaster richColors position="bottom-right" closeButton />
+                </TooltipProvider>
+              </PaddleProvider>
+            </QueryProvider>
+          </I18nProvider>
         </ThemeProvider>
       </body>
     </html>

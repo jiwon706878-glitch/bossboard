@@ -35,7 +35,9 @@ import {
   IdCard,
   Zap,
   RefreshCw,
+  Shield,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -49,6 +51,13 @@ interface ProviderModel {
   provider: ProviderId;
 }
 
+interface AgentPermissions {
+  can_edit_wiki?: boolean;
+  can_post_board?: boolean;
+  can_send_dm?: boolean;
+  can_create_todos?: boolean;
+}
+
 interface AgentRow {
   id: string;
   full_name: string | null;
@@ -59,6 +68,7 @@ interface AgentRow {
   last_heartbeat: string | null;
   preferred_model: string | null;
   agent_manual_page_id: string | null;
+  agent_permissions: AgentPermissions;
   created_at: string;
 }
 
@@ -921,7 +931,14 @@ function EditAgentDialog({
   const [manualPageId, setManualPageId] = useState(
     agent.agent_manual_page_id ?? ""
   );
+  const [permissions, setPermissions] = useState<AgentPermissions>(
+    agent.agent_permissions ?? {}
+  );
   const [saving, setSaving] = useState(false);
+
+  function togglePerm(key: keyof AgentPermissions) {
+    setPermissions((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -935,6 +952,7 @@ function EditAgentDialog({
           role,
           preferred_model: preferredModel || null,
           agent_manual_page_id: manualPageId || null,
+          agent_permissions: permissions,
         }),
       });
       if (!res.ok) {
@@ -1087,6 +1105,36 @@ function EditAgentDialog({
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Permissions */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-muted-foreground" />
+                <Label>Permissions</Label>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Control what this agent can do via the API. Default: all off.
+              </p>
+              <div className="rounded-md border">
+                {([
+                  { key: "can_edit_wiki" as const, label: "Edit wiki pages" },
+                  { key: "can_post_board" as const, label: "Post to board" },
+                  { key: "can_send_dm" as const, label: "Send DMs" },
+                  { key: "can_create_todos" as const, label: "Create/edit todos" },
+                ]).map((perm) => (
+                  <div
+                    key={perm.key}
+                    className="flex items-center justify-between px-4 py-2.5 border-b last:border-0 hover:bg-muted/30"
+                  >
+                    <span className="text-sm">{perm.label}</span>
+                    <Switch
+                      checked={permissions[perm.key] ?? false}
+                      onCheckedChange={() => togglePerm(perm.key)}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter>

@@ -56,6 +56,10 @@ export async function POST(req: NextRequest) {
     const auth = await authenticateApiKey(req);
     if (auth instanceof NextResponse) return auth;
 
+    const { checkAgentPermission } = await import("@/lib/api/agent-permissions");
+    const denied = await checkAgentPermission(auth.apiKeyId, "can_edit_wiki");
+    if (denied) return denied;
+
     const body = await req.json();
     const parsed = CreateSopSchema.safeParse(body);
     if (!parsed.success) {

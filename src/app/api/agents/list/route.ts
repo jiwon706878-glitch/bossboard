@@ -22,7 +22,7 @@ export async function GET() {
   const { data, error } = await admin
     .from("profiles")
     .select(
-      "id, full_name, avatar_url, agent_role, agent_status, current_task, last_heartbeat, preferred_model, agent_manual_page_id, created_at"
+      "id, full_name, avatar_url, agent_role, agent_status, current_task, last_heartbeat, preferred_model, agent_manual_page_id, agent_permissions, created_at"
     )
     .eq("account_type", "agent")
     .eq("parent_user_id", user.id)

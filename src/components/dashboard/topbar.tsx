@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { LocaleSwitcher } from "@/components/shared/locale-switcher";
 import { DashboardSidebar } from "./sidebar";
 import { NotificationBell } from "./notification-bell";
 import { SearchDropdown } from "./search-dropdown";
@@ -201,6 +202,7 @@ export const DashboardTopbar = memo(function DashboardTopbar() {
 
           <RefreshButton />
           <NotificationBell />
+          <LocaleSwitcher />
           <ThemeToggle />
           <div className="ml-1">
             <UserMenu />

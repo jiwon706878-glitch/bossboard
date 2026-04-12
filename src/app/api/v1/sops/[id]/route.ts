@@ -85,6 +85,10 @@ export async function PUT(
     const auth = await authenticateApiKey(req);
     if (auth instanceof NextResponse) return auth;
 
+    const { checkAgentPermission } = await import("@/lib/api/agent-permissions");
+    const denied = await checkAgentPermission(auth.apiKeyId, "can_edit_wiki");
+    if (denied) return denied;
+
     const { id } = await params;
     const body = await req.json();
     const admin = createAdminClient();

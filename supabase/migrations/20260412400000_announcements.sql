@@ -1,5 +1,5 @@
 -- ============================================================================
--- BB v2.0 Day 11: Announcements + user notification preferences
+-- BB v2.0 Day 11: Announcements + user notification preferences (FIXED)
 -- ============================================================================
 
 -- 1. Announcements table
@@ -20,7 +20,6 @@ CREATE TABLE IF NOT EXISTS public.announcements (
 
 ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
 
--- Admins can do everything
 DROP POLICY IF EXISTS "Admins manage announcements" ON public.announcements;
 CREATE POLICY "Admins manage announcements"
   ON public.announcements FOR ALL
@@ -31,7 +30,6 @@ CREATE POLICY "Admins manage announcements"
     )
   );
 
--- Users can read published announcements targeted to them or broadcast
 DROP POLICY IF EXISTS "Users read announcements" ON public.announcements;
 CREATE POLICY "Users read announcements"
   ON public.announcements FOR SELECT
@@ -56,7 +54,6 @@ CREATE POLICY "Users manage own reads"
   ON public.announcement_reads FOR ALL
   USING (user_id = auth.uid());
 
--- Admins can view all reads (for read counts)
 DROP POLICY IF EXISTS "Admins view all reads" ON public.announcement_reads;
 CREATE POLICY "Admins view all reads"
   ON public.announcement_reads FOR SELECT
@@ -67,7 +64,7 @@ CREATE POLICY "Admins view all reads"
     )
   );
 
--- 3. User notification preferences per announcement category
+-- 3. User notification preferences
 CREATE TABLE IF NOT EXISTS public.user_notification_prefs (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   magazine BOOLEAN NOT NULL DEFAULT true,
@@ -85,7 +82,6 @@ CREATE POLICY "Users manage own prefs"
   ON public.user_notification_prefs FOR ALL
   USING (user_id = auth.uid());
 
--- Index for efficient announcement queries
+-- 4. Index (WHERE 절 제거, 전체 인덱스로)
 CREATE INDEX IF NOT EXISTS idx_announcements_scheduled
-  ON public.announcements (scheduled_at DESC)
-  WHERE scheduled_at <= NOW();
+  ON public.announcements (scheduled_at DESC);

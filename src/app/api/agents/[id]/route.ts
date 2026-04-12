@@ -96,6 +96,17 @@ export async function PATCH(req: Request, { params }: RouteParams) {
   ) {
     update.agent_manual_page_id = body.agent_manual_page_id || null;
   }
+  if (body.agent_permissions != null && typeof body.agent_permissions === "object") {
+    // Whitelist allowed permission keys to prevent injection
+    const allowed = ["can_edit_wiki", "can_post_board", "can_send_dm", "can_create_todos"];
+    const perms: Record<string, boolean> = {};
+    for (const key of allowed) {
+      if (typeof (body.agent_permissions as Record<string, unknown>)[key] === "boolean") {
+        perms[key] = (body.agent_permissions as Record<string, boolean>)[key];
+      }
+    }
+    update.agent_permissions = perms;
+  }
 
   // account_type, parent_user_id, agent_status, current_task,
   // last_heartbeat are deliberately NOT accepted here — status and

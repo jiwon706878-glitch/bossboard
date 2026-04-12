@@ -10,6 +10,9 @@ import { StatsSection } from "@/components/dashboard/stats-section";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { SearchDropdown } from "@/components/dashboard/search-dropdown";
+import { AgentActivityWidget } from "@/components/dashboard/agent-activity-widget";
+import { QuickStatsWidget } from "@/components/dashboard/quick-stats-widget";
+import { ByokWidget } from "@/components/dashboard/byok-widget";
 
 export default function DashboardPage() {
   const { isAdmin, loadRole } = useRoleStore();
@@ -71,6 +74,17 @@ export default function DashboardPage() {
           activeTodos={activeTodos}
         />
       )}
+
+      {/* ── BB v2.0 Day 8 widgets ────────────────────────── */}
+      {/* 3-column responsive grid on desktop, stacks on mobile.
+          Each widget is self-contained (fetches its own data +
+          auto-refreshes) so the parent doesn't need to coordinate
+          loading states. */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <AgentActivityWidget />
+        <QuickStatsWidget />
+        <ByokWidget />
+      </div>
 
       {/* ── Recent activity feed ──────────────────────────── */}
       <RecentActivity />

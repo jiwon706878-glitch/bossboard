@@ -5,6 +5,9 @@ create table public.profiles (
   avatar_url text,
   plan_id text not null default 'free',
   paddle_customer_id text unique,
+  trial_end_date timestamptz,
+  trial_plan text,
+  original_plan_id text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

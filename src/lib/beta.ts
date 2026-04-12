@@ -57,14 +57,22 @@ export const getBetaState = unstable_cache(
 
 /**
  * Whether the given user is currently inside their Pro trial.
- *
- * STUB for Day 3: returns false for everyone. Day 4 will wire this
- * up to a `profiles.trial_end_date` column populated on signup
- * during the beta window. Keeping the helper exported now so feature
- * gates can be updated to call it ahead of the real implementation.
+ * Reads profiles.trial_end_date — returns true if the date is in the future.
  */
-export async function isInBetaTrial(_userId: string): Promise<boolean> {
-  return false;
+export async function isInBetaTrial(userId: string): Promise<boolean> {
+  try {
+    const supabase = createAdminClient();
+    const { data } = await supabase
+      .from("profiles")
+      .select("trial_end_date")
+      .eq("id", userId)
+      .single();
+
+    if (!data?.trial_end_date) return false;
+    return new Date(data.trial_end_date).getTime() > Date.now();
+  } catch {
+    return false;
+  }
 }
 
 /** Invalidates the cached beta state — called from admin mutations. */

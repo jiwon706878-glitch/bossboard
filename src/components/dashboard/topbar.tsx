@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Menu, Search, MessageSquarePlus, LogOut, User as UserIcon, Settings as SettingsIcon, Send } from "lucide-react";
+import { Menu, Search, MessageSquarePlus, LogOut, Settings as SettingsIcon, Send } from "lucide-react";
 import { useDmPanel } from "@/hooks/use-dm-panel";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -14,12 +14,10 @@ import {
 } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
-import { LocaleSwitcher } from "@/components/shared/locale-switcher";
 import { DashboardSidebar } from "./sidebar";
 import { NotificationBell } from "./notification-bell";
 import { SearchDropdown } from "./search-dropdown";
 import { FeedbackCard } from "./feedback-card";
-import { RefreshButton } from "./refresh-button";
 import { fetchCurrentUser, fetchProfile, userKeys } from "@/lib/queries";
 import { useBusinessStore } from "@/hooks/use-business";
 import { createClient } from "@/lib/supabase/client";
@@ -83,13 +81,6 @@ function UserMenu() {
           <p className="truncate text-xs text-text-secondary">{user?.email ?? ""}</p>
         </div>
         <div className="py-1">
-          <a
-            href="/dashboard/settings"
-            className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-text-primary hover:bg-surface transition-colors"
-          >
-            <UserIcon className="h-4 w-4 text-text-secondary" />
-            Profile
-          </a>
           <a
             href="/dashboard/settings"
             className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-text-primary hover:bg-surface transition-colors"
@@ -210,10 +201,8 @@ export const DashboardTopbar = memo(function DashboardTopbar() {
             </PopoverContent>
           </Popover>
 
-          <RefreshButton />
           <DmButton />
           <NotificationBell />
-          <LocaleSwitcher />
           <ThemeToggle />
           <div className="ml-1">
             <UserMenu />

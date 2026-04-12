@@ -29,7 +29,7 @@ export default function SignupPage() {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -37,6 +37,15 @@ export default function SignupPage() {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
+
+    // Supabase returns a user with identities=[] when the email
+    // is already registered and email confirmations are enabled.
+    // Detect this and show a helpful message instead of "email sent".
+    if (!error && data?.user && data.user.identities?.length === 0) {
+      toast.error("An account with this email already exists. Try logging in instead.");
+      setLoading(false);
+      return;
+    }
 
     if (error) {
       console.error("Signup error:", error.message);

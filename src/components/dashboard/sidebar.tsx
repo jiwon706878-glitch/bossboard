@@ -24,7 +24,6 @@ import {
   ListTodo,
   CalendarDays,
   MessageSquare,
-  Send,
   Settings,
   Activity,
   Code2,
@@ -43,7 +42,6 @@ const navLinks = [
   { key: "checklists", href: "/dashboard/checklists", label: "Checklists", icon: CheckSquare },
   { key: "todos", href: "/dashboard/todos", label: "Todos", icon: ListTodo },
   { key: "board", href: "/dashboard/board", label: "Board", icon: MessageSquare },
-  { key: "dm", href: "/dashboard/dm", label: "Direct Messages", icon: Send },
   { key: "calendar", href: "/dashboard/calendar", label: "Calendar", icon: CalendarDays },
 ];
 

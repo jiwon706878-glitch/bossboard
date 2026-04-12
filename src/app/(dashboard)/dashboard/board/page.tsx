@@ -18,6 +18,17 @@ import { PostCard } from "@/components/board/post-card";
 import { CommentSection } from "@/components/board/comment-section";
 import { plans, type PlanId } from "@/config/plans";
 
+// ─── BB v2.0 Day 7: channel definitions ─────────────────────────────────────
+// The DB enforces these via a CHECK constraint on board_posts.channel.
+// Keep this list in sync with 20260414100000_board_channels.sql.
+type Channel = "general" | "team" | "agent-activity" | "announcements";
+const CHANNELS: Array<{ id: Channel; label: string; hint: string }> = [
+  { id: "general", label: "# general", hint: "Catch-all team chat" },
+  { id: "team", label: "# team", hint: "Internal discussion" },
+  { id: "agent-activity", label: "# agent-activity", hint: "Agent updates" },
+  { id: "announcements", label: "# announcements", hint: "Workspace news" },
+];
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function BoardPage() {
@@ -30,6 +41,10 @@ export default function BoardPage() {
   // Use shared user query instead of calling getUser() in every board query
   const { data: currentUser } = useQuery({ queryKey: userKeys.current, queryFn: fetchCurrentUser, retry: false });
   const currentUserId = currentUser?.id ?? null;
+
+  // BB v2.0 Day 7: which channel is the user looking at? Drives the
+  // post-fetch query AND the channel a new post is filed under.
+  const [activeChannel, setActiveChannel] = useState<Channel>("general");
 
   // Create form — two-step mount/visible for smooth CSS transition
   const [formMounted, setFormMounted] = useState(false);
@@ -85,7 +100,9 @@ export default function BoardPage() {
   // ─── Load posts via React Query ──────────────────────────────────────────
 
   const { data: posts = [], isLoading: loading } = useQuery({
-    queryKey: boardKeys.all(businessId ?? ""),
+    // Channel is part of the cache key so switching channels doesn't
+    // flash the previous channel's posts.
+    queryKey: [...boardKeys.all(businessId ?? ""), activeChannel],
     queryFn: async (): Promise<Post[]> => {
       if (!businessId || !currentUserId) return [];
 
@@ -93,6 +110,7 @@ export default function BoardPage() {
         .from("board_posts")
         .select("id, user_id, type, title, content, is_pinned, created_at, attachments")
         .eq("business_id", businessId)
+        .eq("channel", activeChannel)
         .order("created_at", { ascending: false });
 
       if (!postsData || postsData.length === 0) return [];
@@ -165,6 +183,9 @@ export default function BoardPage() {
 
   function invalidateBoard() {
     if (businessId) {
+      // Invalidate every channel's cached query for this business —
+      // boardKeys.all is the prefix, so passing it without the
+      // channel suffix matches all four channel-specific keys.
       queryClient.invalidateQueries({ queryKey: boardKeys.all(businessId) });
     }
   }
@@ -234,6 +255,9 @@ export default function BoardPage() {
         content: formContent.trim() || null,
         is_pinned: formPinned && formType === "notice",
         attachments: uploadedFiles.length > 0 ? uploadedFiles : null,
+        // BB v2.0 Day 7: file the new post in the currently-selected
+        // channel so it appears immediately after closing the form.
+        channel: activeChannel,
       })
       .select("id")
       .single();
@@ -515,6 +539,34 @@ export default function BoardPage() {
           {formMounted ? <X className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
           {formMounted ? "Cancel" : "New Post"}
         </Button>
+      </div>
+
+      {/* BB v2.0 Day 7: channel tabs. Switching channels just bumps
+          activeChannel state — the React Query key includes channel
+          so each tab has its own cached posts list. New posts go
+          into the currently-active channel. */}
+      <div className="flex gap-1 border-b overflow-x-auto -mx-1 px-1">
+        {CHANNELS.map((c) => {
+          const isActive = c.id === activeChannel;
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setActiveChannel(c.id)}
+              className={`relative px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                isActive
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              title={c.hint}
+            >
+              {c.label}
+              {isActive && (
+                <span className="absolute inset-x-0 -bottom-px h-0.5 bg-primary" />
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Create form — two-step mount then CSS transition for smooth open/close */}

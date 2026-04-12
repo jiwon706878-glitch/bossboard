@@ -143,13 +143,17 @@ export default async function HomePage() {
                 {/* Dashboard content */}
                 <div className="grid grid-cols-12 gap-3 p-4 text-xs">
                   {/* Sidebar */}
-                  <div className="col-span-3 space-y-1">
-                    <div className="p-2 rounded font-medium" style={{ backgroundColor: "rgba(79,139,255,0.1)", color: "#4F8BFF" }}>Dashboard</div>
-                    <div className="p-2" style={{ color: "var(--muted-foreground)" }}>Library</div>
-                    <div className="p-2" style={{ color: "var(--muted-foreground)" }}>Board</div>
-                    <div className="p-2" style={{ color: "var(--muted-foreground)" }}>DM</div>
-                    <div className="p-2" style={{ color: "var(--muted-foreground)" }}>Calendar</div>
-                    <div className="p-2" style={{ color: "var(--muted-foreground)" }}>Settings</div>
+                  <div className="col-span-3 flex flex-col">
+                    <div className="space-y-1 flex-1">
+                      <div className="p-2 rounded font-medium" style={{ backgroundColor: "rgba(79,139,255,0.1)", color: "#4F8BFF" }}>Dashboard</div>
+                      <div className="p-2" style={{ color: "var(--muted-foreground)" }}>Library</div>
+                      <div className="p-2" style={{ color: "var(--muted-foreground)" }}>Board</div>
+                      <div className="p-2" style={{ color: "var(--muted-foreground)" }}>Calendar</div>
+                      <div className="p-2" style={{ color: "var(--muted-foreground)" }}>Agents</div>
+                    </div>
+                    <div className="pt-2 mt-2" style={{ borderTop: "1px solid color-mix(in srgb, var(--border) 50%, transparent)" }}>
+                      <div className="p-2" style={{ color: "var(--muted-foreground)" }}>Settings</div>
+                    </div>
                   </div>
 
                   {/* Main */}

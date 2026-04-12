@@ -53,7 +53,8 @@ export function LaunchBannerClient({
 
   return (
     <div
-      className="relative px-4 py-2.5 text-center text-sm"
+      id="bb-beta-banner"
+      className="sticky top-0 z-[60] relative px-4 py-2.5 text-center text-sm"
       style={{
         backgroundColor: "var(--card)",
         color: "var(--foreground)",

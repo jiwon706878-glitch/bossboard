@@ -1,12 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 
 export function MarketingNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [bannerHeight, setBannerHeight] = useState(0);
+
+  // Measure the beta banner above so the navbar sticks below it
+  useEffect(() => {
+    function measure() {
+      const banner = document.getElementById("bb-beta-banner");
+      setBannerHeight(banner ? banner.offsetHeight : 0);
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    // Re-check periodically in case the banner is dismissed
+    const t = setInterval(measure, 1000);
+    return () => { window.removeEventListener("resize", measure); clearInterval(t); };
+  }, []);
 
   const navLinks = [
     { href: "/#features", label: "Features" },
@@ -18,8 +32,9 @@ export function MarketingNavbar() {
 
   return (
     <header
-      className="sticky top-0 z-50 w-full"
+      className="sticky z-50 w-full"
       style={{
+        top: `${bannerHeight}px`,
         backgroundColor: "color-mix(in srgb, var(--background) 95%, transparent)",
         borderBottom: "1px solid var(--border)",
         backdropFilter: "blur(12px)",

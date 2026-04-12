@@ -90,6 +90,24 @@ export const SLASH_COMMANDS: SlashCommandItem[] = [
     },
   },
   {
+    title: "Diagram",
+    description: "Mermaid flowchart or diagram",
+    icon: "⎇",
+    command: (editor) => editor.chain().focus().insertMermaid().run(),
+  },
+  {
+    title: "Chart",
+    description: "Bar, line, pie, or area chart",
+    icon: "▥",
+    command: (editor) => editor.chain().focus().insertChart().run(),
+  },
+  {
+    title: "Math",
+    description: "LaTeX math equation",
+    icon: "∑",
+    command: (editor) => editor.chain().focus().insertMath().run(),
+  },
+  {
     title: "Footnote",
     description: "Add a reference [1]",
     icon: "¹",

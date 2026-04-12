@@ -33,6 +33,9 @@ import {
   Code,
   Minus,
   Link2,
+  GitBranch,
+  BarChart3,
+  Sigma,
 } from "lucide-react";
 import { WikiLink } from "./wiki-link/extension";
 import { createSuggestionItems } from "./wiki-link/suggestion";
@@ -41,6 +44,9 @@ import { SlashCommand } from "./slash-command/extension";
 import { Details, DetailsSummary, DetailsContent } from "./extensions/toggle-block";
 import { Callout } from "./extensions/callout";
 import { FootnoteRef } from "./extensions/footnote";
+import { Mermaid } from "./extensions/mermaid";
+import { Chart } from "./extensions/chart";
+import { MathExtension } from "./extensions/math";
 
 interface SOPEditorProps {
   content?: JSONContent | null;
@@ -138,6 +144,9 @@ export function SOPEditor({ content, onChange, editable = true, businessId, onNa
       DetailsContent,
       Callout,
       FootnoteRef,
+      Mermaid,
+      Chart,
+      MathExtension,
       SlashCommand,
       WikiLink.configure({
         suggestion: {
@@ -261,6 +270,11 @@ export function SOPEditor({ content, onChange, editable = true, businessId, onNa
         /* Footnotes */
         .prose .footnote-ref { color: var(--primary); cursor: default; font-size: 0.75em; vertical-align: super; padding: 0 1px; font-weight: 600; }
         .prose .footnote-ref:hover { text-decoration: underline; }
+        /* Power-up blocks */
+        .prose .mermaid-block, .prose .chart-block, .prose .math-block { margin: 0.75em 0; }
+        .prose .mermaid-block .node rect, .prose .mermaid-block .node circle, .prose .mermaid-block .node polygon { fill: var(--muted) !important; stroke: var(--border) !important; }
+        .prose .mermaid-block .edgeLabel { background-color: var(--bg-secondary, #141824) !important; }
+        .prose .mermaid-block text { fill: var(--text-primary, #E8ECF4) !important; }
       `}</style>
 
       {editable && (
@@ -420,6 +434,27 @@ export function SOPEditor({ content, onChange, editable = true, businessId, onNa
               <p className="text-[10px] text-muted-foreground mt-2">Tip: Press Win+. for full emoji picker</p>
             </PopoverContent>
           </Popover>
+
+          <div className="mx-1 h-5 w-px bg-border" />
+
+          <ToolbarButton
+            onClick={() => editor.chain().focus().insertMermaid().run()}
+            title="Mermaid Diagram"
+          >
+            <GitBranch className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().insertChart().run()}
+            title="Chart"
+          >
+            <BarChart3 className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().insertMath().run()}
+            title="Math Equation"
+          >
+            <Sigma className="h-4 w-4" />
+          </ToolbarButton>
 
           <div className="mx-1 h-5 w-px bg-border" />
 

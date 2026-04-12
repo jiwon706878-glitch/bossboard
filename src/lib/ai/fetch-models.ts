@@ -243,6 +243,135 @@ function parseClaudeModel(id: string): ClaudeParsed | null {
 }
 
 /**
+ * "Latest per family" — picks one representative model per family
+ * (opus / sonnet / haiku / gemini-pro / gemini-flash / gpt-N /
+ * o-series / grok) so the dropdown can render a tight ⭐ Latest
+ * section above the full catalog. Covers ~99% of agent creation
+ * picks without making the user scroll a long list.
+ *
+ * Family classification (`getFamilyKey`) is intentionally loose:
+ *   - Anthropic: parseClaudeModel → "anthropic:opus|sonnet|haiku"
+ *   - Google: substring match on "flash" / "pro"
+ *   - OpenAI: o-series (`/^o\d/`) or "gpt-N" (major version only)
+ *   - Grok: single bucket "grok:grok"
+ *   - anything that doesn't match → null (skipped from Latest)
+ *
+ * Within a family, the "best" representative is whichever model
+ * sorts earliest under `compareForLatest` — Anthropic uses the
+ * parsed major.minor (so opus 4.6 beats opus 4.5 even when both
+ * carry an epoch timestamp), other providers fall back to
+ * created_at desc, and the natural ID sort is the last resort.
+ */
+
+function getFamilyKey(m: ProviderModel): string | null {
+  if (m.provider === "anthropic") {
+    const parsed = parseClaudeModel(m.id);
+    return parsed ? `anthropic:${parsed.family}` : null;
+  }
+  if (m.provider === "google") {
+    const id = m.id.toLowerCase();
+    // Order matters: a model named "gemini-flash-pro" (hypothetical)
+    // should land under flash, not pro. Flash check first.
+    if (id.includes("flash")) return "google:flash";
+    if (id.includes("pro")) return "google:pro";
+    return null;
+  }
+  if (m.provider === "openai") {
+    const id = m.id.toLowerCase();
+    // o-series reasoning models (o1, o2, o3-mini, ...)
+    if (/^o\d/.test(id)) return "openai:o-series";
+    // GPT-N family — grouped by major version only, so gpt-4o,
+    // gpt-4.1, gpt-4-turbo all share family "openai:gpt-4" and
+    // compareForLatest picks whichever has the newer timestamp.
+    const gptMatch = id.match(/^gpt-(\d+)/);
+    if (gptMatch) return `openai:gpt-${gptMatch[1]}`;
+    return null;
+  }
+  if (m.provider === "grok") {
+    return "grok:grok";
+  }
+  return null;
+}
+
+/**
+ * Comparator used INSIDE a family to pick the latest representative.
+ * Returns negative when `a` should win.
+ */
+function compareForLatest(a: ProviderModel, b: ProviderModel): number {
+  // Anthropic: prefer parsed version desc — beats epoch timestamps.
+  if (a.provider === "anthropic" && b.provider === "anthropic") {
+    const ap = parseClaudeModel(a.id);
+    const bp = parseClaudeModel(b.id);
+    if (ap && bp) {
+      if (ap.major !== bp.major) return bp.major - ap.major;
+      if (ap.minor !== bp.minor) return bp.minor - ap.minor;
+    }
+  }
+  // Other providers: timestamp desc when both populated.
+  if (a.created_at && b.created_at && a.created_at !== b.created_at) {
+    return b.created_at - a.created_at;
+  }
+  // Fallback: locale-numeric ID desc.
+  return b.id.localeCompare(a.id, undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
+}
+
+/**
+ * Returns one ProviderModel per family in display order. Unknown
+ * family keys are appended at the end (sorted within themselves
+ * by ID desc) so a hypothetical future "openai:gpt-6" doesn't get
+ * silently dropped — it just lands below the curated order.
+ */
+export function getLatestPerFamily(models: ProviderModel[]): ProviderModel[] {
+  const byFamily = new Map<string, ProviderModel>();
+
+  for (const m of models) {
+    const key = getFamilyKey(m);
+    if (!key) continue;
+    const existing = byFamily.get(key);
+    if (!existing || compareForLatest(m, existing) < 0) {
+      byFamily.set(key, m);
+    }
+  }
+
+  // Curated display order. New families released after this list
+  // was last updated will appear at the end via the unknown-keys
+  // append loop below — they show up in Latest immediately, just
+  // not in the "best" position until someone reorders this list.
+  const order = [
+    "anthropic:opus",
+    "anthropic:sonnet",
+    "anthropic:haiku",
+    "google:pro",
+    "google:flash",
+    "openai:gpt-5",
+    "openai:o-series",
+    "openai:gpt-4",
+    "grok:grok",
+  ];
+
+  const result: ProviderModel[] = [];
+  for (const key of order) {
+    const m = byFamily.get(key);
+    if (m) result.push(m);
+  }
+
+  // Append unknown family keys at the end, sorted by key desc so a
+  // future "openai:gpt-6" lands above an "openai:gpt-3" that we've
+  // also forgotten to put in the order list.
+  const unknown: Array<[string, ProviderModel]> = [];
+  for (const [key, m] of byFamily) {
+    if (!order.includes(key)) unknown.push([key, m]);
+  }
+  unknown.sort((a, b) => b[0].localeCompare(a[0]));
+  for (const [, m] of unknown) result.push(m);
+
+  return result;
+}
+
+/**
  * Sort a heterogeneous model list by provider, then newest-first
  * within provider.
  *

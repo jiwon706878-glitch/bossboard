@@ -149,8 +149,11 @@ export default function AgentsSettingsPage() {
 
   // Live model discovery state. Fetched on mount so both Create and
   // Edit modals can receive the same list without duplicate calls.
-  // The server-side route caches per user for 24h.
+  // The server-side route caches per user for 24h and now returns a
+  // pre-computed `latest` (one model per family) alongside the full
+  // `all` catalog — see /api/ai/available-models.
   const [availableModels, setAvailableModels] = useState<ProviderModel[]>([]);
+  const [latestModels, setLatestModels] = useState<ProviderModel[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -198,12 +201,20 @@ export default function AgentsSettingsPage() {
       });
       if (!res.ok) {
         setAvailableModels([]);
+        setLatestModels([]);
         return;
       }
       const data = await res.json();
-      setAvailableModels((data.models ?? []) as ProviderModel[]);
+      // Prefer the new `all` shape; fall back to `models` for any
+      // pre-Latest cached entry that might still be in flight on
+      // a freshly-deployed instance.
+      setAvailableModels(
+        (data.all ?? data.models ?? []) as ProviderModel[]
+      );
+      setLatestModels((data.latest ?? []) as ProviderModel[]);
     } catch {
       setAvailableModels([]);
+      setLatestModels([]);
     } finally {
       setLoadingModels(false);
     }
@@ -362,6 +373,7 @@ export default function AgentsSettingsPage() {
         onOpenChange={setCreateOpen}
         wikiOptions={wikiOptions}
         availableModels={availableModels}
+        latestModels={latestModels}
         loadingModels={loadingModels}
         onCreated={loadAgents}
       />
@@ -371,6 +383,7 @@ export default function AgentsSettingsPage() {
           agent={editTarget}
           wikiOptions={wikiOptions}
           availableModels={availableModels}
+          latestModels={latestModels}
           loadingModels={loadingModels}
           onRefreshModels={() => loadModels(true)}
           onClose={() => setEditTarget(null)}
@@ -486,6 +499,7 @@ function CreateAgentDialog({
   onOpenChange,
   wikiOptions,
   availableModels,
+  latestModels,
   loadingModels,
   onCreated,
 }: {
@@ -493,6 +507,7 @@ function CreateAgentDialog({
   onOpenChange: (open: boolean) => void;
   wikiOptions: WikiOption[];
   availableModels: ProviderModel[];
+  latestModels: ProviderModel[];
   loadingModels: boolean;
   onCreated: () => void;
 }) {
@@ -681,14 +696,32 @@ function CreateAgentDialog({
                       className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
                     >
                       <option value="">Select a model...</option>
+
+                      {/* ⭐ Latest section: one model per family.
+                          React keys are prefixed with "latest-" to
+                          stay unique against the All section below
+                          (same model id may appear in both). The
+                          option `value` is still the raw model id
+                          so the server contract is unchanged. */}
+                      {latestModels.length > 0 && (
+                        <optgroup label="⭐ Latest (recommended)">
+                          {latestModels.map((m) => (
+                            <option key={`latest-${m.id}`} value={m.id}>
+                              {m.name} ({PROVIDER_LABELS[m.provider]})
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+
+                      {/* 📦 All Models — full catalog grouped by provider */}
                       {(Object.keys(groupedModels) as ProviderId[]).map(
                         (provider) => (
                           <optgroup
                             key={provider}
-                            label={PROVIDER_LABELS[provider]}
+                            label={`📦 All ${PROVIDER_LABELS[provider]}`}
                           >
                             {groupedModels[provider].map((m) => (
-                              <option key={m.id} value={m.id}>
+                              <option key={`all-${m.id}`} value={m.id}>
                                 {m.name}
                               </option>
                             ))}
@@ -865,6 +898,7 @@ function EditAgentDialog({
   agent,
   wikiOptions,
   availableModels,
+  latestModels,
   loadingModels,
   onRefreshModels,
   onClose,
@@ -873,6 +907,7 @@ function EditAgentDialog({
   agent: AgentRow;
   wikiOptions: WikiOption[];
   availableModels: ProviderModel[];
+  latestModels: ProviderModel[];
   loadingModels: boolean;
   onRefreshModels: () => void;
   onClose: () => void;
@@ -985,6 +1020,19 @@ function EditAgentDialog({
                     </option>
                   )}
                 <option value="">Select a model...</option>
+
+                {/* ⭐ Latest section — same as Create dialog */}
+                {latestModels.length > 0 && (
+                  <optgroup label="⭐ Latest (recommended)">
+                    {latestModels.map((m) => (
+                      <option key={`latest-${m.id}`} value={m.id}>
+                        {m.name} ({PROVIDER_LABELS[m.provider]})
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+
+                {/* 📦 All Models — full catalog grouped by provider */}
                 {(Object.keys(
                   availableModels.reduce<Record<ProviderId, ProviderModel[]>>(
                     (acc, m) => {
@@ -1000,10 +1048,10 @@ function EditAgentDialog({
                   return (
                     <optgroup
                       key={provider}
-                      label={PROVIDER_LABELS[provider]}
+                      label={`📦 All ${PROVIDER_LABELS[provider]}`}
                     >
                       {models.map((m) => (
-                        <option key={m.id} value={m.id}>
+                        <option key={`all-${m.id}`} value={m.id}>
                           {m.name}
                         </option>
                       ))}

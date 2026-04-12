@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   fetchModelsForProvider,
   sortModels,
+  getLatestPerFamily,
   type ProviderId,
   type ProviderModel,
 } from "@/lib/ai/fetch-models";
@@ -34,7 +35,10 @@ const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const AI_PROVIDER_IDS = ["anthropic", "google", "openai", "grok"] as const;
 
 interface CacheEntry {
-  models: ProviderModel[];
+  /** One model per family for the ⭐ Latest dropdown section. */
+  latest: ProviderModel[];
+  /** Full sorted catalog for the 📦 All Models section. */
+  all: ProviderModel[];
   expiresAt: number;
 }
 
@@ -50,9 +54,22 @@ export async function GET() {
   }
 
   // Cache hit — serve it and short-circuit the provider round-trips.
+  // Defensive: an entry written by an older deploy may not carry the
+  // `latest` / `all` fields. Treat any such entry as a miss so we
+  // refetch + re-shape rather than returning undefined to the client.
   const hit = cache.get(user.id);
-  if (hit && hit.expiresAt > Date.now()) {
-    return NextResponse.json({ models: hit.models, cached: true });
+  if (
+    hit &&
+    hit.expiresAt > Date.now() &&
+    Array.isArray(hit.latest) &&
+    Array.isArray(hit.all)
+  ) {
+    return NextResponse.json({
+      latest: hit.latest,
+      all: hit.all,
+      models: hit.all, // legacy alias for any pre-Latest caller
+      cached: true,
+    });
   }
 
   // Read the user's registered API keys
@@ -98,10 +115,15 @@ export async function GET() {
   // see sortModels() docs.
   const sorted = sortModels(allModels);
 
+  // Pick one representative per family for the ⭐ Latest section.
+  // Computed against the unsorted `allModels` because the family
+  // selection algorithm doesn't depend on sort order.
+  const latest = getLatestPerFamily(allModels);
+
   // Debug: one-shot structured log so Jay can verify ordering in
-  // Vercel logs / dashboard. Truncated to first 10 per provider so
-  // the line stays readable. Safe to leave in production — no key
-  // material is logged, just ids + timestamps.
+  // Vercel logs. `latest` count makes it obvious whether family
+  // selection is producing rows. Safe to leave in production — no
+  // key material is logged, just ids + timestamps.
   const debugSummary = sorted.slice(0, 20).map((m) => ({
     provider: m.provider,
     id: m.id,
@@ -111,18 +133,25 @@ export async function GET() {
       : null,
   }));
   console.log(
-    "[available-models] user=%s total=%d sample=%s",
+    "[available-models] user=%s total=%d latest=%d sample=%s",
     user.id,
     sorted.length,
+    latest.length,
     JSON.stringify(debugSummary)
   );
 
   cache.set(user.id, {
-    models: sorted,
+    latest,
+    all: sorted,
     expiresAt: Date.now() + TTL_MS,
   });
 
-  return NextResponse.json({ models: sorted, cached: false });
+  return NextResponse.json({
+    latest,
+    all: sorted,
+    models: sorted, // legacy alias for any pre-Latest caller
+    cached: false,
+  });
 }
 
 /**

@@ -14,6 +14,7 @@ import {
   ArrowLeft,
   LogOut,
   Tag,
+  Megaphone,
 } from "lucide-react";
 import { useAdminLang } from "@/lib/admin-i18n";
 import { toast } from "sonner";
@@ -25,6 +26,7 @@ const linkConfigs = [
   { href: "/admin/users", labelKey: "users" as const, icon: Users },
   { href: "/admin/revenue", labelKey: "revenue" as const, icon: DollarSign },
   { href: "/admin/promotions", labelKey: "promotions" as const, icon: Tag },
+  { href: "/admin/announcements", labelKey: "announcements" as const, icon: Megaphone },
   { href: "/admin/feedback", labelKey: "feedback" as const, icon: MessageSquare },
 ];
 

@@ -21,6 +21,7 @@ export interface Post {
   poll_options?: PollOption[];
   user_voted_option_id?: string | null;
   attachments?: Attachment[] | null;
+  channel?: string;
 }
 
 export interface PollOption {

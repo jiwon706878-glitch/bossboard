@@ -10,8 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import {
-  MessageCircle, Eye, Trash2, ChevronDown, ChevronUp, FileIcon, Pencil, Pin,
+  MessageCircle, Eye, Trash2, ChevronDown, ChevronUp, FileIcon, Pencil, Pin, Share2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Post, Attachment, TYPE_CONFIG } from "@/components/board/types";
 
 interface PostCardProps {
@@ -95,6 +96,11 @@ export function PostCard({
               <Badge variant="secondary" className={cn("text-[10px] px-1.5 py-0.5", typeConf.color)}>
                 {typeConf.label}
               </Badge>
+              {post.channel && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 text-muted-foreground">
+                  #{post.channel}
+                </Badge>
+              )}
               {post.is_pinned && <Pin className="h-3.5 w-3.5 text-amber-500 fill-amber-500 shrink-0" />}
               <span className="font-medium text-sm">{post.title}</span>
             </div>
@@ -107,6 +113,18 @@ export function PostCard({
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="press-effect text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                const url = `${window.location.origin}/dashboard/board?post=${post.id}`;
+                navigator.clipboard.writeText(url).then(() => toast.success("Link copied"));
+              }}
+              aria-label="Share post"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+            </Button>
             {canDelete && (
               <>
                 <Button variant="ghost" size="sm" className="press-effect text-muted-foreground hover:text-foreground" onClick={() => onStartEditing(post)} aria-label="Edit post">

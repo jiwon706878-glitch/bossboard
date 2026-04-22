@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useBusinessStore } from "@/hooks/use-business";
@@ -21,8 +22,9 @@ import { plans, type PlanId } from "@/config/plans";
 // ─── BB v2.0 Day 7: channel definitions ─────────────────────────────────────
 // The DB enforces these via a CHECK constraint on board_posts.channel.
 // Keep this list in sync with 20260414100000_board_channels.sql.
-type Channel = "general" | "team" | "agent-activity" | "announcements";
+type Channel = "all" | "general" | "team" | "agent-activity" | "announcements";
 const CHANNELS: Array<{ id: Channel; label: string; hint: string }> = [
+  { id: "all", label: "All", hint: "All channels" },
   { id: "general", label: "# general", hint: "Catch-all team chat" },
   { id: "team", label: "# team", hint: "Internal discussion" },
   { id: "agent-activity", label: "# agent-activity", hint: "Agent updates" },
@@ -37,6 +39,8 @@ export default function BoardPage() {
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
   const businessId = currentBusiness?.id;
   const { isAdmin } = useRoleStore();
+  const searchParams = useSearchParams();
+  const highlightPostId = searchParams.get("post");
 
   // Use shared user query instead of calling getUser() in every board query
   const { data: currentUser } = useQuery({ queryKey: userKeys.current, queryFn: fetchCurrentUser, retry: false });
@@ -44,7 +48,7 @@ export default function BoardPage() {
 
   // BB v2.0 Day 7: which channel is the user looking at? Drives the
   // post-fetch query AND the channel a new post is filed under.
-  const [activeChannel, setActiveChannel] = useState<Channel>("general");
+  const [activeChannel, setActiveChannel] = useState<Channel>("all");
 
   // Create form — two-step mount/visible for smooth CSS transition
   const [formMounted, setFormMounted] = useState(false);
@@ -106,12 +110,17 @@ export default function BoardPage() {
     queryFn: async (): Promise<Post[]> => {
       if (!businessId || !currentUserId) return [];
 
-      const { data: postsData } = await supabase
+      let query = supabase
         .from("board_posts")
-        .select("id, user_id, type, title, content, is_pinned, created_at, attachments")
+        .select("id, user_id, type, title, content, is_pinned, created_at, attachments, channel")
         .eq("business_id", businessId)
-        .eq("channel", activeChannel)
         .order("created_at", { ascending: false });
+
+      if (activeChannel !== "all") {
+        query = query.eq("channel", activeChannel);
+      }
+
+      const { data: postsData } = await query;
 
       if (!postsData || postsData.length === 0) return [];
 
@@ -159,6 +168,7 @@ export default function BoardPage() {
           comment_count: commentCountMap.get(p.id) ?? 0, read_count: readCountMap.get(p.id) ?? 0,
           poll_options: opts.length > 0 ? opts : undefined, user_voted_option_id: votedOpt?.id ?? null,
           attachments: p.attachments ?? null,
+          channel: p.channel ?? undefined,
         };
       });
 
@@ -180,6 +190,18 @@ export default function BoardPage() {
     },
     enabled: !!businessId && !!currentUserId,
   });
+
+  // Auto-scroll to shared post when ?post=ID is in URL
+  useEffect(() => {
+    if (!highlightPostId || loading) return;
+    const el = document.querySelector(`[data-post-id="${highlightPostId}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-primary/50");
+      const t = setTimeout(() => el.classList.remove("ring-2", "ring-primary/50"), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [highlightPostId, loading, posts]);
 
   function invalidateBoard() {
     if (businessId) {
@@ -257,7 +279,7 @@ export default function BoardPage() {
         attachments: uploadedFiles.length > 0 ? uploadedFiles : null,
         // BB v2.0 Day 7: file the new post in the currently-selected
         // channel so it appears immediately after closing the form.
-        channel: activeChannel,
+        channel: activeChannel === "all" ? "general" : activeChannel,
       })
       .select("id")
       .single();

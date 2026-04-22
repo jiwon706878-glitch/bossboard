@@ -20,6 +20,7 @@ const ApiDocsPage = lazy(() => import("@/app/(dashboard)/dashboard/api-docs/page
 const McpGuidePage = lazy(() => import("@/app/(dashboard)/dashboard/mcp-guide/page"));
 const BillingPage = lazy(() => import("@/app/(dashboard)/dashboard/billing/page"));
 const OnboardingPathsPage = lazy(() => import("@/app/(dashboard)/dashboard/onboarding-paths/page"));
+const MeetingsPage = lazy(() => import("@/app/(dashboard)/dashboard/meetings/page"));
 
 interface TabDef {
   id: string;
@@ -41,6 +42,7 @@ const TABS: TabDef[] = [
   { id: "mcp-guide", path: "/dashboard/mcp-guide", Component: McpGuidePage },
   { id: "billing", path: "/dashboard/billing", Component: BillingPage },
   { id: "onboarding-paths", path: "/dashboard/onboarding-paths", Component: OnboardingPathsPage },
+  { id: "meetings", path: "/dashboard/meetings", Component: MeetingsPage },
 ];
 
 const TAB_PATHS = new Set(TABS.map((t) => t.path));

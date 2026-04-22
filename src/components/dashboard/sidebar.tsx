@@ -30,6 +30,7 @@ import {
   Plug,
   ChevronDown,
   ChevronRight,
+  Users,
 } from "lucide-react";
 
 const supabase = createClient();
@@ -43,6 +44,7 @@ const navLinks = [
   { key: "todos", href: "/dashboard/todos", label: "Todos", icon: ListTodo },
   { key: "board", href: "/dashboard/board", label: "Board", icon: MessageSquare },
   { key: "calendar", href: "/dashboard/calendar", label: "Calendar", icon: CalendarDays },
+  { key: "meetings", href: "/dashboard/meetings", label: "Meetings", icon: Users },
 ];
 
 // Tab IDs map href → tab id for instant switching
@@ -53,6 +55,7 @@ const TAB_IDS: Record<string, string> = {
   "/dashboard/checklists": "checklists",
   "/dashboard/todos": "todos",
   "/dashboard/calendar": "calendar",
+  "/dashboard/meetings": "meetings",
   "/dashboard/board": "board",
   "/dashboard/dm": "dm",
   "/dashboard/team": "team",

@@ -48,7 +48,7 @@ export const plans: Record<PlanId, PlanConfig> = {
       aiChat: false,
     },
     features: [
-      "3 team members + 3 AI agents",
+      "3 AI agents",
       "5 GB storage · 50 MB per file",
       "10 GB monthly downloads",
       "Wiki, Board, Calendar, Todos",
@@ -76,8 +76,7 @@ export const plans: Record<PlanId, PlanConfig> = {
       aiChat: true,
     },
     features: [
-      "Unlimited team members",
-      "Up to 10 AI agents",
+      "10 AI agents",
       "50 GB storage · 200 MB per file",
       "100 GB monthly downloads",
       "Everything in Free",
@@ -105,8 +104,7 @@ export const plans: Record<PlanId, PlanConfig> = {
       aiChat: true,
     },
     features: [
-      "Unlimited team members",
-      "Up to 50 AI agents",
+      "50 AI agents",
       "200 GB storage · 2 GB per file",
       "500 GB monthly downloads",
       "Everything in Starter",
@@ -134,7 +132,6 @@ export const plans: Record<PlanId, PlanConfig> = {
       aiChat: true,
     },
     features: [
-      "Unlimited team members",
       "Unlimited AI agents",
       "1 TB storage · 10 GB per file",
       "2 TB monthly downloads",

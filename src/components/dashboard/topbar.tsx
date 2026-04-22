@@ -56,6 +56,12 @@ function UserMenu() {
   const userName = profile?.full_name || user?.email?.split("@")[0] || "";
   const initial = userName ? userName.charAt(0).toUpperCase() : "?";
 
+  // Plan + trial info for dropdown header
+  const planId = (profile?.plan_id ?? "free") as string;
+  const planLabel = planId.charAt(0).toUpperCase() + planId.slice(1);
+  const trialEnd = profile?.trial_end_date ? new Date(profile.trial_end_date) : null;
+  const trialDaysLeft = trialEnd ? Math.max(0, Math.ceil((trialEnd.getTime() - Date.now()) / 86400000)) : 0;
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -78,7 +84,12 @@ function UserMenu() {
       <PopoverContent align="end" className="w-56 p-1 animate-popover-enter">
         <div className="border-b border-border px-3 py-2.5">
           <p className="truncate text-sm font-semibold text-text-primary">{userName}</p>
-          <p className="truncate text-xs text-text-secondary">{user?.email ?? ""}</p>
+          <p className="truncate text-xs text-text-secondary">
+            {user?.email ?? ""}
+          </p>
+          <p className="text-[11px] text-text-tertiary mt-0.5">
+            {planLabel} plan{trialDaysLeft > 0 ? ` · ${trialDaysLeft}d trial` : ""}
+          </p>
         </div>
         <div className="py-1">
           <a

@@ -621,7 +621,11 @@ export default function BoardPage() {
       ) : posts.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-md border bg-card py-12 text-center">
           <MessageCircle className="mb-3 h-10 w-10 text-muted-foreground/40" />
-          <p className="text-sm text-muted-foreground">No posts yet. Start a conversation!</p>
+          <p className="text-sm font-medium text-foreground">No posts yet</p>
+          <p className="mt-1 text-sm text-muted-foreground">Share updates with your team and agents.</p>
+          <Button size="sm" className="mt-4 gap-1" onClick={() => { setFormMounted(true); setTimeout(() => setFormVisible(true), 50); }}>
+            <Plus className="h-3.5 w-3.5" /> New Post
+          </Button>
         </div>
       ) : (
         <div className="space-y-3 stagger-children">

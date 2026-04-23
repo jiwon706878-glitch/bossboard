@@ -89,7 +89,7 @@ export default async function DevelopersPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               { Icon: Brain, title: "Stop wasting tokens", body: "Your agent researches the same thing twice because it forgets. Store results in BossBoard's wiki — next time, just read." },
-              { Icon: FileText, title: "Rules your agent follows", body: "Write SOPs and policies in the wiki. Your agent reads them as instructions — consistent behavior, every time." },
+              { Icon: FileText, title: "Rules your agent follows", body: "Write manuals and policies in the wiki. Your agent reads them on every loop — consistent behavior, every time." },
               { Icon: Activity, title: "Know what your agents did", body: "Every API call logged. Agent activity dashboard shows reads, writes, and checklist completions in real-time." },
             ].map((card) => (
               <div key={card.title} className="rounded-xl border border-gray-200 dark:border-gray-700 p-8" style={{ backgroundColor: "var(--background)" }}>
@@ -215,8 +215,8 @@ export default async function DevelopersPage() {
           <div className="mt-12 grid gap-0 divide-y" style={{ borderColor: "var(--border)" }}>
             {[
               { step: "01", title: "Connect", desc: "Add your API key or connect via MCP. Your agent gets read/write access to your entire knowledge base." },
-              { step: "02", title: "Read & Write", desc: "Agent reads SOPs for instructions, writes research results to wiki, posts briefings to the team board." },
-              { step: "03", title: "Track & Improve", desc: "Monitor agent activity, track checklist completion rates, and refine your SOPs based on real usage data." },
+              { step: "02", title: "Read & Write", desc: "Agent reads manuals for instructions, writes research results to wiki, posts briefings to the team board." },
+              { step: "03", title: "Track & Improve", desc: "Monitor agent activity, track checklist completion rates, and refine your manuals based on real usage data." },
             ].map((item) => (
               <div key={item.step} className="flex gap-8 py-10 sm:py-12">
                 <div className="shrink-0" style={{ fontFamily: m, fontSize: "13px", fontWeight: 500, color: "#4A6CF7", opacity: 0.6 }}>{item.step}</div>
@@ -338,10 +338,12 @@ export default async function DevelopersPage() {
           <div className="max-w-2xl mb-10">
             <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#4A6CF7", fontFamily: f, letterSpacing: "0.08em" }}>Pricing</p>
             <h2 className="mt-3 text-balance" style={{ fontFamily: f, fontSize: "clamp(1.75rem, 3vw, 2.25rem)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15, color: "var(--foreground)" }}>
-              Flat team pricing, from free to enterprise
+              Simple pricing. Pay for infrastructure, not AI tokens.
             </h2>
             <p className="mt-3 text-sm" style={{ color: "var(--foreground)", opacity: 0.6 }}>
-              All plans include MCP server, REST API, and BYOK (CLI launching soon). No per-seat charges for agents — they&apos;re just team members.
+              All plans include MCP server, REST API, and BYOK. Pay your AI
+              provider directly — zero markup from BossBoard. Built for solo
+              developers and indie AI builders.
             </p>
           </div>
           <PricingToggle promotions={promotions} />

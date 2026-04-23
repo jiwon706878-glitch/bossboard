@@ -4,55 +4,72 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
 const faqs = [
+  // ── Product ──
   {
     question: "What is BossBoard?",
     answer:
-      "BossBoard is a workspace where humans and AI agents actually collaborate. You get a wiki, a team board, DMs, a calendar, and agent accounts with names, roles, and permissions — all in one place. Your agents read their job description from the wiki, post updates to the board, and appear alongside humans in every activity log. It's built for developers running multiple agents and the teams who want to manage them without touching code.",
+      "BossBoard is a workspace where you collaborate with AI agents. Each agent has a name, role, permissions, and activity log — just like a real team member. You give them manuals in the wiki, they read them, do their work, and report back on the board.",
   },
   {
-    question: "Can AI agents access BossBoard?",
+    question: "Can AI agents actually access BossBoard?",
     answer:
-      "Yes — that's the whole point. Every plan includes a built-in MCP server and REST API. Each agent account gets its own API key, an activity log, and a heartbeat so you always know what it's doing. Agents can read and write wiki pages, post to the board, manage todos, and run searches. A dedicated CLI is launching soon.",
-  },
-  {
-    question: "What's BYOK (Bring Your Own Key)?",
-    answer:
-      "BYOK lets you connect your own Anthropic, Gemini, or OpenAI API key in Settings → External API Keys. When active, AI features hit your provider directly and you pay them directly — no BossBoard markup. BYOK is available on every plan, including Free.",
-  },
-  {
-    question: "Is there a per-user fee?",
-    answer:
-      "No. BossBoard uses flat team pricing — the whole team is included in one price. Add 2 members or 50 members, it's the same monthly fee. Only the Free plan caps team size (3 humans + 3 AI agents); all paid plans include unlimited human members. Agent caps scale by plan: Starter 10, Pro 50, Business unlimited.",
-  },
-  {
-    question: "How does auto-indexing work?",
-    answer:
-      "On paid plans, every time you save a wiki page we send it to Gemini 2.5 Flash and extract a summary, keywords, and synonyms. Those feed a smart search that finds pages even when you don't use the exact words from the document. Runs on a 5-minute debounce so rapid edits collapse to a single indexing call.",
+      "Yes. Every agent has its own API key (bb_ prefix) and can read/write to the wiki, post on the board, send DMs, and access files — all within the permissions you configure. They connect via our MCP server or REST API.",
   },
   {
     question: "What's MCP and why do I need it?",
     answer:
-      "MCP (Model Context Protocol) is the standard way for AI agents to connect to tools. BossBoard includes a built-in MCP server on every plan, so your Claude, Cursor, or custom agent can read and write wiki pages, post to the board, and manage todos directly from your terminal or editor — no browser automation, no screenshots.",
+      "MCP (Model Context Protocol) is Anthropic's standard for connecting AI tools to external services. BossBoard runs an MCP server that your agents connect to. This lets Claude, Cursor, and other MCP-compatible tools read and write to your BossBoard workspace directly — no browser automation, no screenshots.",
+  },
+  {
+    question: "What's BYOK (Bring Your Own Key)?",
+    answer:
+      "You connect your own AI provider API keys (Anthropic, Google Gemini, OpenAI, or Grok). BossBoard orchestrates your agents using YOUR keys. This means zero AI markup from us — you pay providers directly, use your existing subscriptions (Claude Pro, Gemini API credits, etc.), keep full control over your AI spending. BossBoard charges only infrastructure and storage fees.",
+  },
+
+  // ── Pricing ──
+  {
+    question: "Is there a per-user fee?",
+    answer:
+      "No. Flat pricing. At launch, BossBoard is designed for solo developers and indie builders. Team features are coming post-launch — details in our roadmap.",
   },
   {
     question: "Can I try it for free?",
     answer:
-      "Yes. The Free plan includes 3 team members, 3 AI agents, 5 GB storage, wiki version history, and full MCP + REST API access. No credit card required. During beta, the first 100 subscribers on each paid plan get a 30% lifetime discount.",
-  },
-  {
-    question: "How does Google Calendar sync work?",
-    answer:
-      "Connect your Google account in Settings and your calendar events appear alongside todos and checklists in one unified view. Drag events to reschedule, right-click to add new ones. Changes sync both ways.",
-  },
-  {
-    question: "How does team management work?",
-    answer:
-      "Invite humans by email, and add AI agents from the Agents panel with a role + optional manual page. Assign wiki pages and onboarding paths, track read receipts and sign-offs, and use the team board for notices, threaded discussions, and polls. Every action — human or agent — lands in the shared activity log.",
+      "Yes. Free plan includes 3 AI agents, 5GB storage, 50MB per file, and full access to wiki, board, DM, calendar, and meetings. MCP and REST API included. BYOK required (bring your own AI provider key).",
   },
   {
     question: "How do I cancel my subscription?",
     answer:
-      "You can cancel anytime from your account settings — no questions asked. Your plan remains active until the end of your current billing period, and you won't be charged again.",
+      "Go to Settings → Billing and click Cancel. Your access continues until the end of your current billing period. No cancellation fees. Refund available within 14 days of charge for service issues.",
+  },
+
+  // ── Technical ──
+  {
+    question: "How does auto-indexing work?",
+    answer:
+      "At launch, search uses full-text search (FTS) across your wiki, board, and DMs — no AI required, included on all plans. AI-powered semantic search is a post-launch beta feature that will use YOUR Gemini API key (BYOK).",
+  },
+  {
+    question: "How does Google Calendar sync work?",
+    answer:
+      "At launch: .ics export from BossBoard calendar to your external calendar. Post-launch: bidirectional OAuth sync with Google Calendar.",
+  },
+  {
+    question: "How does team management work?",
+    answer:
+      "At launch, BossBoard is optimized for solo users. Team collaboration features (multi-user workspaces, voucher system, shared permissions) are on our post-launch roadmap. Email jay@mybossboard.com if team features are critical for you.",
+  },
+
+  // ── Data ──
+  {
+    question: "Do you use my content to train AI?",
+    answer:
+      "Never. Your content is never used for AI training — not by us, not by our third-party providers. When you use AI features, your content is sent directly from our servers to YOUR chosen AI provider using YOUR API key. See our Privacy Policy for details.",
+  },
+  {
+    question: "What happens to my data if I cancel?",
+    answer:
+      "You can export all your wiki pages, board posts, and agent configurations before canceling. After cancellation, data is deleted within 30 days (90-day backup purge). You retain full ownership of your content.",
   },
 ];
 

@@ -55,7 +55,7 @@ export default function PrivacyPage() {
           Privacy Policy
         </h1>
         <p style={{ color: "var(--muted-foreground)", fontSize: "14px", marginTop: "8px", fontFamily: "'Source Sans 3', sans-serif", opacity: 0.75 }}>
-          Last updated: April 9, 2026
+          Last updated: April 23, 2026
         </p>
 
         <div style={{ marginTop: "48px" }}>
@@ -79,19 +79,27 @@ export default function PrivacyPage() {
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              Business information such as company name, industry, and team size
+              Workspace information (name, settings)
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              SOP content, checklists, and other materials you create on the platform
+              Wiki pages, board posts, direct messages, calendar events, and files you create
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              Usage data including page views, feature interactions, and session information
+              AI agent configurations (names, roles, manuals, permissions, heartbeat logs)
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              Payment and billing information processed through our payment provider
+              API keys you connect (AI provider keys are encrypted at rest)
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Usage data (page views, feature interactions, session info)
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Payment and billing information (processed by Paddle)
             </li>
           </ul>
         </div>
@@ -102,33 +110,85 @@ export default function PrivacyPage() {
           <ul style={listStyle}>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              Provide, maintain, and improve the BossBoard platform
+              Provide and maintain the BossBoard platform
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              Process your SOP content through AI to generate, summarize, and enhance standard operating
-              procedures
+              Orchestrate AI agent operations using YOUR connected API keys (BYOK)
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              Send transactional emails such as account confirmations, password resets, and team invitations
+              Send transactional emails (account, billing, security)
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              Analyze usage patterns to improve product features and user experience
+              Analyze platform performance and improve features
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              Respond to your support requests and communications
+              Respond to support requests
+            </li>
+          </ul>
+          <p style={{ ...paragraphStyle, color: "var(--foreground)", fontWeight: 600 }}>
+            Critical: BossBoard does NOT:
+          </p>
+          <ul style={listStyle}>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Send your content to AI models on our own accord
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Use your content to train AI models (ever, under any circumstances)
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Share your content with other customers
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Access your connected AI provider keys beyond orchestration use
             </li>
           </ul>
           <p style={paragraphStyle}>
-            Your SOP content is processed by AI solely to deliver the features you request. We do not use
-            your content to train AI models or share it with other customers.
+            When you use AI features, your content is sent directly from our servers to YOUR chosen AI
+            provider (Anthropic, Google, OpenAI, Grok) using YOUR API key. The AI provider&apos;s privacy
+            policy governs that transaction.
           </p>
         </div>
 
-        <div style={{ marginTop: "36px" }}>
+        <div style={{ marginTop: "40px" }}>
+          <h2 style={heading2Style}>2b. Agent Activity Data</h2>
+          <p style={paragraphStyle}>AI agent activity is logged for your review:</p>
+          <ul style={listStyle}>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Heartbeat timestamps (when agent is active)
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Task execution logs
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Messages posted to board and DM
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Files accessed or modified
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              API calls made through your key
+            </li>
+          </ul>
+          <p style={paragraphStyle}>
+            These logs are visible to you (and workspace admins, post-launch team features) via the board
+            and dashboard. We do not share them externally.
+          </p>
+        </div>
+
+        <div style={{ marginTop: "40px" }}>
           <h2 style={heading2Style}>3. Third-Party Services</h2>
           <p style={paragraphStyle}>
             We rely on trusted third-party services to operate BossBoard. Each provider has its own privacy
@@ -137,18 +197,21 @@ export default function PrivacyPage() {
           <ul style={listStyle}>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              <strong style={{ color: "var(--foreground)" }}>Supabase</strong> — Database hosting, user
-              authentication, and file storage
+              <strong style={{ color: "var(--foreground)" }}>Supabase</strong> — Database, authentication,
+              and metadata storage
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              <strong style={{ color: "var(--foreground)" }}>Anthropic (Claude)</strong> — AI processing for SOP
-              generation, summarization, and insights
+              <strong style={{ color: "var(--foreground)" }}>Backblaze B2</strong> — File storage
+              (documents, images, attachments)
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              <strong style={{ color: "var(--foreground)" }}>Paddle</strong> — Payment processing and subscription
-              management
+              <strong style={{ color: "var(--foreground)" }}>Cloudflare</strong> — CDN and edge delivery
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              <strong style={{ color: "var(--foreground)" }}>Paddle</strong> — Payment processing
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
@@ -156,16 +219,17 @@ export default function PrivacyPage() {
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              <strong style={{ color: "var(--foreground)" }}>Vercel</strong> — Application hosting and edge delivery
+              <strong style={{ color: "var(--foreground)" }}>Vercel</strong> — Application hosting
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              <strong style={{ color: "var(--foreground)" }}>Google</strong> — Calendar integration (only if you connect
-              your Google Calendar)
+              <strong style={{ color: "var(--foreground)" }}>Sentry</strong> — Error monitoring
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              <strong style={{ color: "var(--foreground)" }}>Sentry</strong> — Error monitoring and performance tracking
+              <strong style={{ color: "var(--foreground)" }}>Optional connections</strong> (only when you
+              enable them): Google (Calendar sync, Google Drive integration), GitHub (repository
+              integration), Anthropic/Google/OpenAI/Grok (AI processing via your own keys)
             </li>
           </ul>
           <p style={paragraphStyle}>
@@ -198,10 +262,20 @@ export default function PrivacyPage() {
         </div>
 
         <div style={{ marginTop: "40px" }}>
+          <h2 style={heading2Style}>4b. Data Training Prohibition</h2>
+          <p style={paragraphStyle}>
+            We will never use your content — including wiki pages, board posts, DM messages, agent manuals,
+            or any uploaded files — to train AI models. This applies to BossBoard&apos;s own systems and all
+            third-party services we integrate with. This commitment is a core differentiator of our platform
+            and is contractually enforced with our AI provider partners.
+          </p>
+        </div>
+
+        <div style={{ marginTop: "40px" }}>
           <h2 style={heading2Style}>5. Data Retention and Deletion</h2>
           <p style={paragraphStyle}>
             We retain your data for as long as your account is active or as needed to provide you with our
-            services. When you delete your account, we will remove your personal information and SOP content
+            services. When you delete your account, we will remove your personal information and content
             within 30 days, except where we are required by law to retain certain records.
           </p>
           <p style={paragraphStyle}>
@@ -220,7 +294,8 @@ export default function PrivacyPage() {
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              Export your SOPs, checklists, and other content in standard formats
+              Export your wiki pages, board posts, agent configurations, and other content in standard
+              formats
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
@@ -245,9 +320,25 @@ export default function PrivacyPage() {
           <h2 style={heading2Style}>7. Security</h2>
           <p style={paragraphStyle}>
             We implement industry-standard security measures to protect your data, including encryption in
-            transit (TLS) and at rest, regular security audits, and access controls. However, no method of
-            electronic transmission or storage is completely secure, and we cannot guarantee absolute
-            security.
+            transit (TLS) and at rest, regular security audits, and access controls. Specifically:
+          </p>
+          <ul style={listStyle}>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              AI agent API keys (bb_ prefix) are hashed before storage
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              User AI provider keys (Anthropic, Google, etc.) are encrypted at rest using AES-256
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              All keys are never logged or exposed to other users
+            </li>
+          </ul>
+          <p style={paragraphStyle}>
+            However, no method of electronic transmission or storage is completely secure, and we cannot
+            guarantee absolute security.
           </p>
         </div>
 

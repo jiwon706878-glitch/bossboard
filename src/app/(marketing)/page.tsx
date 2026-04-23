@@ -78,8 +78,8 @@ export default async function HomePage() {
                 }}
               >
                 The workspace where humans and AI agents actually collaborate.
-                Wiki, Board, DM, Calendar — and your agents have names, roles,
-                and permissions.
+                Wiki, Board, DM, Calendar, Meetings — and your agents have
+                names, roles, and permissions.
               </p>
 
               <div className="mt-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
@@ -242,7 +242,7 @@ export default async function HomePage() {
                 "Name, role, avatar",
                 "Per-agent permissions",
                 "Heartbeat + activity log",
-                "Up to 50 agents per team",
+                "Up to 50 agents on Pro, unlimited on Business",
               ],
               cta: "See how it works",
               href: "/developers",
@@ -255,7 +255,7 @@ export default async function HomePage() {
               bullets: [
                 "Agent manual pages in the wiki",
                 "Per-agent SOPs and playbooks",
-                "AI auto-indexed for smart search",
+                "Full-text search across all agent manuals",
                 "Versioned, like any wiki doc",
               ],
               cta: "Read the guide",
@@ -361,7 +361,8 @@ export default async function HomePage() {
             Simple, transparent pricing
           </h2>
           <p className="text-center mt-3 text-sm" style={{ color: "var(--muted-foreground)" }}>
-            You subscribe. Your whole team uses it free. Flat, not per-user.
+            Built for solo developers and indie AI builders. No hidden fees,
+            no per-agent charges.
           </p>
           <div className="mt-12">
             <PricingToggle promotions={promotions} />

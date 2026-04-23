@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { ScrollToTop } from "@/components/marketing/scroll-to-top";
 
 export const metadata: Metadata = {
   title: "Download BossBoard Desktop",
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
 export default function DownloadPage() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-16 sm:py-24">
+      <ScrollToTop />
       <div className="text-center mb-14">
         <h1
           className="text-4xl sm:text-5xl font-semibold tracking-tight"

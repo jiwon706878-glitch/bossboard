@@ -11,14 +11,8 @@ import {
   ArrowRight,
   Brain,
   Users,
-  Code,
-  Rocket,
   Check,
   X,
-  Zap,
-  DollarSign,
-  Cpu,
-  Heart,
   Building2,
 } from "lucide-react";
 
@@ -57,7 +51,7 @@ export default async function HomePage() {
               "radial-gradient(ellipse at center, rgba(74,108,247,0.08) 0%, transparent 70%)",
           }}
         />
-        <div className="relative mx-auto max-w-[1200px] px-6 pt-20 pb-20 sm:pt-24 sm:pb-24 lg:pt-28 lg:pb-28">
+        <div className="relative mx-auto max-w-[1200px] px-6 pt-14 pb-14 sm:pt-16 sm:pb-16 lg:pt-20 lg:pb-20">
           <HeroIntro>
           <div className="grid gap-12 lg:grid-cols-[1.1fr_1fr] lg:items-center">
             {/* ── Left: text ── */}
@@ -86,11 +80,6 @@ export default async function HomePage() {
                 The workspace where humans and AI agents actually collaborate.
                 Wiki, Board, DM, Calendar — and your agents have names, roles,
                 and permissions.
-              </p>
-
-              <p className="mt-3 max-w-lg text-base" style={{ color: "var(--muted-foreground)", opacity: 0.75 }}>
-                Built for developers running multiple agents.
-                Loved by teams who want flat pricing.
               </p>
 
               <div className="mt-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
@@ -197,7 +186,7 @@ export default async function HomePage() {
 
       {/* ═══ SECTION 2: THE PROBLEM ═══════════════════════════════════════ */}
       <section id="how-it-works" style={{ backgroundColor: "var(--card)" }}>
-        <AnimatedSection className="mx-auto max-w-[900px] px-6 py-24 text-center">
+        <AnimatedSection className="mx-auto max-w-[900px] px-6 py-16 text-center">
           <h2
             className="tracking-tight text-balance"
             style={{
@@ -241,7 +230,7 @@ export default async function HomePage() {
       </section>
 
       {/* ═══ SECTION 3: THREE PILLARS ═════════════════════════════════════ */}
-      <section id="features" className="mx-auto max-w-[1200px] px-6 py-24 sm:py-32">
+      <section id="features" className="mx-auto max-w-[1200px] px-6 py-16 sm:py-24">
         <AnimatedSection className="grid gap-6 md:grid-cols-3">
           {[
             {
@@ -342,201 +331,9 @@ export default async function HomePage() {
         </AnimatedSection>
       </section>
 
-      {/* ═══ SECTION 4: THREE AUDIENCES ═══════════════════════════════════ */}
-      <section style={{ backgroundColor: "var(--card)" }}>
-        <AnimatedSection className="mx-auto max-w-[1200px] px-6 py-24 sm:py-28">
-          <h2
-            className="text-center tracking-tight text-balance"
-            style={{
-              fontSize: "clamp(1.875rem, 3.5vw, 2.5rem)",
-              fontWeight: 600,
-              letterSpacing: "-0.02em",
-              color: "var(--foreground)",
-            }}
-          >
-            Built for Three Audiences
-          </h2>
-
-          <div className="mt-14 grid gap-6 md:grid-cols-3">
-            {[
-              {
-                icon: Code,
-                accent: "#06B6D4",
-                title: "Developers",
-                description: "AI agent builders who need memory and tooling for their agents.",
-                features: ["MCP server, REST API, BYOK", "Multi-agent coordination", "Activity logs + audit trail"],
-                price: "From $0/mo",
-              },
-              {
-                icon: Users,
-                accent: "#4A6CF7",
-                title: "Teams",
-                description: "Small teams who want flat pricing and a real workspace.",
-                features: ["Wiki + Board + Calendar", "Flat pricing, not per-user", "Unlimited members on paid"],
-                price: "From $19/mo",
-              },
-              {
-                icon: Rocket,
-                accent: "#A855F7",
-                title: "Solo Founders",
-                description: "Indie hackers using AI as a force multiplier.",
-                features: ["3 AI agents · 5 GB storage", "BYOK — use your own AI key", "Full MCP + REST API access"],
-                price: "Free forever",
-              },
-            ].map((aud) => {
-              const Icon = aud.icon;
-              return (
-                <div
-                  key={aud.title}
-                  className="rounded-xl border p-8 h-full flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
-                  style={{
-                    backgroundColor: "var(--background)",
-                    borderColor: "var(--border)",
-                  }}
-                >
-                  <div
-                    className="flex h-10 w-10 items-center justify-center rounded-md"
-                    style={{ backgroundColor: `${aud.accent}15` }}
-                  >
-                    <Icon className="h-5 w-5" style={{ color: aud.accent }} />
-                  </div>
-                  <h3
-                    className="mt-5 text-xl"
-                    style={{ fontWeight: 600, color: "var(--foreground)" }}
-                  >
-                    {aud.title}
-                  </h3>
-                  <p className="mt-2 text-sm" style={{ color: "var(--muted-foreground)" }}>
-                    {aud.description}
-                  </p>
-                  <ul className="mt-5 space-y-2">
-                    {aud.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2 text-sm">
-                        <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: aud.accent }} />
-                        <span style={{ color: "var(--foreground)", opacity: 0.85 }}>{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <p
-                    className="mt-auto pt-6 text-sm font-medium"
-                    style={{ color: aud.accent }}
-                  >
-                    {aud.price}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </AnimatedSection>
-      </section>
-
-      {/* ═══ SECTION 5: WHY BOSSBOARD? ════════════════════════════════════ */}
-      <section className="mx-auto max-w-[1200px] px-6 py-24 sm:py-28">
-        <AnimatedSection>
-        <div className="max-w-2xl mx-auto text-center">
-          <h2
-            className="tracking-tight text-balance"
-            style={{
-              fontSize: "clamp(1.875rem, 3.5vw, 2.5rem)",
-              fontWeight: 600,
-              letterSpacing: "-0.02em",
-              color: "var(--foreground)",
-            }}
-          >
-            Why BossBoard?
-          </h2>
-          <p
-            className="mt-4 text-lg text-balance"
-            style={{ color: "var(--muted-foreground)", lineHeight: 1.6 }}
-          >
-            The only platform built from the ground up for AI agents AND
-            human teams to collaborate.
-          </p>
-        </div>
-
-        <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[
-            {
-              icon: Brain,
-              accent: "#4A6CF7",
-              title: "Persistent Memory",
-              body: "Wiki, board, calendar — all writable by your agents via MCP and REST API.",
-            },
-            {
-              icon: Users,
-              accent: "#A855F7",
-              title: "Multi-Agent Coordination",
-              body: "Code stays in Git. Context, decisions, and conversations live in BossBoard.",
-            },
-            {
-              icon: Zap,
-              accent: "#06B6D4",
-              title: "Bring Your Own Key",
-              body: "Use your own Anthropic, Gemini, or OpenAI key. Pay your AI provider directly — no BossBoard markup.",
-            },
-            {
-              icon: DollarSign,
-              accent: "#10B981",
-              title: "Flat Team Pricing",
-              body: "$19/month for your entire team. No per-user fees, ever. 2 or 50 members — same price.",
-            },
-            {
-              icon: Cpu,
-              accent: "#F59E0B",
-              title: "Open API + MCP",
-              body: "REST API and MCP server included on every plan. Even free. (CLI launching soon.)",
-            },
-            {
-              icon: Heart,
-              accent: "#EF4444",
-              title: "Built by Indie Developers",
-              body: "For indie developers. Honest pricing. Real support. No enterprise sales calls.",
-            },
-          ].map((card) => {
-            const Icon = card.icon;
-            return (
-              <div
-                key={card.title}
-                className="rounded-xl border p-7 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-                style={{
-                  backgroundColor: "var(--card)",
-                  borderColor: "var(--border)",
-                }}
-              >
-                <div
-                  className="flex h-10 w-10 items-center justify-center rounded-md"
-                  style={{ backgroundColor: `${card.accent}15` }}
-                >
-                  <Icon className="h-5 w-5" style={{ color: card.accent }} />
-                </div>
-                <h3
-                  className="mt-5 text-balance"
-                  style={{
-                    fontSize: "1.25rem",
-                    fontWeight: 600,
-                    letterSpacing: "-0.01em",
-                    lineHeight: 1.2,
-                    color: "var(--foreground)",
-                  }}
-                >
-                  {card.title}
-                </h3>
-                <p
-                  className="mt-2.5 text-sm"
-                  style={{ color: "var(--muted-foreground)", lineHeight: 1.7 }}
-                >
-                  {card.body}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-        </AnimatedSection>
-      </section>
-
-      {/* ═══ SECTION 6: PRICING ═══════════════════════════════════════════ */}
+      {/* ═══ SECTION 4: PRICING ═══════════════════════════════════════════ */}
       <section id="pricing" style={{ backgroundColor: "var(--card)" }}>
-        <AnimatedSection className="mx-auto max-w-[1080px] px-6 py-24 sm:py-28">
+        <AnimatedSection className="mx-auto max-w-[1080px] px-6 py-16 sm:py-20">
           {headlinePromo && (
             <div className="text-center mb-4">
               <p
@@ -572,12 +369,12 @@ export default async function HomePage() {
         </AnimatedSection>
       </section>
 
-      {/* ═══ SECTION 7: FAQ ═══════════════════════════════════════════════ */}
+      {/* ═══ SECTION 5: FAQ ═══════════════════════════════════════════════ */}
       <AnimatedSection>
         <FaqSection />
       </AnimatedSection>
 
-      {/* ═══ SECTION 8: FINAL CTA ═════════════════════════════════════════ */}
+      {/* ═══ SECTION 6: FINAL CTA ═════════════════════════════════════════ */}
       <section className="relative overflow-hidden">
         <div
           className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2"
@@ -587,7 +384,7 @@ export default async function HomePage() {
             background: "radial-gradient(ellipse at center, rgba(74,108,247,0.1) 0%, transparent 70%)",
           }}
         />
-        <AnimatedSection className="relative mx-auto max-w-[900px] px-6 py-32 text-center">
+        <AnimatedSection className="relative mx-auto max-w-[900px] px-6 py-24 text-center">
           <h2
             className="tracking-tight text-balance"
             style={{
@@ -604,8 +401,7 @@ export default async function HomePage() {
             className="mt-6 mx-auto max-w-xl text-lg"
             style={{ color: "var(--muted-foreground)", lineHeight: 1.7 }}
           >
-            Free forever. No credit card. 3 agents and 5 GB storage included.<br />
-            MCP + REST API + BYOK on every plan.
+            Free forever. No credit card. 3 agents and 5 GB storage included.
           </p>
           <div className="mt-10">
             <Link
@@ -616,12 +412,6 @@ export default async function HomePage() {
               Start Building Free <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-          <p className="mt-8 text-sm" style={{ color: "var(--muted-foreground)", opacity: 0.75 }}>
-            Questions? Email{" "}
-            <a href="mailto:jay@mybossboard.com" className="underline hover:opacity-80" style={{ color: "var(--foreground)" }}>
-              jay@mybossboard.com
-            </a>
-          </p>
         </AnimatedSection>
       </section>
     </>

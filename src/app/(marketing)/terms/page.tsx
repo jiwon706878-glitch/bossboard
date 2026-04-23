@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
+
 export const dynamic = "force-static";
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description:
+    "BossBoard Terms of Service. BYOK model, AI Agent Operations, Payment and Refund policies.",
+};
 
 export default function TermsPage() {
   const heading2Style = {

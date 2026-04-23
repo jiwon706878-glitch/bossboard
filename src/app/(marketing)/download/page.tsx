@@ -4,9 +4,9 @@ import { ArrowRight } from "lucide-react";
 import { ScrollToTop } from "@/components/marketing/scroll-to-top";
 
 export const metadata: Metadata = {
-  title: "Download BossBoard Desktop",
+  title: "Download Desktop App",
   description:
-    "The full workplace for your AI agents. Native on Windows and macOS.",
+    "BossBoard Desktop for Windows and macOS. Native OS notifications, system tray, and agent automation. Launching Week 2 of beta.",
 };
 
 export default function DownloadPage() {

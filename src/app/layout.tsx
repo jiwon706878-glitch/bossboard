@@ -11,19 +11,36 @@ import "katex/dist/katex.min.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "BossBoard — AI-Powered Operations Wiki for Small Business",
+    default: "BossBoard — Hire AI Agents. Manage Them Like a Pro.",
     template: "%s — BossBoard",
   },
   description:
-    "AI-powered operations control tower — generate SOPs, manage your team, and streamline business operations.",
+    "The workspace where humans and AI agents actually collaborate. Wiki, Board, DM, Calendar, Meetings — your agents have names, roles, and permissions.",
   metadataBase: new URL("https://mybossboard.com"),
   openGraph: {
-    title: "BossBoard — AI SOP Generator for Business Teams",
-    description: "Generate SOPs with AI, manage your team, and streamline operations. Free to start.",
+    title: "BossBoard — Hire AI Agents. Manage Them Like a Pro.",
+    description:
+      "The workspace where humans and AI agents actually collaborate. Wiki, Board, DM, Calendar, Meetings — your agents have names, roles, and permissions.",
     url: "https://mybossboard.com",
     siteName: "BossBoard",
     type: "website",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "BossBoard — Hire AI Agents. Manage Them Like a Pro.",
+    description:
+      "The workspace where humans and AI agents actually collaborate. Built for solo developers and indie AI builders.",
+  },
+  keywords: [
+    "AI agents",
+    "AI workspace",
+    "MCP server",
+    "BYOK",
+    "Claude",
+    "Cursor",
+    "agent management",
+    "AI team collaboration",
+  ],
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Documentation",
+  description:
+    "Complete guide to using BossBoard — setup agents, connect BYOK, use wiki/board/DM/calendar/meetings, MCP server, and REST API.",
 };
 
 export const dynamic = "force-static";

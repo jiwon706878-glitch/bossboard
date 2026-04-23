@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
+
 export const dynamic = "force-static";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description:
+    "BossBoard Privacy Policy. Your content is never used for AI training. BYOK keeps your data under your control.",
+};
 
 export default function PrivacyPage() {
   const heading2Style = {

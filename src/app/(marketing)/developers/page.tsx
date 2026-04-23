@@ -8,9 +8,9 @@ import { PricingToggle } from "@/components/marketing/pricing-toggle";
 import { getActivePromotionForPlan } from "@/lib/promotions";
 
 export const metadata: Metadata = {
-  title: "BossBoard — API & MCP for AI Agents",
+  title: "For Developers & AI Agents",
   description:
-    "Give your AI agent persistent memory. REST API and MCP server for reading, writing, and managing structured knowledge. Free forever, on every plan.",
+    "Give your AI agents a brain. BossBoard is the structured knowledge base your agents read from, write to, and coordinate through. MCP + REST API included on every plan.",
 };
 
 const f = "'A2Z', sans-serif";

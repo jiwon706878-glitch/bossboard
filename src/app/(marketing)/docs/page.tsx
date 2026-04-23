@@ -631,6 +631,12 @@ export default function DocsPage() {
         </CodeBlock>
 
         <SubHeading>SOPs / Wiki</SubHeading>
+        <Callout>
+          <strong>Note:</strong> The <Code>/sops</Code> endpoint is the
+          wiki/library resource. The URL preserves the original name for API
+          backward compatibility; internally and in the UI this feature is
+          called &quot;Library&quot; or &quot;Wiki&quot;.
+        </Callout>
         <CodeBlock title="GET /api/v1/sops">
           {`# List all SOPs in the workspace
 # Query params: ?status=published&category=operations&page=1&limit=20

@@ -223,6 +223,10 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* Anchor-link offset so section titles clear the sticky banner + navbar */
+  section[id] {
+    scroll-margin-top: 120px;
+  }
   html {
     height: 100%;
     overflow: hidden;

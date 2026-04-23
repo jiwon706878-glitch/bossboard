@@ -51,6 +51,10 @@ export function LaunchBannerClient({
       ? slotsParts.join(" · ")
       : "First 100 subscribers — limited slots";
 
+  // Total remaining across starter + pro, for the tablet line
+  const totalLeft =
+    (starterLeft ?? 0) + (proLeft ?? 0);
+
   return (
     <div
       id="bb-beta-banner"
@@ -61,7 +65,8 @@ export function LaunchBannerClient({
         borderBottom: "1px solid var(--border)",
       }}
     >
-      <span>
+      {/* Desktop (md+): full message */}
+      <span className="hidden md:inline">
         <strong style={{ color: "#4F8BFF" }}>Beta launch</strong>
         <span style={{ color: "var(--muted-foreground)" }}>
           {" · "}First 100 subscribers get 30% lifetime
@@ -71,6 +76,24 @@ export function LaunchBannerClient({
           {slotsMessage}
         </span>{" "}
       </span>
+
+      {/* Tablet (sm–md): medium message */}
+      <span className="hidden sm:inline md:hidden">
+        <strong style={{ color: "#4F8BFF" }}>Beta</strong>
+        <span style={{ color: "var(--muted-foreground)" }}>
+          {" · "}30% lifetime discount
+          {totalLeft > 0 ? ` · ${totalLeft} left` : ""}
+        </span>{" "}
+      </span>
+
+      {/* Mobile (<sm): minimal message */}
+      <span className="sm:hidden">
+        <strong style={{ color: "#4F8BFF" }}>Beta</strong>
+        <span style={{ color: "var(--muted-foreground)" }}>
+          {" · "}30% off lifetime
+        </span>{" "}
+      </span>
+
       <a
         href="/#pricing"
         className="ml-1 font-semibold underline underline-offset-2 transition-opacity hover:opacity-80"

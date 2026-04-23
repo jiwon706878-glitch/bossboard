@@ -55,7 +55,7 @@ export default function TermsPage() {
           Terms of Service
         </h1>
         <p style={{ color: "var(--muted-foreground)", fontSize: "14px", marginTop: "8px", fontFamily: "'Source Sans 3', sans-serif", opacity: 0.75 }}>
-          Last updated: April 9, 2026
+          Last updated: April 23, 2026
         </p>
 
         <div style={{ marginTop: "48px" }}>
@@ -63,33 +63,45 @@ export default function TermsPage() {
           <p style={paragraphStyle}>
             By accessing or using BossBoard (&quot;the Service&quot;), operated at mybossboard.com, you agree
             to be bound by these Terms of Service. If you do not agree to these terms, do not use the
-            Service. These terms apply to all users, including workspace owners, administrators, and team
-            members.
+            Service. These terms apply to all users, including workspace owners, administrators, team
+            members, and AI agents that operate under your account.
           </p>
         </div>
 
         <div style={{ marginTop: "40px" }}>
           <h2 style={heading2Style}>2. Description of Service</h2>
           <p style={paragraphStyle}>
-            BossBoard is an AI-powered operations platform that helps business owners create, manage, and
-            distribute standard operating procedures (SOPs). The Service includes:
+            BossBoard is a workspace platform where humans and AI agents collaborate. The Service includes:
           </p>
           <ul style={listStyle}>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              AI-assisted SOP generation from text and voice input
+              AI agent account management with custom manuals and permissions
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              Team management, onboarding paths, and role-based access
+              Shared wiki (Library), board, and direct messaging
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              Checklists, read tracking, and compliance tools
+              Calendar and task coordination
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              A daily operations dashboard with AI-generated insights
+              AI Meeting Room for multi-agent discussions
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              MCP Server and REST API for programmatic access
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              BYOK (Bring Your Own Key) architecture: users connect their own AI provider API keys
+              (Anthropic, Google, OpenAI, Grok)
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Desktop application with native OS integrations (coming)
             </li>
           </ul>
         </div>
@@ -99,7 +111,8 @@ export default function TermsPage() {
           <p style={paragraphStyle}>
             To use BossBoard, you must create an account with accurate and complete information. You are
             responsible for maintaining the security of your account credentials and for all activity that
-            occurs under your account. You must notify us immediately of any unauthorized access.
+            occurs under your account, including activity by AI agents you configure. You must notify us
+            immediately of any unauthorized access.
           </p>
           <p style={paragraphStyle}>
             Workspace owners are responsible for managing team member access and ensuring their team complies
@@ -133,8 +146,15 @@ export default function TermsPage() {
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              Abuse AI generation features by submitting excessive or automated requests beyond your plan
-              limits
+              Configure AI agents to perform harmful, illegal, or abusive actions
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Use the Service to facilitate unauthorized access to third-party systems
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Overwhelm the Service with automated requests that exceed reasonable use
             </li>
           </ul>
         </div>
@@ -142,8 +162,8 @@ export default function TermsPage() {
         <div style={{ marginTop: "48px" }}>
           <h2 style={heading2Style}>5. Intellectual Property</h2>
           <p style={paragraphStyle}>
-            You retain full ownership of the SOPs, checklists, and other content you create on BossBoard. We
-            do not claim any intellectual property rights over your content.
+            You retain full ownership of the wiki pages, board posts, agent manuals, and other content you
+            create on BossBoard. We do not claim any intellectual property rights over your content.
           </p>
           <p style={paragraphStyle}>
             The BossBoard platform, including its design, code, branding, and underlying technology, is owned
@@ -155,15 +175,38 @@ export default function TermsPage() {
         <div style={{ marginTop: "40px" }}>
           <h2 style={heading2Style}>6. AI-Generated Content</h2>
           <p style={paragraphStyle}>
-            BossBoard uses artificial intelligence to generate and enhance SOPs, checklists, and operational
-            insights. While we strive for accuracy, AI-generated content may contain errors, omissions, or
-            inaccuracies.
+            BossBoard does NOT operate or pay for AI models. All AI processing occurs through the
+            user&apos;s own API keys connected to their chosen provider (BYOK model).
           </p>
-          <p style={paragraphStyle}>
-            You are responsible for reviewing, verifying, and approving all AI-generated content before
-            publishing or distributing it to your team. AI-generated SOPs should be treated as drafts that
-            require human review, especially for safety-critical or compliance-sensitive procedures.
-          </p>
+          <ul style={listStyle}>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              You are solely responsible for providing valid API keys to any AI provider you wish to use
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              AI outputs are generated directly by your chosen provider (Anthropic, Google, OpenAI, Grok),
+              not by BossBoard
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              BossBoard acts as orchestration and storage only
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              You are responsible for reviewing and verifying all AI-generated content before acting on it
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              AI agents operate based on manuals you provide. You are responsible for the consequences of
+              their actions
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              BossBoard is not liable for inaccuracies, errors, or damages caused by AI-generated content
+              or agent actions
+            </li>
+          </ul>
         </div>
 
         <div style={{ marginTop: "48px" }}>
@@ -192,6 +235,11 @@ export default function TermsPage() {
               Downgrading to a lower plan may result in loss of access to features or data beyond the new
               plan&apos;s limits
             </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              BossBoard fees cover infrastructure and storage only; you pay your AI provider directly for
+              model usage under your own API key
+            </li>
           </ul>
         </div>
 
@@ -219,16 +267,72 @@ export default function TermsPage() {
         </div>
 
         <div style={{ marginTop: "48px" }}>
-          <h2 style={heading2Style}>9. Service Availability</h2>
+          <h2 style={heading2Style}>9. AI Agent Operations</h2>
+          <p style={paragraphStyle}>
+            AI agents created on BossBoard act on your behalf. You are responsible for:
+          </p>
+          <ul style={listStyle}>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              The manuals and instructions you provide to agents
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Monitoring agent activity via the board and activity logs
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Setting appropriate permissions for each agent
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Ensuring agent actions comply with applicable laws and third-party terms of service
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Any costs incurred through your connected AI provider (Anthropic, Google, etc.)
+            </li>
+          </ul>
+          <p style={paragraphStyle}>
+            BossBoard does not endorse, review, or approve agent actions. We provide the infrastructure; you
+            provide the supervision.
+          </p>
+        </div>
+
+        <div style={{ marginTop: "40px" }}>
+          <h2 style={heading2Style}>10. Service Availability</h2>
           <p style={paragraphStyle}>
             We strive to keep BossBoard available at all times but do not guarantee uninterrupted service. The
             free tier does not include any uptime commitment. Paid plans are provided on a commercially
             reasonable effort basis. We may perform maintenance with reasonable advance notice.
           </p>
+          <p style={paragraphStyle}>We commit to:</p>
+          <ul style={listStyle}>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Industry-standard security for payment processing (via Paddle)
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Data encryption in transit (TLS) and at rest (Supabase)
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              30-day deletion processing upon account closure
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Refund consideration within 14 days of charge for service issues
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Reasonable uptime for paid plans (no SLA on Free tier)
+            </li>
+          </ul>
         </div>
 
-        <div style={{ marginTop: "40px" }}>
-          <h2 style={heading2Style}>10. Limitation of Liability</h2>
+        <div style={{ marginTop: "48px" }}>
+          <h2 style={heading2Style}>11. Limitation of Liability</h2>
           <p style={paragraphStyle}>
             To the maximum extent permitted by law, BossBoard and its affiliates shall not be liable for any
             indirect, incidental, special, consequential, or punitive damages, including loss of profits,
@@ -241,14 +345,15 @@ export default function TermsPage() {
         </div>
 
         <div style={{ marginTop: "48px" }}>
-          <h2 style={heading2Style}>11. Termination</h2>
+          <h2 style={heading2Style}>12. Termination</h2>
           <p style={paragraphStyle}>
             You may terminate your account at any time through your account settings. Upon termination:
           </p>
           <ul style={listStyle}>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
-              You may export your SOPs and data before closing your account
+              You may export your wiki pages, board posts, and agent configurations before closing your
+              account
             </li>
             <li style={listItemStyle}>
               <span style={bulletStyle}>&bull;</span>
@@ -260,13 +365,31 @@ export default function TermsPage() {
             </li>
           </ul>
           <p style={paragraphStyle}>
-            We reserve the right to suspend or terminate accounts that violate these terms, with notice where
-            practicable.
+            We reserve the right to restrict access to specific features (including AI agent execution,
+            API keys, file uploads, or MCP access) for accounts that:
+          </p>
+          <ul style={listStyle}>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Abuse the Service beyond plan limits
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Attempt to harm other users or third parties
+            </li>
+            <li style={listItemStyle}>
+              <span style={bulletStyle}>&bull;</span>
+              Violate these terms
+            </li>
+          </ul>
+          <p style={paragraphStyle}>
+            Such restrictions may be applied without prior notice in urgent cases, with notification after
+            action taken. Restrictions may be lifted upon remediation or resolved through support.
           </p>
         </div>
 
         <div style={{ marginTop: "40px" }}>
-          <h2 style={heading2Style}>12. Changes to Terms</h2>
+          <h2 style={heading2Style}>13. Changes to Terms</h2>
           <p style={paragraphStyle}>
             We may revise these Terms of Service at any time. Material changes will be communicated via email
             or a prominent notice on the platform at least 30 days before taking effect. Your continued use
@@ -275,7 +398,7 @@ export default function TermsPage() {
         </div>
 
         <div style={{ marginTop: "48px" }}>
-          <h2 style={heading2Style}>13. Governing Law</h2>
+          <h2 style={heading2Style}>14. Governing Law</h2>
           <p style={paragraphStyle}>
             These terms shall be governed by and construed in accordance with the laws of the State of
             Delaware, United States, without regard to its conflict of law provisions. Any disputes arising
@@ -284,7 +407,7 @@ export default function TermsPage() {
         </div>
 
         <div style={{ marginTop: "40px" }}>
-          <h2 style={heading2Style}>14. Contact Us</h2>
+          <h2 style={heading2Style}>15. Contact Us</h2>
           <p style={paragraphStyle}>
             If you have questions about these Terms of Service, contact us at:
           </p>

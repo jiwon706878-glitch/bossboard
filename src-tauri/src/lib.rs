@@ -3,6 +3,7 @@ mod commands;
 use commands::fs::{
     create_directory, delete_file, file_exists, list_directory, read_file, write_file,
 };
+use commands::metadata::{metadata_delete, metadata_list, metadata_search, metadata_upsert};
 use commands::workspace::{get_default_workspace_path, initialize_workspace, is_workspace};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -34,6 +35,10 @@ pub fn run() {
             initialize_workspace,
             is_workspace,
             get_default_workspace_path,
+            metadata_upsert,
+            metadata_list,
+            metadata_search,
+            metadata_delete,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

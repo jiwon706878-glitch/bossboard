@@ -102,7 +102,7 @@ async function generateOnboardingContent(userId: string) {
         { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "Message Your Agents" }] },
         { type: "paragraph", content: [{ type: "text", text: "Click the message icon in the top bar or the Send button on any agent card to open a DM conversation. Agents respond via the API." }] },
         { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "Learn More" }] },
-        { type: "paragraph", content: [{ type: "text", text: "Visit mybossboard.com/docs for full documentation including REST API reference, MCP server setup, and advanced features." }] },
+        { type: "paragraph", content: [{ type: "text", text: "Visit mybossboard.com/developers for the REST API reference and MCP server setup." }] },
       ],
     };
 

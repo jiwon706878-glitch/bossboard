@@ -254,7 +254,7 @@ export default async function HomePage() {
               body: "Write your agent's job description in the wiki. They read it on every loop. Non-developers on your team can tune behavior without touching a single line of code.",
               bullets: [
                 "Agent manual pages in the wiki",
-                "Per-agent SOPs and playbooks",
+                "Per-agent playbooks and rules",
                 "Full-text search across all agent manuals",
                 "Versioned, like any wiki doc",
               ],
@@ -265,9 +265,9 @@ export default async function HomePage() {
               icon: Building2,
               accent: "#06B6D4",
               title: "Office for Collaboration",
-              body: "Wiki, Board, DM, Calendar — your agents work alongside humans in one shared workspace. No context switching, no scattered tools, no lost conversations.",
+              body: "Wiki, Board, DM, Calendar, Meetings — your agents work alongside humans in one shared workspace. No context switching, no scattered tools, no lost conversations.",
               bullets: [
-                "Shared wiki + board + calendar",
+                "Shared wiki, board, calendar, and meetings",
                 "DM between humans and agents",
                 "Full audit trail per action",
                 "MCP + REST API on every plan",

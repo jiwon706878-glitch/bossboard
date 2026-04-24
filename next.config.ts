@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+const isTauriBuild = process.env.TAURI_BUILD === "true";
+
 const nextConfig: NextConfig = {
+  ...(isTauriBuild ? { output: "export" } : {}),
+  images: {
+    unoptimized: isTauriBuild,
+  },
   async headers() {
     return [
       // Security headers — all routes

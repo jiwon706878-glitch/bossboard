@@ -50,6 +50,14 @@ pub async fn is_workspace(root_path: String) -> bool {
     marker.exists()
 }
 
+#[tauri::command]
+pub async fn get_default_workspace_path() -> Result<String, FsError> {
+    let home = dirs::home_dir()
+        .ok_or_else(|| FsError::InvalidPath("could not resolve home directory".into()))?;
+    let path = home.join("Documents").join("BossBoard");
+    Ok(path.to_string_lossy().to_string())
+}
+
 const GETTING_STARTED_CONTENT: &str = r#"---
 id: "getting-started"
 title: "Getting Started with BossBoard"

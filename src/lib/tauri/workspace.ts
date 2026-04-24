@@ -1,6 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { homeDir } from "@tauri-apps/api/path";
 
 export interface WorkspaceInfo {
   root_path: string;
@@ -28,6 +27,5 @@ export async function selectWorkspaceFolder(): Promise<string | null> {
 }
 
 export async function getDefaultWorkspacePath(): Promise<string> {
-  const home = await homeDir();
-  return `${home}/BossBoard`;
+  return invoke("get_default_workspace_path");
 }

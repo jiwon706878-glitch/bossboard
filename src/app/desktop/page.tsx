@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { isTauri } from "@/lib/tauri/fs";
 import {
   selectWorkspaceFolder,
@@ -10,34 +12,38 @@ import {
 } from "@/lib/tauri/workspace";
 
 export default function DesktopPage() {
-  const [workspacePath, setWorkspacePath] = useState<string | null>(null);
-  const [step, setStep] = useState<"loading" | "welcome" | "select" | "ready">("loading");
+  const router = useRouter();
+  const [stage, setStage] = useState<"loading" | "welcome" | "ready">("loading");
   const [defaultPath, setDefaultPath] = useState<string>("");
 
   useEffect(() => {
-    if (!isTauri()) {
-      setStep("ready");
-      return;
-    }
-
     (async () => {
-      const saved = localStorage.getItem("bb_workspace_path");
-      if (saved && (await isWorkspace(saved))) {
-        setWorkspacePath(saved);
-        setStep("ready");
+      if (isTauri()) {
+        const saved = localStorage.getItem("bb_workspace_path");
+        if (saved && (await isWorkspace(saved))) {
+          const supabase = createClient();
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          if (session) {
+            router.replace("/desktop/dashboard");
+          } else {
+            router.replace("/desktop/login");
+          }
+        } else {
+          const def = await getDefaultWorkspacePath();
+          setDefaultPath(def);
+          setStage("welcome");
+        }
       } else {
-        const def = await getDefaultWorkspacePath();
-        setDefaultPath(def);
-        setStep("welcome");
+        window.location.href = "/";
       }
     })();
-  }, []);
+  }, [router]);
 
   async function handleChooseFolder() {
     const selected = await selectWorkspaceFolder();
-    if (selected) {
-      await setupWorkspace(selected);
-    }
+    if (selected) await setupWorkspace(selected);
   }
 
   async function handleUseDefault() {
@@ -48,25 +54,27 @@ export default function DesktopPage() {
     try {
       await initializeWorkspace(path);
       localStorage.setItem("bb_workspace_path", path);
-      setWorkspacePath(path);
-      setStep("ready");
+      router.replace("/desktop/login");
     } catch (e) {
-      console.error("Failed to initialize workspace:", e);
       alert(`Error: ${e}`);
     }
   }
 
-  if (step === "loading") {
-    return <div className="p-8 text-white">Loading…</div>;
+  if (stage === "loading") {
+    return (
+      <div className="min-h-screen bg-[#0C0F17] text-white flex items-center justify-center">
+        <div className="text-gray-400">Loading BossBoard…</div>
+      </div>
+    );
   }
 
-  if (step === "welcome") {
+  if (stage === "welcome") {
     return (
       <div className="min-h-screen bg-[#0C0F17] text-white p-8">
         <div className="max-w-xl mx-auto mt-20">
           <h1 className="text-4xl font-bold mb-4">Welcome to BossBoard</h1>
           <p className="text-gray-400 mb-8">
-            Your AI agents need a workspace. Let&apos;s set up the folder where your files will live.
+            Let&apos;s set up your workspace folder. This is where your files will live.
           </p>
 
           <div className="space-y-3">
@@ -88,20 +96,10 @@ export default function DesktopPage() {
               </div>
             </button>
           </div>
-
-          <p className="text-xs text-gray-500 mt-8">
-            BossBoard will create subfolders: Library, agents, shared, private
-          </p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-[#0C0F17] text-white p-8">
-      <h1 className="text-3xl font-bold mb-4">BossBoard</h1>
-      <p className="text-gray-400 mb-4">Workspace: {workspacePath}</p>
-      <p className="text-green-400">Ready! Next: Dashboard will be built in Week 2.</p>
-    </div>
-  );
+  return null;
 }

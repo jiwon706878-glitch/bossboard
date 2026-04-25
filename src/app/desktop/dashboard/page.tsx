@@ -26,50 +26,31 @@ export default function DesktopDashboard() {
     })();
   }, [router]);
 
-  async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.replace("/desktop/login");
-  }
-
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[#0C0F17] text-white p-8">
+    <div className="p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">BossBoard</h1>
-          <button onClick={handleSignOut} className="text-sm text-gray-400 hover:text-white">
-            Sign out
-          </button>
-        </div>
+        <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+        <p className="text-gray-400 mb-8">Welcome back, {user.email}</p>
 
         <div className="space-y-4">
-          <div className="p-4 bg-[#141824] rounded-md border border-gray-800">
-            <div className="text-xs text-gray-500 uppercase">Signed in as</div>
-            <div className="text-lg mt-1">{user.email}</div>
-          </div>
-
           <div className="p-4 bg-[#141824] rounded-md border border-gray-800">
             <div className="text-xs text-gray-500 uppercase">Workspace</div>
             <div className="text-sm text-gray-300 mt-1 font-mono">{workspacePath}</div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-8">
-            <button
-              onClick={() => router.push("/desktop/library")}
-              className="p-6 bg-[#141824] rounded-md border border-gray-800 hover:border-blue-500 transition text-left"
-            >
-              <div className="text-xl font-semibold">Library</div>
-              <div className="text-sm text-gray-400 mt-1">Wiki pages and manuals</div>
-            </button>
-            <button
-              disabled
-              className="p-6 bg-[#141824] rounded-md border border-gray-800 opacity-50 text-left cursor-not-allowed"
-            >
-              <div className="text-xl font-semibold">Agents</div>
-              <div className="text-sm text-gray-400 mt-1">Coming in Week 3</div>
-            </button>
+            <div className="p-6 bg-[#141824] rounded-md border border-gray-800">
+              <div className="text-xs text-gray-500 uppercase">Agents</div>
+              <div className="text-3xl font-bold mt-2">0</div>
+              <div className="text-xs text-gray-500 mt-1">Coming in Week 3</div>
+            </div>
+            <div className="p-6 bg-[#141824] rounded-md border border-gray-800">
+              <div className="text-xs text-gray-500 uppercase">Library Pages</div>
+              <div className="text-3xl font-bold mt-2">—</div>
+              <div className="text-xs text-gray-500 mt-1">Check Library</div>
+            </div>
           </div>
         </div>
       </div>

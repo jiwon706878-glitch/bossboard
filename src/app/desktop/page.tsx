@@ -17,7 +17,10 @@ export default function DesktopPage() {
   const [defaultPath, setDefaultPath] = useState<string>("");
 
   useEffect(() => {
-    (async () => {
+    let checkCount = 0;
+    const maxChecks = 20;
+
+    const checkTauri = async () => {
       if (isTauri()) {
         const saved = localStorage.getItem("bb_workspace_path");
         if (saved && (await isWorkspace(saved))) {
@@ -35,10 +38,19 @@ export default function DesktopPage() {
           setDefaultPath(def);
           setStage("welcome");
         }
-      } else {
-        window.location.href = "/";
+        return;
       }
-    })();
+
+      checkCount++;
+      if (checkCount >= maxChecks) {
+        window.location.href = "/";
+        return;
+      }
+
+      setTimeout(checkTauri, 100);
+    };
+
+    checkTauri();
   }, [router]);
 
   async function handleChooseFolder() {

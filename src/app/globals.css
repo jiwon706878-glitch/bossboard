@@ -1,7 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
 /* A2Z — 4 essential weights only (cuts font payload by 55%).
    The CSS font-weight system synthesizes intermediate weights when not loaded. */
@@ -25,7 +24,6 @@
   --color-bb-fg-light: #1a1a1a;
   --color-bb-card-light: #ffffff;
   --color-bb-border-light: #e5e5e5;
-  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 html.dark body {
@@ -58,8 +56,8 @@ html.light .text-white { color: #1a1a1a; }
   animation: slideDown 0.2s ease-out;
 }
 
-.bb-app-shell {
-  font-family: var(--font-ui);
+.bb-app-shell, html.bb-app-shell {
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
 }
 
 @theme inline {

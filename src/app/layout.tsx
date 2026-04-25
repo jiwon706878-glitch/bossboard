@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/shared/theme-provider";
 import { PaddleProvider } from "@/components/shared/paddle-provider";
 import { QueryProvider } from "@/providers/query-provider";
@@ -8,6 +9,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "sonner";
 import "./globals.css";
 import "katex/dist/katex.min.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -55,7 +63,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
       <head>
         {/* Preload primary font weights to minimize FOUT */}
         <link rel="preload" href="/fonts/A2Z-4Regular.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />

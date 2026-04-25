@@ -10,6 +10,7 @@ export default function LibraryPage() {
   const [error, setError] = useState<string | null>(null);
   const [newFileName, setNewFileName] = useState("");
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   async function loadFiles() {
     try {
@@ -31,12 +32,13 @@ export default function LibraryPage() {
   async function handleCreate() {
     if (!newFileName.trim()) return;
     setCreating(true);
+    setCreateError(null);
     try {
       await createLibraryFile(newFileName.trim());
       setNewFileName("");
       await loadFiles();
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : String(e));
+      setCreateError(e instanceof Error ? e.message : String(e));
     } finally {
       setCreating(false);
     }
@@ -74,6 +76,18 @@ export default function LibraryPage() {
             Create
           </button>
         </div>
+
+        {createError && (
+          <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded-md text-red-300 text-sm">
+            <div>{createError}</div>
+            <button
+              onClick={() => setCreateError(null)}
+              className="text-xs underline mt-2"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <div className="text-gray-400">Loading…</div>

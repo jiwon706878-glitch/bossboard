@@ -16,6 +16,7 @@ function EditorInner() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [dirty, setDirty] = useState(false);
+  const [editorError, setEditorError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!filePath) return;
@@ -25,7 +26,8 @@ function EditorInner() {
         setFrontmatter(frontmatter);
         setContent(content);
       } catch (e: unknown) {
-        alert(`Failed to load: ${e instanceof Error ? e.message : String(e)}`);
+        const msg = e instanceof Error ? e.message : String(e);
+        setEditorError(`Failed to load: ${msg}`);
       } finally {
         setLoading(false);
       }
@@ -35,11 +37,13 @@ function EditorInner() {
   const handleSave = useCallback(async () => {
     if (!frontmatter) return;
     setSaving(true);
+    setEditorError(null);
     try {
       await saveLibraryFile(filePath, frontmatter, content);
       setDirty(false);
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setEditorError(`Failed to save: ${msg}`);
     } finally {
       setSaving(false);
     }
@@ -95,6 +99,18 @@ function EditorInner() {
       </div>
 
       <div className="max-w-4xl mx-auto p-8">
+        {editorError && (
+          <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded-md text-red-300 text-sm">
+            <div>{editorError}</div>
+            <button
+              onClick={() => setEditorError(null)}
+              className="text-xs underline mt-2"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         <input
           type="text"
           value={frontmatter.title}

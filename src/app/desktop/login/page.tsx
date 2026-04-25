@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { isTauri } from "@/lib/tauri/fs";
@@ -12,6 +12,8 @@ export default function DesktopLoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [oauthInProgress, setOauthInProgress] = useState(false);
+  const oauthCancelRef = useRef<{ cancelled: boolean }>({ cancelled: false });
 
   const supabase = createClient();
 
@@ -31,7 +33,16 @@ export default function DesktopLoginPage() {
   }
 
   async function handleOAuth(provider: "google" | "github") {
+    if (provider === "github") {
+      setError("GitHub login is not yet configured. Use Google or email/password.");
+      return;
+    }
+
     setLoading(true);
+    setOauthInProgress(true);
+    setError(null);
+    oauthCancelRef.current = { cancelled: false };
+
     try {
       const redirectTo = `${window.location.origin}/auth/callback`;
       if (isTauri()) {
@@ -42,7 +53,7 @@ export default function DesktopLoginPage() {
         if (error) throw error;
         if (data?.url) {
           await openExternal(data.url);
-          pollForSession();
+          pollForSession(oauthCancelRef.current);
         }
       } else {
         await supabase.auth.signInWithOAuth({ provider, options: { redirectTo } });
@@ -50,11 +61,17 @@ export default function DesktopLoginPage() {
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
       setLoading(false);
+      setOauthInProgress(false);
     }
   }
 
-  async function pollForSession() {
+  async function pollForSession(cancelRef: { cancelled: boolean }) {
     for (let i = 0; i < 60; i++) {
+      if (cancelRef.cancelled) {
+        setLoading(false);
+        setOauthInProgress(false);
+        return;
+      }
       await new Promise((r) => setTimeout(r, 2000));
       const {
         data: { session },
@@ -66,6 +83,14 @@ export default function DesktopLoginPage() {
     }
     setError("Login timed out. Please try again.");
     setLoading(false);
+    setOauthInProgress(false);
+  }
+
+  function cancelOAuth() {
+    oauthCancelRef.current.cancelled = true;
+    setLoading(false);
+    setOauthInProgress(false);
+    setError(null);
   }
 
   async function handleCreateAccount() {
@@ -95,9 +120,10 @@ export default function DesktopLoginPage() {
           <button
             onClick={() => handleOAuth("github")}
             disabled={loading}
-            className="w-full p-3 bg-[#24292e] text-white rounded-md font-medium hover:bg-[#333] disabled:opacity-50"
+            className="w-full p-3 bg-[#24292e] text-white rounded-md font-medium hover:bg-[#333] disabled:opacity-50 flex items-center justify-center gap-2"
           >
             Continue with GitHub
+            <span className="text-xs text-gray-400">(coming soon)</span>
           </button>
         </div>
 
@@ -135,6 +161,21 @@ export default function DesktopLoginPage() {
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
+
+        {oauthInProgress && (
+          <div className="mt-4 p-3 bg-blue-900/20 border border-blue-800 rounded-md text-sm">
+            <div className="text-blue-300">Waiting for login in browser...</div>
+            <div className="text-xs text-gray-400 mt-1">
+              Complete the login in the browser window that opened.
+            </div>
+            <button
+              onClick={cancelOAuth}
+              className="text-xs text-gray-400 hover:text-white mt-2 underline"
+            >
+              Cancel and try a different method
+            </button>
+          </div>
+        )}
 
         {error && (
           <div className="mt-4 p-3 bg-red-900/20 border border-red-800 rounded-md text-red-300 text-sm">

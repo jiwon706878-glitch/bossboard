@@ -15,6 +15,7 @@ export default function DesktopPage() {
   const router = useRouter();
   const [stage, setStage] = useState<"loading" | "welcome" | "ready">("loading");
   const [defaultPath, setDefaultPath] = useState<string>("");
+  const [setupError, setSetupError] = useState<string | null>(null);
 
   useEffect(() => {
     let checkCount = 0;
@@ -64,11 +65,13 @@ export default function DesktopPage() {
 
   async function setupWorkspace(path: string) {
     try {
+      setSetupError(null);
       await initializeWorkspace(path);
       localStorage.setItem("bb_workspace_path", path);
       router.replace("/desktop/login");
-    } catch (e) {
-      alert(`Error: ${e}`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setSetupError(`Failed to set up workspace: ${msg}`);
     }
   }
 
@@ -108,6 +111,18 @@ export default function DesktopPage() {
               </div>
             </button>
           </div>
+
+          {setupError && (
+            <div className="mt-4 p-3 bg-red-900/20 border border-red-800 rounded-md text-red-300 text-sm">
+              <div>{setupError}</div>
+              <button
+                onClick={() => setSetupError(null)}
+                className="text-xs underline mt-2"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );

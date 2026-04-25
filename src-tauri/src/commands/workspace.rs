@@ -13,6 +13,8 @@ pub struct WorkspaceInfo {
 pub async fn initialize_workspace(root_path: String) -> Result<WorkspaceInfo, FsError> {
     let root = PathBuf::from(&root_path);
 
+    fs::create_dir_all(&root)?;
+
     let dirs = ["Library", "agents", "shared", "private", ".bb"];
 
     for dir in &dirs {

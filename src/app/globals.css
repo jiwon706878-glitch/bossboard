@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
 /* A2Z — 4 essential weights only (cuts font payload by 55%).
    The CSS font-weight system synthesizes intermediate weights when not loaded. */
@@ -10,6 +11,44 @@
 @font-face { font-family: "A2Z"; src: url("/fonts/A2Z-8ExtraBold.ttf") format("truetype"); font-weight: 800; font-style: normal; font-display: swap; }
 
 @custom-variant dark (&:is(.dark *));
+
+@theme {
+  /* BB v3.0 desktop palette — cobalt blue primary, dark gray surface */
+  --color-bb-bg: #1e1e1e;
+  --color-bb-fg: #dcdcdc;
+  --color-bb-card: #252525;
+  --color-bb-border: #2f2f2f;
+  --color-bb-sidebar: #181818;
+  --color-bb-primary: #4a6cf7;
+  --color-bb-primary-hover: #5b7bf8;
+  --color-bb-bg-light: #f8f8f8;
+  --color-bb-fg-light: #1a1a1a;
+  --color-bb-card-light: #ffffff;
+  --color-bb-border-light: #e5e5e5;
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html.dark body {
+  background-color: var(--color-bb-bg);
+  color: var(--color-bb-fg);
+}
+
+html.light body {
+  background-color: var(--color-bb-bg-light);
+  color: var(--color-bb-fg-light);
+}
+
+@keyframes slideDown {
+  from { max-height: 0; opacity: 0; }
+  to { max-height: 500px; opacity: 1; }
+}
+.animate-slideDown {
+  animation: slideDown 0.2s ease-out;
+}
+
+.bb-app-shell {
+  font-family: var(--font-ui);
+}
 
 @theme inline {
   --color-background: var(--background);

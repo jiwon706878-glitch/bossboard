@@ -77,7 +77,7 @@ export default function DesktopPage() {
 
   if (stage === "loading") {
     return (
-      <div className="min-h-screen bg-[#0C0F17] text-white flex items-center justify-center">
+      <div className="min-h-screen bg-bb-bg text-bb-fg flex items-center justify-center">
         <div className="text-gray-400">Loading BossBoard…</div>
       </div>
     );
@@ -85,7 +85,7 @@ export default function DesktopPage() {
 
   if (stage === "welcome") {
     return (
-      <div className="min-h-screen bg-[#0C0F17] text-white p-8">
+      <div className="min-h-screen bg-bb-bg text-bb-fg p-8">
         <div className="max-w-xl mx-auto mt-20">
           <h1 className="text-4xl font-bold mb-4">Welcome to BossBoard</h1>
           <p className="text-gray-400 mb-8">
@@ -95,7 +95,7 @@ export default function DesktopPage() {
           <div className="space-y-3">
             <button
               onClick={handleUseDefault}
-              className="w-full p-4 bg-blue-600 hover:bg-blue-500 rounded-md text-left transition"
+              className="w-full p-4 bg-bb-primary hover:bg-bb-primary-hover rounded-md text-left transition"
             >
               <div className="font-semibold">Use default location</div>
               <div className="text-sm text-gray-200 mt-1">{defaultPath}</div>

@@ -3,8 +3,13 @@
 import { useEffect, useState, Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Languages } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
 import { readLibraryFile, saveLibraryFile } from "@/lib/library/service";
 import { type Frontmatter } from "@/lib/markdown/frontmatter";
+import { createDirectory } from "@/lib/tauri/fs";
+import { MarkdownRenderer } from "@/components/library/markdown-renderer";
+import { TranslationPanel } from "@/components/library/translation-panel";
 
 function EditorInner() {
   const params = useSearchParams();
@@ -17,6 +22,8 @@ function EditorInner() {
   const [loading, setLoading] = useState(true);
   const [dirty, setDirty] = useState(false);
   const [editorError, setEditorError] = useState<string | null>(null);
+  const [translationOpen, setTranslationOpen] = useState(false);
+  const [translation, setTranslation] = useState<{ lang: string; content: string } | null>(null);
 
   useEffect(() => {
     if (!filePath) return;
@@ -60,28 +67,71 @@ function EditorInner() {
     return () => window.removeEventListener("keydown", handler);
   }, [handleSave]);
 
-  if (loading) {
-    return <div className="min-h-screen bg-[#0C0F17] text-white p-8">Loading…</div>;
+  async function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+
+    const assetsPath = filePath.replace(/\.md$/, ".assets");
+    const assetsFolderName = (filePath.split(/[\\/]/).pop() || "").replace(/\.md$/, ".assets");
+
+    try {
+      await createDirectory(assetsPath);
+      let inserts = "";
+      for (const file of files) {
+        if (!file.type.startsWith("image/")) continue;
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const destPath = `${assetsPath}/${safeName}`;
+        const arrayBuffer = await file.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = "";
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        const base64Data = btoa(binary);
+        await invoke("write_binary_file", { path: destPath, base64Data });
+        inserts += `\n![${file.name}](${assetsFolderName}/${safeName})\n`;
+      }
+      if (inserts) {
+        setContent((c) => c + inserts);
+        setDirty(true);
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setEditorError(`Attachment failed: ${msg}`);
+    }
   }
 
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+  }
+
+  if (loading) {
+    return <div className="p-8 text-bb-fg">Loading…</div>;
+  }
   if (!frontmatter) {
-    return <div className="min-h-screen bg-[#0C0F17] text-white p-8">File not found</div>;
+    return <div className="p-8 text-bb-fg">File not found</div>;
   }
 
   return (
-    <div className="min-h-screen bg-[#0C0F17] text-white">
-      <div className="sticky top-0 bg-[#0C0F17] border-b border-gray-800 px-6 py-3 flex items-center justify-between z-10">
+    <div onDrop={handleDrop} onDragOver={handleDragOver}>
+      <div className="sticky top-0 bg-bb-bg border-b border-bb-border px-6 py-3 flex items-center justify-between z-10">
         <Link href="/desktop/library" className="text-sm text-gray-400 hover:text-white">
           ← Library
         </Link>
         <div className="flex items-center gap-2">
-          <div className="flex rounded-md overflow-hidden border border-gray-700">
+          <button
+            onClick={() => setTranslationOpen(true)}
+            className="p-2 hover:bg-bb-card rounded"
+            title="Translate page"
+          >
+            <Languages className="w-4 h-4 text-gray-400" />
+          </button>
+          <div className="flex rounded-md overflow-hidden border border-bb-border">
             {(["source", "live", "preview"] as const).map((m) => (
               <button
                 key={m}
                 onClick={() => setMode(m)}
                 className={`px-3 py-1 text-xs ${
-                  mode === m ? "bg-blue-600" : "bg-[#141824] hover:bg-gray-800"
+                  mode === m ? "bg-bb-primary" : "bg-bb-card hover:bg-bb-bg"
                 }`}
               >
                 {m}
@@ -91,7 +141,7 @@ function EditorInner() {
           <button
             onClick={handleSave}
             disabled={saving || !dirty}
-            className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-md text-sm disabled:opacity-50"
+            className="px-4 py-1.5 bg-bb-primary hover:bg-bb-primary-hover rounded-md text-sm disabled:opacity-50"
           >
             {saving ? "Saving..." : dirty ? "Save" : "Saved"}
           </button>
@@ -121,44 +171,82 @@ function EditorInner() {
           className="w-full text-3xl font-bold bg-transparent border-none outline-none mb-6"
         />
 
-        {mode === "source" && (
-          <textarea
-            value={content}
-            onChange={(e) => {
-              setContent(e.target.value);
-              setDirty(true);
-            }}
-            className="w-full h-[60vh] bg-[#141824] border border-gray-700 rounded-md p-4 font-mono text-sm"
-          />
-        )}
-
-        {mode === "live" && (
-          <textarea
-            value={content}
-            onChange={(e) => {
-              setContent(e.target.value);
-              setDirty(true);
-            }}
-            className="w-full h-[60vh] bg-transparent border border-gray-800 rounded-md p-4 text-base leading-relaxed"
-          />
-        )}
-
-        {mode === "preview" && (
-          <div className="prose prose-invert max-w-none">
-            <pre className="whitespace-pre-wrap">{content}</pre>
-            <p className="text-xs text-gray-500 mt-4">
-              Rendered preview will use TipTap/markdown renderer in Week 3
-            </p>
+        {translation ? (
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <h2 className="text-xs uppercase text-gray-500 mb-2">Original</h2>
+              <textarea
+                value={content}
+                onChange={(e) => {
+                  setContent(e.target.value);
+                  setDirty(true);
+                }}
+                className="w-full h-[60vh] bg-bb-card border border-bb-border rounded-md p-4 font-mono text-sm"
+              />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xs uppercase text-gray-500">{translation.lang}</h2>
+                <button
+                  onClick={() => setTranslation(null)}
+                  className="text-xs text-gray-400 hover:text-white underline"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="h-[60vh] overflow-auto bg-bb-card border border-bb-border rounded-md p-4">
+                <MarkdownRenderer content={translation.content} editable={false} />
+              </div>
+            </div>
           </div>
+        ) : (
+          <>
+            {mode === "source" && (
+              <textarea
+                value={content}
+                onChange={(e) => {
+                  setContent(e.target.value);
+                  setDirty(true);
+                }}
+                className="w-full h-[60vh] bg-bb-card border border-bb-border rounded-md p-4 font-mono text-sm"
+              />
+            )}
+            {mode === "live" && (
+              <textarea
+                value={content}
+                onChange={(e) => {
+                  setContent(e.target.value);
+                  setDirty(true);
+                }}
+                placeholder="Drop images here to attach…"
+                className="w-full h-[60vh] bg-transparent border border-bb-border rounded-md p-4 text-base leading-relaxed"
+              />
+            )}
+            {mode === "preview" && (
+              <div className="prose prose-invert max-w-none">
+                <MarkdownRenderer content={content} editable={false} />
+              </div>
+            )}
+          </>
         )}
       </div>
+
+      {translationOpen && (
+        <TranslationPanel
+          sourceContent={content}
+          onClose={() => setTranslationOpen(false)}
+          onTranslated={(lang, translated) =>
+            setTranslation({ lang, content: translated })
+          }
+        />
+      )}
     </div>
   );
 }
 
 export default function EditorPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-white">Loading…</div>}>
+    <Suspense fallback={<div className="p-8 text-bb-fg">Loading…</div>}>
       <EditorInner />
     </Suspense>
   );

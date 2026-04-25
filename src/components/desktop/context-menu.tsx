@@ -66,13 +66,13 @@ export function ContextMenu({ items, children, className }: ContextMenuProps) {
       {open && (
         <div
           ref={menuRef}
-          className="fixed z-[200] min-w-[200px] bg-[#1a1f2e] border border-gray-700 rounded-md shadow-2xl py-1"
+          className="fixed z-[200] min-w-[200px] bg-bb-card border border-bb-border rounded-md shadow-2xl py-1"
           style={{ left: position.x, top: position.y }}
           onClick={(e) => e.stopPropagation()}
         >
           {items.map((item, i) => {
             if (item.separator) {
-              return <div key={i} className="my-1 border-t border-gray-800" />;
+              return <div key={i} className="my-1 border-t border-bb-border" />;
             }
             return (
               <button
@@ -91,7 +91,7 @@ export function ContextMenu({ items, children, className }: ContextMenuProps) {
                       ? "text-gray-600 cursor-not-allowed"
                       : item.danger
                         ? "text-red-400 hover:bg-red-900/30"
-                        : "text-gray-200 hover:bg-blue-600/20"
+                        : "text-gray-200 hover:bg-bb-primary/20"
                   }
                 `}
               >

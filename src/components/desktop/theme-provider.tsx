@@ -25,6 +25,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const root = document.documentElement;
     root.classList.remove("dark", "light");
     root.classList.add(theme);
+    document.body.classList.remove("dark", "light");
+    document.body.classList.add(theme);
     localStorage.setItem("bb_theme", theme);
   }, [theme]);
 

@@ -108,7 +108,7 @@ export default function DesktopLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0C0F17] text-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-bb-bg text-bb-fg flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold">BossBoard</h1>
@@ -138,7 +138,7 @@ export default function DesktopLoginPage() {
             <div className="w-full border-t border-gray-700" />
           </div>
           <div className="relative flex justify-center text-xs">
-            <span className="bg-[#0C0F17] px-2 text-gray-500">or continue with email</span>
+            <span className="bg-bb-bg px-2 text-gray-500">or continue with email</span>
           </div>
         </div>
 
@@ -149,7 +149,7 @@ export default function DesktopLoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full p-3 bg-[#141824] border border-gray-700 rounded-md text-white"
+            className="w-full p-3 bg-bb-card border border-gray-700 rounded-md text-white"
           />
           <input
             type="password"
@@ -157,7 +157,7 @@ export default function DesktopLoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full p-3 bg-[#141824] border border-gray-700 rounded-md text-white"
+            className="w-full p-3 bg-bb-card border border-gray-700 rounded-md text-white"
           />
           <div className="flex items-center justify-between text-sm">
             <label className="flex items-center gap-2 cursor-pointer">
@@ -165,7 +165,7 @@ export default function DesktopLoginPage() {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="rounded border-gray-700 bg-[#141824]"
+                className="rounded border-gray-700 bg-bb-card"
               />
               <span className="text-gray-300">Remember me</span>
             </label>
@@ -176,7 +176,7 @@ export default function DesktopLoginPage() {
                   "Password reset coming soon. Contact jay@mybossboard.com for help.",
                 )
               }
-              className="text-blue-400 hover:underline"
+              className="text-bb-primary hover:underline"
             >
               Forgot password?
             </button>
@@ -184,7 +184,7 @@ export default function DesktopLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full p-3 bg-blue-600 hover:bg-blue-500 rounded-md font-medium disabled:opacity-50"
+            className="w-full p-3 bg-bb-primary hover:bg-bb-primary-hover rounded-md font-medium disabled:opacity-50"
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
@@ -213,7 +213,7 @@ export default function DesktopLoginPage() {
 
         <div className="mt-6 text-center text-sm text-gray-400">
           New to BossBoard?{" "}
-          <button onClick={handleCreateAccount} className="text-blue-400 hover:underline">
+          <button onClick={handleCreateAccount} className="text-bb-primary hover:underline">
             Create account
           </button>
         </div>

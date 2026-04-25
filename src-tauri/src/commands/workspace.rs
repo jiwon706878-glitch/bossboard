@@ -13,6 +13,9 @@ pub struct WorkspaceInfo {
 pub async fn initialize_workspace(root_path: String) -> Result<WorkspaceInfo, FsError> {
     let root = PathBuf::from(&root_path);
 
+    if let Some(parent) = root.parent() {
+        fs::create_dir_all(parent)?;
+    }
     fs::create_dir_all(&root)?;
 
     let dirs = ["Library", "agents", "shared", "private", ".bb"];
@@ -106,6 +109,8 @@ created: "2026-04-24T00:00:00Z"
 - Multi-agent collaboration
 - GitHub + Google Drive MCP integration
 - Desktop app (Windows + macOS)
+- DM-based chat with agents (Personal Assistant + specialists)
+- Translate any wiki page to 6 languages (BYOK; Gemini Flash is the cheapest)
 
 ## Coming Soon
 

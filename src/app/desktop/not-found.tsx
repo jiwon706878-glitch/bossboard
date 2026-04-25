@@ -10,7 +10,7 @@ export default function DesktopNotFound() {
       <p className="text-gray-400 mb-6">This feature isn&apos;t built yet or the link is broken.</p>
       <Link
         href="/desktop/dashboard"
-        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-md text-sm"
+        className="px-4 py-2 bg-bb-primary hover:bg-bb-primary-hover rounded-md text-sm"
       >
         Back to Dashboard
       </Link>

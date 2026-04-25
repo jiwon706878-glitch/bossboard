@@ -89,3 +89,16 @@ pub async fn delete_file(path: String) -> Result<(), FsError> {
 pub async fn file_exists(path: String) -> bool {
     PathBuf::from(&path).exists()
 }
+
+#[tauri::command]
+pub async fn write_binary_file(path: String, base64_data: String) -> Result<(), FsError> {
+    use base64::Engine as _;
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(&base64_data)
+        .map_err(|e| FsError::InvalidPath(e.to_string()))?;
+    if let Some(parent) = PathBuf::from(&path).parent() {
+        fs::create_dir_all(parent)?;
+    }
+    fs::write(&path, bytes)?;
+    Ok(())
+}

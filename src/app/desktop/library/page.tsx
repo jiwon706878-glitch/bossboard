@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { listLibrary, createLibraryFile, type LibraryFile } from "@/lib/library/service";
 import { ContextMenu, type ContextMenuItem } from "@/components/desktop/context-menu";
+import { isTauri } from "@/lib/tauri/fs";
 
 export default function LibraryPage() {
   const router = useRouter();
@@ -33,6 +36,29 @@ export default function LibraryPage() {
     loadFiles();
   }, []);
 
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+    let cancelled = false;
+    (async () => {
+      if (!isTauri()) return;
+      const ws = localStorage.getItem("bb_workspace_path");
+      if (!ws) return;
+      try {
+        await invoke("start_watching_workspace", { workspaceRoot: ws });
+        if (cancelled) return;
+        unlisten = await listen("file-change", () => {
+          loadFiles();
+        });
+      } catch {
+        // Watcher may already be running from a previous mount; safe to ignore.
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (unlisten) unlisten();
+    };
+  }, []);
+
   async function handleCreate() {
     if (!newFileName.trim()) return;
     setCreating(true);
@@ -59,19 +85,13 @@ export default function LibraryPage() {
       { separator: true, label: "" },
       {
         label: "Rename",
-        onClick: () => setNotice("Rename comes in Week 3."),
+        onClick: () => setNotice("Rename comes in Week 4."),
         shortcut: "F2",
       },
-      {
-        label: "Duplicate",
-        onClick: () => setNotice("Duplicate comes in Week 3."),
-      },
-      { label: "Translate (soon)", disabled: true },
+      { label: "Duplicate", onClick: () => setNotice("Duplicate comes in Week 4.") },
+      { label: "Translate (open file)", onClick: () => router.push(`/desktop/library/edit?path=${encodeURIComponent(f.path)}`) },
       { separator: true, label: "" },
-      {
-        label: "Show in folder",
-        onClick: () => setNotice(`Path: ${f.path}`),
-      },
+      { label: "Show in folder", onClick: () => setNotice(`Path: ${f.path}`) },
       {
         label: "Copy path",
         onClick: () => {
@@ -83,7 +103,7 @@ export default function LibraryPage() {
       {
         label: "Delete",
         danger: true,
-        onClick: () => setNotice("Delete comes in Week 3."),
+        onClick: () => setNotice("Delete comes in Week 4."),
         shortcut: "Del",
       },
     ];
@@ -111,12 +131,12 @@ export default function LibraryPage() {
             value={newFileName}
             onChange={(e) => setNewFileName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-            className="flex-1 p-2 bg-[#141824] border border-gray-700 rounded-md text-sm"
+            className="flex-1 p-2 bg-bb-card border border-bb-border rounded-md text-sm"
           />
           <button
             onClick={handleCreate}
             disabled={creating || !newFileName.trim()}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-md text-sm font-medium disabled:opacity-50"
+            className="px-4 py-2 bg-bb-primary hover:bg-bb-primary-hover rounded-md text-sm font-medium disabled:opacity-50"
           >
             Create
           </button>
@@ -125,22 +145,16 @@ export default function LibraryPage() {
         {createError && (
           <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded-md text-red-300 text-sm">
             <div>{createError}</div>
-            <button
-              onClick={() => setCreateError(null)}
-              className="text-xs underline mt-2"
-            >
+            <button onClick={() => setCreateError(null)} className="text-xs underline mt-2">
               Dismiss
             </button>
           </div>
         )}
 
         {notice && (
-          <div className="mb-4 p-3 bg-blue-900/20 border border-blue-800 rounded-md text-blue-200 text-sm">
+          <div className="mb-4 p-3 bg-bb-primary/15 border border-bb-primary/40 rounded-md text-bb-fg text-sm">
             <div className="break-all">{notice}</div>
-            <button
-              onClick={() => setNotice(null)}
-              className="text-xs underline mt-2"
-            >
+            <button onClick={() => setNotice(null)} className="text-xs underline mt-2">
               Dismiss
             </button>
           </div>
@@ -158,7 +172,7 @@ export default function LibraryPage() {
               <ContextMenu key={f.path} items={buildItems(f)}>
                 <Link
                   href={`/desktop/library/edit?path=${encodeURIComponent(f.path)}`}
-                  className="block p-4 bg-[#141824] rounded-md border border-gray-800 hover:border-blue-500 transition"
+                  className="block p-4 bg-bb-card rounded-md border border-bb-border hover:border-bb-primary transition"
                 >
                   <div className="flex items-center gap-2">
                     <span>{f.is_directory ? "📁" : "📄"}</span>
@@ -170,7 +184,7 @@ export default function LibraryPage() {
                         {f.frontmatter.tags.map((t) => (
                           <span
                             key={t}
-                            className="text-xs bg-gray-800 px-2 py-0.5 rounded"
+                            className="text-xs bg-bb-bg px-2 py-0.5 rounded"
                           >
                             {t}
                           </span>
@@ -179,9 +193,7 @@ export default function LibraryPage() {
                     )}
                   </div>
                   {f.preview && (
-                    <div className="text-sm text-gray-400 mt-1 line-clamp-2">
-                      {f.preview}
-                    </div>
+                    <div className="text-sm text-gray-400 mt-1 line-clamp-2">{f.preview}</div>
                   )}
                 </Link>
               </ContextMenu>

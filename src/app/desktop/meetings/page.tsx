@@ -18,6 +18,7 @@ import {
   fileExists,
 } from "@/lib/tauri/fs";
 import { stringifyMarkdown, generateId } from "@/lib/markdown/frontmatter";
+import { estimateCostUsd, formatCost } from "@/lib/ai/cost";
 
 interface MeetingFile {
   path: string;
@@ -38,6 +39,10 @@ export default function MeetingsPage() {
   const [progress, setProgress] = useState<MeetingMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<MeetingResult | null>(null);
+  const [pendingCostConfirm, setPendingCostConfirm] = useState<{
+    tokens: number;
+    cost: string;
+  } | null>(null);
 
   function meetingsDir() {
     const ws = localStorage.getItem("bb_workspace_path") || "";
@@ -78,11 +83,24 @@ export default function MeetingsPage() {
     });
   }
 
-  async function start() {
+  async function start(skipCostCheck = false) {
     if (!topic.trim() || picked.size === 0) {
       setError("Topic and at least one participant required.");
       return;
     }
+
+    if (!skipCostCheck) {
+      // Conservative estimate: ~500 tokens per turn, +1 turn for the summary.
+      const turns = picked.size * rounds + 1;
+      const tokens = turns * 500;
+      const cost = estimateCostUsd(tokens, "google");
+      if (cost > 0.5) {
+        setPendingCostConfirm({ tokens, cost: formatCost(cost) });
+        return;
+      }
+    }
+    setPendingCostConfirm(null);
+
     setRunning(true);
     setError(null);
     setProgress([]);
@@ -267,6 +285,26 @@ export default function MeetingsPage() {
                 {error}
               </div>
             )}
+            {pendingCostConfirm && (
+              <div className="p-3 bg-amber-900/20 border border-amber-800 rounded text-amber-200 text-sm">
+                Estimated cost ~{pendingCostConfirm.cost} (
+                {pendingCostConfirm.tokens.toLocaleString()} tokens). Continue?
+                <div className="mt-2 flex gap-2">
+                  <button
+                    onClick={() => setPendingCostConfirm(null)}
+                    className="px-2 py-1 text-xs border border-amber-700 hover:bg-amber-900/30 rounded"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => start(true)}
+                    className="px-2 py-1 text-xs bg-bb-primary hover:bg-bb-primary-hover rounded"
+                  >
+                    Run anyway
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-end gap-2 pt-2">
               <button
@@ -277,7 +315,7 @@ export default function MeetingsPage() {
                 Cancel
               </button>
               <button
-                onClick={start}
+                onClick={() => start(false)}
                 disabled={running || !topic.trim() || picked.size === 0}
                 className="px-3 py-1.5 text-sm bg-bb-primary hover:bg-bb-primary-hover rounded-md disabled:opacity-50"
               >

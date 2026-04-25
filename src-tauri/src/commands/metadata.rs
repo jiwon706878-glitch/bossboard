@@ -2,6 +2,9 @@ use super::fs::FsError;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use tauri::Manager;
+
+const SCHEMA_VERSION: i32 = 1;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FileMetadata {
@@ -16,32 +19,93 @@ pub struct FileMetadata {
     pub content_preview: String,
 }
 
-fn db_path(workspace_root: &str) -> PathBuf {
-    PathBuf::from(workspace_root).join(".bb/metadata.sqlite")
+/// Returns `<app_data>/metadata.sqlite`. Stays out of the user's workspace
+/// folder so OneDrive / iCloud / Dropbox don't lock the SQLite file.
+fn db_path(app: &tauri::AppHandle) -> Result<PathBuf, FsError> {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| FsError::InvalidPath(format!("app_data_dir: {e}")))?;
+    std::fs::create_dir_all(&dir)?;
+    Ok(dir.join("metadata.sqlite"))
+}
+
+/// One-time migration: if a v3 install ran before this commit, the DB lived at
+/// `<workspace>/.bb/metadata.sqlite`. Copy it to the new app-data location and
+/// remove the old file so the cloud-sync provider stops seeing it.
+fn migrate_legacy_db(app: &tauri::AppHandle, workspace_root: &str) -> Result<(), FsError> {
+    let new_path = db_path(app)?;
+    if new_path.exists() {
+        return Ok(());
+    }
+    let old_path = PathBuf::from(workspace_root)
+        .join(".bb")
+        .join("metadata.sqlite");
+    if old_path.exists() {
+        std::fs::copy(&old_path, &new_path)?;
+        let _ = std::fs::remove_file(&old_path);
+        log::info!(
+            "Migrated metadata.sqlite from {} to {}",
+            old_path.display(),
+            new_path.display()
+        );
+    }
+    Ok(())
+}
+
+fn open_db(app: &tauri::AppHandle, workspace_root: &str) -> Result<Connection, FsError> {
+    migrate_legacy_db(app, workspace_root)?;
+    let path = db_path(app)?;
+    let conn = Connection::open(&path).map_err(|e| FsError::InvalidPath(e.to_string()))?;
+    apply_pragmas(&conn);
+    ensure_schema(&conn).map_err(|e| FsError::InvalidPath(e.to_string()))?;
+    Ok(conn)
+}
+
+fn apply_pragmas(conn: &Connection) {
+    let _ = conn.execute_batch(
+        r#"
+        PRAGMA journal_mode = WAL;
+        PRAGMA synchronous = NORMAL;
+        PRAGMA cache_size = -64000;
+        "#,
+    );
 }
 
 fn ensure_schema(conn: &Connection) -> rusqlite::Result<()> {
-    conn.execute_batch(
-        r#"
-        CREATE TABLE IF NOT EXISTS file_metadata (
-            id TEXT PRIMARY KEY,
-            path TEXT NOT NULL UNIQUE,
-            title TEXT NOT NULL,
-            tags TEXT,
-            agent_access TEXT,
-            hash TEXT,
-            size INTEGER,
-            modified INTEGER,
-            content_preview TEXT
-        );
-        CREATE INDEX IF NOT EXISTS idx_path ON file_metadata(path);
-        CREATE INDEX IF NOT EXISTS idx_title ON file_metadata(title);
-        CREATE INDEX IF NOT EXISTS idx_modified ON file_metadata(modified);
-        CREATE VIRTUAL TABLE IF NOT EXISTS file_search USING fts5(
-            id, title, tags, content_preview
-        );
-    "#,
-    )?;
+    let current: i32 = conn
+        .query_row("PRAGMA user_version", [], |row| row.get(0))
+        .unwrap_or(0);
+    if current >= SCHEMA_VERSION {
+        return Ok(());
+    }
+
+    let tx = conn.unchecked_transaction()?;
+    if current < 1 {
+        tx.execute_batch(
+            r#"
+            CREATE TABLE IF NOT EXISTS file_metadata (
+                id TEXT PRIMARY KEY,
+                path TEXT NOT NULL UNIQUE,
+                title TEXT NOT NULL,
+                tags TEXT,
+                agent_access TEXT,
+                hash TEXT,
+                size INTEGER,
+                modified INTEGER,
+                content_preview TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_path ON file_metadata(path);
+            CREATE INDEX IF NOT EXISTS idx_title ON file_metadata(title);
+            CREATE INDEX IF NOT EXISTS idx_modified ON file_metadata(modified);
+            CREATE VIRTUAL TABLE IF NOT EXISTS file_search USING fts5(
+                id, title, tags, content_preview
+            );
+            PRAGMA user_version = 1;
+            "#,
+        )?;
+    }
+    tx.commit()?;
     Ok(())
 }
 
@@ -71,16 +135,11 @@ fn row_to_metadata(row: &rusqlite::Row) -> rusqlite::Result<FileMetadata> {
 
 #[tauri::command]
 pub async fn metadata_upsert(
+    app: tauri::AppHandle,
     workspace_root: String,
     meta: FileMetadata,
 ) -> Result<(), FsError> {
-    let path = db_path(&workspace_root);
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)?;
-    }
-    let conn =
-        Connection::open(&path).map_err(|e| FsError::InvalidPath(e.to_string()))?;
-    ensure_schema(&conn).map_err(|e| FsError::InvalidPath(e.to_string()))?;
+    let conn = open_db(&app, &workspace_root)?;
 
     let tags = meta.tags.join(",");
     let agent_access = meta.agent_access.join(",");
@@ -114,16 +173,11 @@ pub async fn metadata_upsert(
 
 #[tauri::command]
 pub async fn metadata_list(
+    app: tauri::AppHandle,
     workspace_root: String,
     folder: Option<String>,
 ) -> Result<Vec<FileMetadata>, FsError> {
-    let path = db_path(&workspace_root);
-    if !path.exists() {
-        return Ok(vec![]);
-    }
-    let conn =
-        Connection::open(&path).map_err(|e| FsError::InvalidPath(e.to_string()))?;
-    ensure_schema(&conn).map_err(|e| FsError::InvalidPath(e.to_string()))?;
+    let conn = open_db(&app, &workspace_root)?;
 
     let results = match folder {
         Some(f) => {
@@ -154,16 +208,11 @@ pub async fn metadata_list(
 
 #[tauri::command]
 pub async fn metadata_search(
+    app: tauri::AppHandle,
     workspace_root: String,
     query: String,
 ) -> Result<Vec<FileMetadata>, FsError> {
-    let path = db_path(&workspace_root);
-    if !path.exists() {
-        return Ok(vec![]);
-    }
-    let conn =
-        Connection::open(&path).map_err(|e| FsError::InvalidPath(e.to_string()))?;
-    ensure_schema(&conn).map_err(|e| FsError::InvalidPath(e.to_string()))?;
+    let conn = open_db(&app, &workspace_root)?;
 
     let sql = r#"
         SELECT m.* FROM file_metadata m
@@ -185,10 +234,12 @@ pub async fn metadata_search(
 }
 
 #[tauri::command]
-pub async fn metadata_delete(workspace_root: String, id: String) -> Result<(), FsError> {
-    let path = db_path(&workspace_root);
-    let conn =
-        Connection::open(&path).map_err(|e| FsError::InvalidPath(e.to_string()))?;
+pub async fn metadata_delete(
+    app: tauri::AppHandle,
+    workspace_root: String,
+    id: String,
+) -> Result<(), FsError> {
+    let conn = open_db(&app, &workspace_root)?;
     conn.execute("DELETE FROM file_metadata WHERE id = ?1", params![id])
         .map_err(|e| FsError::InvalidPath(e.to_string()))?;
     conn.execute("DELETE FROM file_search WHERE id = ?1", params![id])

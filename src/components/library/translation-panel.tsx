@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import {
   SUPPORTED_LANGUAGES,
-  translateText,
   type LangCode,
   type TranslationProvider,
 } from "@/lib/library/translate";
+import { translateWithCache } from "@/lib/library/translation-cache";
+import { estimateCostUsd, estimateTokens, formatCost } from "@/lib/ai/cost";
 
 interface Props {
   sourceContent: string;
@@ -15,17 +16,25 @@ interface Props {
   onTranslated: (langCode: LangCode, langName: string, content: string) => void;
 }
 
+const COST_CONFIRM_THRESHOLD_USD = 0.1;
+const TOKEN_CONFIRM_THRESHOLD = 10_000;
+
 export function TranslationPanel({ sourceContent, onClose, onTranslated }: Props) {
   const [lang, setLang] = useState<LangCode>("ko");
   const [provider, setProvider] = useState<TranslationProvider>("google");
   const [translating, setTranslating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmRequired, setConfirmRequired] = useState(false);
 
-  async function run() {
+  const tokens = useMemo(() => estimateTokens(sourceContent), [sourceContent]);
+  const cost = useMemo(() => estimateCostUsd(tokens, provider), [tokens, provider]);
+  const heavy = tokens > TOKEN_CONFIRM_THRESHOLD || cost > COST_CONFIRM_THRESHOLD_USD;
+
+  async function actuallyTranslate() {
     setTranslating(true);
     setError(null);
     try {
-      const translated = await translateText(sourceContent, lang, provider);
+      const translated = await translateWithCache(sourceContent, lang, provider);
       onTranslated(lang, SUPPORTED_LANGUAGES[lang], translated);
       onClose();
     } catch (e: unknown) {
@@ -33,6 +42,14 @@ export function TranslationPanel({ sourceContent, onClose, onTranslated }: Props
     } finally {
       setTranslating(false);
     }
+  }
+
+  function run() {
+    if (heavy && !confirmRequired) {
+      setConfirmRequired(true);
+      return;
+    }
+    actuallyTranslate();
   }
 
   return (
@@ -55,7 +72,10 @@ export function TranslationPanel({ sourceContent, onClose, onTranslated }: Props
             <label className="block text-xs text-gray-400 mb-1">Target language</label>
             <select
               value={lang}
-              onChange={(e) => setLang(e.target.value as LangCode)}
+              onChange={(e) => {
+                setLang(e.target.value as LangCode);
+                setConfirmRequired(false);
+              }}
               className="w-full p-2 bg-bb-bg border border-bb-border rounded-md text-sm"
             >
               {Object.entries(SUPPORTED_LANGUAGES).map(([code, name]) => (
@@ -69,7 +89,10 @@ export function TranslationPanel({ sourceContent, onClose, onTranslated }: Props
             <label className="block text-xs text-gray-400 mb-1">Provider (BYOK)</label>
             <select
               value={provider}
-              onChange={(e) => setProvider(e.target.value as TranslationProvider)}
+              onChange={(e) => {
+                setProvider(e.target.value as TranslationProvider);
+                setConfirmRequired(false);
+              }}
               className="w-full p-2 bg-bb-bg border border-bb-border rounded-md text-sm"
             >
               <option value="google">Google Gemini Flash (cheapest)</option>
@@ -79,6 +102,18 @@ export function TranslationPanel({ sourceContent, onClose, onTranslated }: Props
               Uses the API key saved in Settings. Bills your provider, not BossBoard.
             </div>
           </div>
+
+          <div className="text-[11px] text-gray-500">
+            ≈ {tokens.toLocaleString()} tokens, ≈ {formatCost(cost)} (estimated).
+            Repeat translations of the same paragraph hit a local cache.
+          </div>
+
+          {confirmRequired && (
+            <div className="p-2 bg-amber-900/20 border border-amber-800 rounded text-amber-200 text-xs">
+              This is a large or expensive translation. Click Translate again to confirm.
+            </div>
+          )}
+
           {error && (
             <div className="p-2 bg-red-900/20 border border-red-800 rounded text-red-300 text-sm">
               {error}
@@ -96,7 +131,11 @@ export function TranslationPanel({ sourceContent, onClose, onTranslated }: Props
               disabled={translating || !sourceContent.trim()}
               className="px-3 py-1.5 text-sm bg-bb-primary hover:bg-bb-primary-hover rounded-md disabled:opacity-50"
             >
-              {translating ? "Translating…" : "Translate"}
+              {translating
+                ? "Translating…"
+                : confirmRequired
+                  ? "Confirm translate"
+                  : "Translate"}
             </button>
           </div>
         </div>

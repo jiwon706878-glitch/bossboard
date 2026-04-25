@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Titlebar } from "@/components/desktop/titlebar";
 import { Sidebar } from "@/components/desktop/sidebar";
 import { OfflineBanner } from "@/components/desktop/offline-banner";
+import { WorkspaceHealthBanner } from "@/components/desktop/workspace-health-banner";
 import { ThemeProvider } from "@/components/desktop/theme-provider";
 import { GlobalContextMenu } from "@/components/desktop/global-context-menu";
 import { DMPanel } from "@/components/desktop/dm-panel";
@@ -75,6 +76,7 @@ export default function DesktopLayout({ children }: { children: React.ReactNode 
       <div className="bb-app-shell h-screen flex flex-col bg-bb-bg text-bb-fg overflow-hidden">
         <Titlebar />
         <OfflineBanner />
+        <WorkspaceHealthBanner />
         <div className="flex-1 flex overflow-hidden">
           {!isAuthPage && <Sidebar />}
           <main className="flex-1 overflow-auto">

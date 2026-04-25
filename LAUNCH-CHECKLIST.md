@@ -152,4 +152,118 @@ manual setup beyond what's listed above:
 
 ---
 
+## What the final hardening pass added (additional to polish)
+
+Wired in the hardening commit; no manual setup required.
+
+**Data integrity**
+- SQLite `metadata.sqlite` moved out of `~/Documents/BossBoard/.bb/` into the
+  Tauri `app_data_dir` so OneDrive / iCloud / Dropbox can't lock the file or
+  cause WAL corruption. Old DBs in the workspace are auto-migrated on first
+  read and the source removed.
+- SQLite migration is `PRAGMA user_version`-gated and runs inside a single
+  transaction. WAL + NORMAL synchronous + 64MB cache PRAGMAs are applied on
+  every connection.
+- Atomic writes: `write_file` and `write_binary_file` write to a sibling
+  `.bb-tmp-<pid>-<nonce>` then `rename()` into place — concurrent readers
+  (Obsidian, the file watcher, search) never see a partial file.
+
+**Agent safeguards**
+- Loop guard (`lib/agents/loop-guard.ts`): blocks the same `(agent, hash)`
+  pair after 5 hits in a 5-minute window. `executeDMTurn` throws a clear
+  "stopped for safety" error.
+- Context window pre-check: estimated `system + user` tokens compared to
+  per-model limits in `lib/agents/execute.ts`. Above 85% the call rejects
+  with a "compress this conversation" message instead of failing upstream.
+- Provider error wrapping (`lib/agents/errors.ts`): 401/429/400/402/5xx
+  mapped to friendly text ("API key invalid", "rate limit", "context too
+  long", "quota exceeded", "server error").
+- `callWithTimeout`: 60s for cloud, 5min for local. Local AI no longer
+  hangs the UI when Ollama isn't responding.
+- Local-AI conflict warning helper (≥2 active local agents).
+
+**File system robustness**
+- Watcher ignores `node_modules`, `.git`, `target`, `dist`, `.next`,
+  `__pycache__`, `.bb/cache|backups|trash`, `.DS_Store`, `Thumbs.db`,
+  and skips symlinks (prevents traversal loops on workspaces with junctions).
+- `check_workspace_health` Rust command + `<WorkspaceHealthBanner>` in the
+  desktop layout: polls every 30s, surfaces a banner after 60s of failure
+  (NAS disconnect, ejected drive).
+- Trash system in Rust (`commands/trash.rs`): `move_to_trash`, `list_trash`,
+  `restore_from_trash`, `empty_trash`. UI for the trash page is post-launch
+  but the safety net is in place — agent-driven deletes can already route
+  through it.
+
+**Network / MCP**
+- Dynamic MCP port: 39001..=39099 scan, port written into `McpState`.
+- Bearer auth on `/`: random 24-byte token generated on startup, only
+  `/health` is unauthenticated. `get_mcp_info` exposes the port + token to
+  the frontend so future Settings UI can display them.
+
+**Security**
+- `lib/library/sanitize.ts` exports `sanitizeHTML` (DOMPurify with strict
+  allowlist) for any future HTML render path. `tiptap-markdown` already
+  runs with `html: false`, so this is defense in depth.
+- Workspace path sandbox: `lib/tauri/path-safety.ts` rejects `C:\`,
+  `C:\Windows`, `C:\Program Files`, `/`, `/System`, `/usr`, `/etc`,
+  `/private`, `/Library`, `/Applications`, and prefixes thereof. Wired into
+  the welcome flow.
+
+**Observability**
+- Tracing (`tracing` + `tracing-subscriber` + `tracing-appender`) writes
+  daily-rotated logs to `<app_data_dir>/logs/bossboard.log`. Panic hook
+  routes Rust panics into the same log. New `get_logs` command reads the
+  current day's file for in-app diagnostics.
+
+**Cost / UX**
+- `lib/ai/cost.ts` provides token estimation (CJK-aware) + USD cost helper.
+- Translation panel shows the estimate up-front and asks for explicit
+  confirmation past 10K tokens or $0.10 (also adds an in-memory paragraph
+  cache via `translateWithCache`).
+- Meetings page checks the projected cost (`participants × rounds + 1`
+  turns × ~500 tokens) and asks for confirmation past $0.50.
+- Reduced-motion CSS rule honors `prefers-reduced-motion: reduce`.
+
+**Build**
+- Cargo release profile: `opt-level = 3`, `lto = true`, `codegen-units = 1`,
+  `panic = "abort"`, `strip = true` (smaller, faster Tauri builds).
+- Cargo dev profile: `opt-level = 1` for faster iteration without losing
+  debugger info.
+
+## Strict deferrals from the hardening pass
+
+These were in the hardening spec but **not implemented** — see code/this
+checklist for rationale:
+
+| Spec § | Item | Status | Why |
+|---|---|---|---|
+| 1.3 | 100-user discount counter | Deferred | Paddle config + landing copy, no code change here |
+| 2.3 + 6.3 | Sleep mode queue + overflow | Deferred | Agents are user-triggered today; queue would be unused infrastructure |
+| 3.1 | macOS permission denial UI | Deferred | Requires actual macOS testing; primary launch is Windows |
+| 3.2 | Windows MAX_PATH normalization | Deferred | Tricky to validate without long-path scenarios; Tauri 2 + Windows 10/11 default supports long paths |
+| 3.3 | WiX `preserveUserDataOnUninstall` | Deferred | Workspace lives in `~/Documents` and isn't installed by the MSI; uninstall doesn't touch it |
+| 3.4 | Wake-from-sleep detector | Deferred | Cosmetic; only matters once we have scheduled agent triggers |
+| 4.3 | Encoding auto-detection (EUC-KR) | Deferred | `chardetng`/`encoding_rs` not added; users on Windows with KR locale should be fine for new files; legacy files can be opened in any editor |
+| 7.1 | Paddle webhook reconciliation cron | Deferred | Needs `CRON_SECRET` + Vercel cron config + access to Paddle subscriptions schema |
+| 7.2 | Free trial abuse detection | Deferred | Sign-up flow is mostly Supabase Auth; CC-required-for-trial is a Paddle/landing change |
+| 7.3 | Cloud metadata ghost cleanup | Deferred | Depends on a `library_metadata` cloud table that v3.0 doesn't use (metadata is local-only) |
+| 8.2 | API key setup videos / GIFs | Deferred | Content production, not code |
+| 10.1 | Per-WebView CSS shims | Deferred | Needs cross-platform smoke test; punt to bug reports |
+| 10.3 | VPN/DNS error wrapping | Deferred | Many fetch sites; would need a wrapper at every callsite for marginal UX gain |
+| 10.4 | macOS keychain release notes template | Deferred | Content for changelog; relevant once we ship updates |
+| 11.* | Framer Motion suite (slide-in, modal scale, sidebar spring, layoutId active indicator, button hover, list stagger, message bubble entrance, smart typing indicator, page transitions, skeletons, toast replacement) | Deferred | Motion polish is its own dedicated pass; current spring-free animations work and don't block beta. `prefers-reduced-motion` CSS guard is in place for when motion lands. |
+| 12.1 | `@next/bundle-analyzer` | Deferred | Diagnostic tool, not a code change |
+| 12.2 | Component memoization audit | Deferred | Lists are small for v3.0 launch; revisit if profiling shows hot spots |
+| 12.3 | Lazy-loaded routes | Deferred | Bundle size is fine for desktop where there's no over-the-wire payload |
+| 12.4 | `next/image` optimization | Deferred | Local images via `convertFileSrc` aren't routed through next/image; cloud images are limited to user avatar (deferred to Pro) |
+| 12.5 | Memory leak audit pass | Spot-checked | New code uses cleanup; full audit deferred |
+| 12.6 | SQLite PRAGMA tuning | **Done** as part of 9.1 (WAL/NORMAL/cache_size) |
+| 12.7 | Search debounce | Deferred | No global search yet (Ctrl+K opens placeholder) |
+| 12.9 | Virtual scrolling | Deferred | Library / DM lists are short for v3.0 launch |
+
+If any of these become production-blocking after testing, file as a
+post-launch hotfix.
+
+---
+
 Stop. Verify what you can locally, schedule the external pieces, then ship.

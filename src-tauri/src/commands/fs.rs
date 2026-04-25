@@ -38,10 +38,27 @@ pub async fn read_file(path: String) -> Result<String, FsError> {
 
 #[tauri::command]
 pub async fn write_file(path: String, content: String) -> Result<(), FsError> {
-    if let Some(parent) = PathBuf::from(&path).parent() {
+    write_atomic(&PathBuf::from(&path), content.as_bytes())
+}
+
+/// Write to a sibling `.tmp` file then rename. On the same volume `rename` is
+/// atomic on Windows / macOS / Linux, so concurrent readers (Obsidian, the
+/// file watcher) never see a half-written file.
+fn write_atomic(target: &std::path::Path, bytes: &[u8]) -> Result<(), FsError> {
+    if let Some(parent) = target.parent() {
         fs::create_dir_all(parent)?;
     }
-    fs::write(&path, content)?;
+    let pid = std::process::id();
+    let nonce = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    let temp = target.with_extension(format!("bb-tmp-{pid}-{nonce}"));
+    fs::write(&temp, bytes)?;
+    if let Err(e) = fs::rename(&temp, target) {
+        let _ = fs::remove_file(&temp);
+        return Err(FsError::Io(e));
+    }
     Ok(())
 }
 
@@ -96,9 +113,15 @@ pub async fn write_binary_file(path: String, base64_data: String) -> Result<(), 
     let bytes = base64::engine::general_purpose::STANDARD
         .decode(&base64_data)
         .map_err(|e| FsError::InvalidPath(e.to_string()))?;
-    if let Some(parent) = PathBuf::from(&path).parent() {
-        fs::create_dir_all(parent)?;
+    write_atomic(&PathBuf::from(&path), &bytes)
+}
+
+#[tauri::command]
+pub async fn check_workspace_health(path: String) -> Result<bool, FsError> {
+    let p = PathBuf::from(&path);
+    if !p.exists() {
+        return Ok(false);
     }
-    fs::write(&path, bytes)?;
-    Ok(())
+    fs::read_dir(&p)?;
+    Ok(true)
 }

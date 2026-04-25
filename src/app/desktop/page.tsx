@@ -10,6 +10,7 @@ import {
   isWorkspace,
   getDefaultWorkspacePath,
 } from "@/lib/tauri/workspace";
+import { isPathSafe } from "@/lib/tauri/path-safety";
 
 export default function DesktopPage() {
   const router = useRouter();
@@ -64,6 +65,11 @@ export default function DesktopPage() {
   }
 
   async function setupWorkspace(path: string) {
+    const safety = isPathSafe(path);
+    if (!safety.safe) {
+      setSetupError(safety.reason ?? "Selected location is not allowed.");
+      return;
+    }
     try {
       setSetupError(null);
       await initializeWorkspace(path);

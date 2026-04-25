@@ -15,6 +15,39 @@ impl Default for WatcherState {
     }
 }
 
+const IGNORED_PATTERNS: &[&str] = &[
+    "node_modules",
+    ".git",
+    "target",
+    "dist",
+    "build",
+    ".bb/cache",
+    ".bb/backups",
+    ".bb/trash",
+    "__pycache__",
+    ".venv",
+    "venv",
+    ".next",
+    ".cache",
+    ".DS_Store",
+    "Thumbs.db",
+];
+
+fn should_ignore(path: &Path) -> bool {
+    let s = path.to_string_lossy();
+    for pattern in IGNORED_PATTERNS {
+        let with_slash = format!("/{}/", pattern);
+        let with_back = format!("\\{}\\", pattern);
+        if s.contains(&with_slash) || s.contains(&with_back) {
+            return true;
+        }
+        if s.ends_with(pattern) {
+            return true;
+        }
+    }
+    false
+}
+
 #[tauri::command]
 pub async fn start_watching_workspace(
     app: tauri::AppHandle,
@@ -45,8 +78,12 @@ pub async fn start_watching_workspace(
                 let paths: Vec<String> = event
                     .paths
                     .iter()
+                    .filter(|p| !p.is_symlink() && !should_ignore(p))
                     .map(|p| p.to_string_lossy().to_string())
                     .collect();
+                if paths.is_empty() {
+                    continue;
+                }
                 let _ = app_handle.emit(
                     "file-change",
                     serde_json::json!({

@@ -1,28 +1,62 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ApiKeys, getKey, setKey } from "@/lib/tauri/keychain";
+import { downloadExport } from "@/lib/export/data-export";
 
 export default function SettingsPage() {
   const [geminiKey, setGeminiKey] = useState("");
   const [anthropicKey, setAnthropicKey] = useState("");
+  const [openaiKey, setOpenaiKey] = useState("");
   const [githubToken, setGithubToken] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
-    setGeminiKey(localStorage.getItem("bb_api_key_google") || "");
-    setAnthropicKey(localStorage.getItem("bb_api_key_anthropic") || "");
-    setGithubToken(localStorage.getItem("bb_github_token") || "");
+    (async () => {
+      try {
+        setGeminiKey((await ApiKeys.google()) ?? "");
+        setAnthropicKey((await ApiKeys.anthropic()) ?? "");
+        setOpenaiKey((await ApiKeys.openai()) ?? "");
+        setGithubToken((await getKey("github_token")) ?? "");
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : String(e));
+      }
+    })();
   }, []);
 
-  function saveKeys() {
-    localStorage.setItem("bb_api_key_google", geminiKey.trim());
-    localStorage.setItem("bb_api_key_anthropic", anthropicKey.trim());
-    setNotice("AI provider keys saved locally.");
+  async function saveKeys() {
+    try {
+      if (geminiKey) await ApiKeys.setGoogle(geminiKey.trim());
+      if (anthropicKey) await ApiKeys.setAnthropic(anthropicKey.trim());
+      if (openaiKey) await ApiKeys.setOpenai(openaiKey.trim());
+      setNotice("AI provider keys saved to OS keychain.");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
   }
 
-  function saveGithub() {
-    localStorage.setItem("bb_github_token", githubToken.trim());
-    setNotice("GitHub PAT saved locally.");
+  async function saveGithub() {
+    try {
+      await setKey("github_token", githubToken.trim());
+      setNotice("GitHub PAT saved to OS keychain.");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function handleExport() {
+    setExporting(true);
+    setError(null);
+    try {
+      await downloadExport();
+      setNotice("Data export downloaded.");
+    } catch (e: unknown) {
+      setError(`Export failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setExporting(false);
+    }
   }
 
   return (
@@ -34,10 +68,15 @@ export default function SettingsPage() {
         {notice && (
           <div className="mb-6 p-3 bg-bb-primary/10 border border-bb-primary/30 rounded-md text-bb-primary text-sm">
             {notice}
-            <button
-              onClick={() => setNotice(null)}
-              className="ml-2 text-xs underline"
-            >
+            <button onClick={() => setNotice(null)} className="ml-2 text-xs underline">
+              Dismiss
+            </button>
+          </div>
+        )}
+        {error && (
+          <div className="mb-6 p-3 bg-red-900/20 border border-red-800 rounded-md text-red-300 text-sm">
+            {error}
+            <button onClick={() => setError(null)} className="ml-2 text-xs underline">
               Dismiss
             </button>
           </div>
@@ -47,9 +86,8 @@ export default function SettingsPage() {
           <section className="p-6 bg-bb-card rounded-md border border-bb-border">
             <h2 className="font-semibold mb-1">AI providers (BYOK)</h2>
             <p className="text-xs text-gray-400 mb-4">
-              Keys are stored locally. Your provider bills you directly — BossBoard charges $0
-              for AI usage. v3.0 stores keys in localStorage; OS Keychain integration is
-              tracked for a post-launch hotfix.
+              Keys are stored in your OS keychain (Windows Credential Manager / macOS Keychain).
+              Your provider bills you directly — BossBoard charges $0 for AI usage.
             </p>
             <div className="space-y-3">
               <div>
@@ -65,14 +103,22 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1">
-                  Anthropic Claude API key
-                </label>
+                <label className="block text-xs text-gray-400 mb-1">Anthropic Claude API key</label>
                 <input
                   type="password"
                   value={anthropicKey}
                   onChange={(e) => setAnthropicKey(e.target.value)}
                   placeholder="sk-ant-…"
+                  className="w-full p-2 bg-bb-bg border border-bb-border rounded-md text-sm font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">OpenAI API key</label>
+                <input
+                  type="password"
+                  value={openaiKey}
+                  onChange={(e) => setOpenaiKey(e.target.value)}
+                  placeholder="sk-…"
                   className="w-full p-2 bg-bb-bg border border-bb-border rounded-md text-sm font-mono"
                 />
               </div>
@@ -88,8 +134,8 @@ export default function SettingsPage() {
           <section className="p-6 bg-bb-card rounded-md border border-bb-border">
             <h2 className="font-semibold mb-1">Integrations</h2>
             <p className="text-xs text-gray-400 mb-4">
-              v3.0 stores integration tokens. Active tool-use by agents lands in v3.1 with the
-              full MCP protocol.
+              v3.0 stores integration tokens in the OS keychain. Active tool-use by agents lands in
+              v3.1 with the full MCP protocol.
             </p>
 
             <div className="space-y-4">
@@ -114,7 +160,7 @@ export default function SettingsPage() {
                   className="w-full p-2 bg-bb-bg border border-bb-border rounded-md text-sm font-mono"
                 />
                 <div className="text-[11px] text-gray-500 mt-1">
-                  Create a classic Personal Access Token at github.com/settings/tokens with{" "}
+                  Create a classic PAT at github.com/settings/tokens with{" "}
                   <code>repo</code> + <code>read:user</code> scopes. OAuth flow comes in v3.1.
                 </div>
                 <button
@@ -141,9 +187,42 @@ export default function SettingsPage() {
           </section>
 
           <section className="p-6 bg-bb-card rounded-md border border-bb-border">
+            <h2 className="font-semibold mb-2">Data &amp; Privacy</h2>
+            <p className="text-xs text-gray-400 mb-4">
+              Download everything BossBoard has about you. The workspace folder exports as plain
+              markdown — usable in any editor.
+            </p>
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="px-3 py-1.5 bg-bb-primary hover:bg-bb-primary-hover rounded-md text-sm disabled:opacity-50"
+            >
+              {exporting ? "Preparing…" : "Export all data (.zip)"}
+            </button>
+
+            <div className="mt-6 pt-4 border-t border-red-900/40">
+              <h3 className="font-medium text-red-400 mb-1">Delete account</h3>
+              <p className="text-xs text-gray-400 mb-3">
+                Permanently delete your BossBoard cloud account. Your local workspace folder stays
+                on your PC. Self-service deletion ships in v3.1.
+              </p>
+              <button
+                onClick={() =>
+                  setNotice(
+                    "Email jay@mybossboard.com from your account email to delete your cloud account.",
+                  )
+                }
+                className="px-3 py-1.5 border border-red-900 text-red-400 hover:bg-red-900/20 rounded-md text-sm"
+              >
+                Delete account
+              </button>
+            </div>
+          </section>
+
+          <section className="p-6 bg-bb-card rounded-md border border-bb-border">
             <h2 className="font-semibold mb-1">Profile picture</h2>
             <p className="text-xs text-gray-400">
-              v3.0 uses a local initial-based avatar (cobalt gradient). Cloud avatar upload is a{" "}
+              v3.0 uses a local initial-based avatar. Cloud avatar upload is a{" "}
               <span className="text-bb-primary">Pro plan</span> feature and ships with the Pro
               launch.
             </p>

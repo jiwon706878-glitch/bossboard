@@ -1,3 +1,5 @@
+import { ApiKeys } from "@/lib/tauri/keychain";
+
 export const SUPPORTED_LANGUAGES = {
   ko: "Korean (한국어)",
   ja: "Japanese (日本語)",
@@ -15,7 +17,10 @@ export async function translateText(
   targetLang: LangCode,
   provider: TranslationProvider = "google",
 ): Promise<string> {
-  const apiKey = localStorage.getItem(`bb_api_key_${provider}`) || "";
+  const apiKey =
+    (provider === "google"
+      ? await ApiKeys.google()
+      : await ApiKeys.anthropic()) || "";
   if (!apiKey) throw new Error("API key required for translation. Add one in Settings.");
 
   const langName = SUPPORTED_LANGUAGES[targetLang];

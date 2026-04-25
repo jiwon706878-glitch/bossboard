@@ -1,4 +1,5 @@
 import matter from "gray-matter";
+import { FrontmatterSchema } from "./schema";
 
 export interface Frontmatter {
   id: string;
@@ -8,6 +9,8 @@ export interface Frontmatter {
   created?: string;
   modified?: string;
   hash?: string;
+  schema_version?: number;
+  [key: string]: unknown;
 }
 
 export interface ParsedMarkdown {
@@ -19,11 +22,11 @@ export interface ParsedMarkdown {
 export function parseMarkdown(raw: string): ParsedMarkdown {
   try {
     const parsed = matter(raw);
-    return {
-      frontmatter: parsed.data as Frontmatter,
-      content: parsed.content,
-      raw,
-    };
+    const validated = FrontmatterSchema.safeParse(parsed.data);
+    const frontmatter: Frontmatter = validated.success
+      ? (validated.data as Frontmatter)
+      : { id: generateId(), title: "Untitled", ...(parsed.data as object) };
+    return { frontmatter, content: parsed.content, raw };
   } catch {
     return {
       frontmatter: { id: generateId(), title: "Untitled" },

@@ -7,6 +7,7 @@ import {
   contentPreview,
   type Frontmatter,
 } from "@/lib/markdown/frontmatter";
+import { migrateFrontmatter } from "@/lib/markdown/migrate";
 import { metadataUpsert, type FileMetadata } from "@/lib/tauri/metadata";
 
 export function getWorkspaceRoot(): string {
@@ -66,7 +67,16 @@ export async function listLibrary(subfolder = ""): Promise<LibraryFile[]> {
 
 export async function readLibraryFile(path: string) {
   const raw = await readFile(path);
-  return parseMarkdown(raw);
+  const parsed = parseMarkdown(raw);
+  const { frontmatter, migrated } = migrateFrontmatter(parsed.frontmatter);
+  if (migrated) {
+    try {
+      await saveLibraryFile(path, frontmatter, parsed.content);
+    } catch {
+      /* migration write failure is non-fatal — keep the in-memory copy */
+    }
+  }
+  return { ...parsed, frontmatter };
 }
 
 export async function saveLibraryFile(

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.50",
+    "@ai-sdk/google": "^3.0.64",
+    "@ai-sdk/openai": "^3.0.53",
     "@ai-sdk/react": "^3.0.107",
     "@aws-sdk/client-s3": "^3.1028.0",
     "@aws-sdk/s3-request-presigner": "^3.1028.0",
@@ -57,6 +59,7 @@
     "date-fns": "^4.1.0",
     "framer-motion": "^12.38.0",
     "gray-matter": "^4.0.3",
+    "jszip": "^3.10.1",
     "katex": "^0.16.45",
     "lucide-react": "^0.575.0",
     "mammoth": "^1.12.0",
@@ -75,6 +78,7 @@
     "resend": "^6.9.3",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
+    "tiptap-markdown": "^0.9.0",
     "xlsx": "^0.18.5",
     "zod": "^4.3.6",
     "zustand": "^5.0.11"

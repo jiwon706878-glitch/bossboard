@@ -1,19 +1,38 @@
-use notify::{recommended_watcher, EventKind, RecursiveMode, Watcher};
+use notify::{recommended_watcher, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::Path;
-use std::sync::mpsc;
-use tauri::Emitter;
+use std::sync::{mpsc, Arc, Mutex};
+use tauri::{Emitter, State};
+
+pub struct WatcherState {
+    pub watcher: Arc<Mutex<Option<RecommendedWatcher>>>,
+}
+
+impl Default for WatcherState {
+    fn default() -> Self {
+        Self {
+            watcher: Arc::new(Mutex::new(None)),
+        }
+    }
+}
 
 #[tauri::command]
 pub async fn start_watching_workspace(
     app: tauri::AppHandle,
+    state: State<'_, WatcherState>,
     workspace_root: String,
 ) -> Result<(), String> {
+    {
+        let mut watcher_guard = state.watcher.lock().map_err(|e| e.to_string())?;
+        *watcher_guard = None;
+    }
+
     let (tx, rx) = mpsc::channel();
     let mut watcher = recommended_watcher(tx).map_err(|e| e.to_string())?;
     watcher
         .watch(Path::new(&workspace_root), RecursiveMode::Recursive)
         .map_err(|e| e.to_string())?;
 
+    let app_handle = app.clone();
     std::thread::spawn(move || {
         for res in rx {
             if let Ok(event) = res {
@@ -28,7 +47,7 @@ pub async fn start_watching_workspace(
                     .iter()
                     .map(|p| p.to_string_lossy().to_string())
                     .collect();
-                let _ = app.emit(
+                let _ = app_handle.emit(
                     "file-change",
                     serde_json::json!({
                         "type": event_type,
@@ -39,9 +58,15 @@ pub async fn start_watching_workspace(
         }
     });
 
-    // v3.0 MVP: a single workspace per app run, so leak the watcher to keep it alive.
-    // Week 4 will move this into managed app state with proper teardown.
-    Box::leak(Box::new(watcher));
+    let mut watcher_guard = state.watcher.lock().map_err(|e| e.to_string())?;
+    *watcher_guard = Some(watcher);
 
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn stop_watching_workspace(state: State<'_, WatcherState>) -> Result<(), String> {
+    let mut watcher_guard = state.watcher.lock().map_err(|e| e.to_string())?;
+    *watcher_guard = None;
     Ok(())
 }

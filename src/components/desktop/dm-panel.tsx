@@ -6,6 +6,7 @@ import { Avatar } from "@/components/desktop/avatar";
 import { listAgents, type Agent } from "@/lib/agents/service";
 import { executeDMTurn } from "@/lib/agents/execute";
 import { writeFile, readFile, fileExists } from "@/lib/tauri/fs";
+import { ApiKeys } from "@/lib/tauri/keychain";
 
 interface Message {
   role: "user" | "agent";
@@ -78,20 +79,36 @@ export function DMPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       content: input,
       timestamp: new Date().toISOString(),
     };
-    const next = [...messages, userMsg];
+    const placeholder: Message = {
+      role: "agent",
+      content: "",
+      timestamp: new Date().toISOString(),
+    };
+    const next = [...messages, userMsg, placeholder];
     setMessages(next);
     setInput("");
     setSending(true);
     setError(null);
 
     try {
-      const response = await executeDMTurn(selectedAgent, userMsg.content);
-      const agentMsg: Message = {
-        role: "agent",
-        content: response,
-        timestamp: new Date().toISOString(),
-      };
-      const updated = [...next, agentMsg];
+      const finalText = await executeDMTurn(
+        selectedAgent,
+        userMsg.content,
+        (chunk) => {
+          setMessages((prev) => {
+            const arr = [...prev];
+            const last = arr[arr.length - 1];
+            if (last && last.role === "agent") {
+              arr[arr.length - 1] = { ...last, content: last.content + chunk };
+            }
+            return arr;
+          });
+        },
+      );
+      const updated: Message[] = [
+        ...next.slice(0, -1),
+        { ...placeholder, content: finalText },
+      ];
       setMessages(updated);
       try {
         await writeFile(activePath(selectedAgent), JSON.stringify(updated, null, 2));
@@ -99,6 +116,7 @@ export function DMPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
         /* persist failure is non-fatal */
       }
     } catch (e: unknown) {
+      setMessages((prev) => prev.slice(0, -1));
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setSending(false);
@@ -111,10 +129,11 @@ export function DMPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       setNotice("Nothing to compress yet — keep at least 10 recent messages.");
       return;
     }
-    const apiKey =
-      localStorage.getItem("bb_api_key_google") ||
-      localStorage.getItem("bb_api_key_anthropic") ||
-      "";
+
+    const googleKey = await ApiKeys.google();
+    const anthropicKey = await ApiKeys.anthropic();
+    const provider: "google" | "anthropic" = googleKey ? "google" : "anthropic";
+    const apiKey = googleKey || anthropicKey || "";
     if (!apiKey) {
       setError("API key required to compress. Add one in Settings.");
       return;
@@ -126,9 +145,6 @@ export function DMPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       const old = messages.slice(0, -10);
       const recent = messages.slice(-10);
       const transcript = old.map((m) => `${m.role}: ${m.content}`).join("\n\n");
-      const provider = localStorage.getItem("bb_api_key_google")
-        ? "google"
-        : "anthropic";
       const summary = await summarize(transcript, apiKey, provider);
 
       const existingMemory = await readFile(memoryPath(selectedAgent)).catch(() => "");

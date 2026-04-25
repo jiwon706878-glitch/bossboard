@@ -2,15 +2,19 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { listLibrary, createLibraryFile, type LibraryFile } from "@/lib/library/service";
+import { ContextMenu, type ContextMenuItem } from "@/components/desktop/context-menu";
 
 export default function LibraryPage() {
+  const router = useRouter();
   const [files, setFiles] = useState<LibraryFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newFileName, setNewFileName] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   async function loadFiles() {
     try {
@@ -44,8 +48,49 @@ export default function LibraryPage() {
     }
   }
 
+  function buildItems(f: LibraryFile): ContextMenuItem[] {
+    return [
+      {
+        label: "Open",
+        onClick: () => router.push(`/desktop/library/edit?path=${encodeURIComponent(f.path)}`),
+        shortcut: "Enter",
+      },
+      { label: "Open in new tab (soon)", disabled: true },
+      { separator: true, label: "" },
+      {
+        label: "Rename",
+        onClick: () => setNotice("Rename comes in Week 3."),
+        shortcut: "F2",
+      },
+      {
+        label: "Duplicate",
+        onClick: () => setNotice("Duplicate comes in Week 3."),
+      },
+      { label: "Translate (soon)", disabled: true },
+      { separator: true, label: "" },
+      {
+        label: "Show in folder",
+        onClick: () => setNotice(`Path: ${f.path}`),
+      },
+      {
+        label: "Copy path",
+        onClick: () => {
+          navigator.clipboard.writeText(f.path);
+          setNotice("Path copied to clipboard.");
+        },
+      },
+      { separator: true, label: "" },
+      {
+        label: "Delete",
+        danger: true,
+        onClick: () => setNotice("Delete comes in Week 3."),
+        shortcut: "Del",
+      },
+    ];
+  }
+
   return (
-    <div className="min-h-screen bg-[#0C0F17] text-white p-8">
+    <div className="p-8">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -89,6 +134,18 @@ export default function LibraryPage() {
           </div>
         )}
 
+        {notice && (
+          <div className="mb-4 p-3 bg-blue-900/20 border border-blue-800 rounded-md text-blue-200 text-sm">
+            <div className="break-all">{notice}</div>
+            <button
+              onClick={() => setNotice(null)}
+              className="text-xs underline mt-2"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <div className="text-gray-400">Loading…</div>
         ) : error ? (
@@ -98,35 +155,36 @@ export default function LibraryPage() {
         ) : (
           <div className="space-y-2">
             {files.map((f) => (
-              <Link
-                key={f.path}
-                href={`/desktop/library/edit?path=${encodeURIComponent(f.path)}`}
-                className="block p-4 bg-[#141824] rounded-md border border-gray-800 hover:border-blue-500 transition"
-              >
-                <div className="flex items-center gap-2">
-                  <span>{f.is_directory ? "📁" : "📄"}</span>
-                  <span className="font-medium">
-                    {f.frontmatter?.title || f.name.replace(".md", "")}
-                  </span>
-                  {f.frontmatter?.tags && f.frontmatter.tags.length > 0 && (
-                    <div className="flex gap-1 ml-2">
-                      {f.frontmatter.tags.map((t) => (
-                        <span
-                          key={t}
-                          className="text-xs bg-gray-800 px-2 py-0.5 rounded"
-                        >
-                          {t}
-                        </span>
-                      ))}
+              <ContextMenu key={f.path} items={buildItems(f)}>
+                <Link
+                  href={`/desktop/library/edit?path=${encodeURIComponent(f.path)}`}
+                  className="block p-4 bg-[#141824] rounded-md border border-gray-800 hover:border-blue-500 transition"
+                >
+                  <div className="flex items-center gap-2">
+                    <span>{f.is_directory ? "📁" : "📄"}</span>
+                    <span className="font-medium">
+                      {f.frontmatter?.title || f.name.replace(".md", "")}
+                    </span>
+                    {f.frontmatter?.tags && f.frontmatter.tags.length > 0 && (
+                      <div className="flex gap-1 ml-2">
+                        {f.frontmatter.tags.map((t) => (
+                          <span
+                            key={t}
+                            className="text-xs bg-gray-800 px-2 py-0.5 rounded"
+                          >
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {f.preview && (
+                    <div className="text-sm text-gray-400 mt-1 line-clamp-2">
+                      {f.preview}
                     </div>
                   )}
-                </div>
-                {f.preview && (
-                  <div className="text-sm text-gray-400 mt-1 line-clamp-2">
-                    {f.preview}
-                  </div>
-                )}
-              </Link>
+                </Link>
+              </ContextMenu>
             ))}
           </div>
         )}

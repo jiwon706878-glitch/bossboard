@@ -13,6 +13,7 @@ export default function DesktopLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [oauthInProgress, setOauthInProgress] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const oauthCancelRef = useRef<{ cancelled: boolean }>({ cancelled: false });
 
   const supabase = createClient();
@@ -24,6 +25,11 @@ export default function DesktopLoginPage() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      if (!rememberMe) {
+        sessionStorage.setItem("bb_session_only", "true");
+      } else {
+        sessionStorage.removeItem("bb_session_only");
+      }
       router.replace("/desktop/dashboard");
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
@@ -44,7 +50,7 @@ export default function DesktopLoginPage() {
     oauthCancelRef.current = { cancelled: false };
 
     try {
-      const redirectTo = `${window.location.origin}/auth/callback`;
+      const redirectTo = `${window.location.origin}/auth/callback-desktop`;
       if (isTauri()) {
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider,
@@ -153,6 +159,28 @@ export default function DesktopLoginPage() {
             required
             className="w-full p-3 bg-[#141824] border border-gray-700 rounded-md text-white"
           />
+          <div className="flex items-center justify-between text-sm">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="rounded border-gray-700 bg-[#141824]"
+              />
+              <span className="text-gray-300">Remember me</span>
+            </label>
+            <button
+              type="button"
+              onClick={() =>
+                setError(
+                  "Password reset coming soon. Contact jay@mybossboard.com for help.",
+                )
+              }
+              className="text-blue-400 hover:underline"
+            >
+              Forgot password?
+            </button>
+          </div>
           <button
             type="submit"
             disabled={loading}

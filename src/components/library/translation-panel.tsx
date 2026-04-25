@@ -12,7 +12,7 @@ import {
 interface Props {
   sourceContent: string;
   onClose: () => void;
-  onTranslated: (lang: string, content: string) => void;
+  onTranslated: (langCode: LangCode, langName: string, content: string) => void;
 }
 
 export function TranslationPanel({ sourceContent, onClose, onTranslated }: Props) {
@@ -26,7 +26,7 @@ export function TranslationPanel({ sourceContent, onClose, onTranslated }: Props
     setError(null);
     try {
       const translated = await translateText(sourceContent, lang, provider);
-      onTranslated(SUPPORTED_LANGUAGES[lang], translated);
+      onTranslated(lang, SUPPORTED_LANGUAGES[lang], translated);
       onClose();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));

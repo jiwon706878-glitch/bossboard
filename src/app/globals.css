@@ -33,10 +33,22 @@ html.dark body {
   color: var(--color-bb-fg);
 }
 
-html.light body {
-  background-color: var(--color-bb-bg-light);
-  color: var(--color-bb-fg-light);
+html.light {
+  --color-bb-bg: #f8f8f8;
+  --color-bb-fg: #1a1a1a;
+  --color-bb-card: #ffffff;
+  --color-bb-border: #e5e5e5;
+  --color-bb-sidebar: #f1f1f1;
 }
+html.light body {
+  background-color: var(--color-bb-bg);
+  color: var(--color-bb-fg);
+}
+html.light .text-gray-400 { color: #6b7280; }
+html.light .text-gray-500 { color: #4b5563; }
+html.light .text-gray-300 { color: #374151; }
+html.light .text-gray-200 { color: #1f2937; }
+html.light .text-white { color: #1a1a1a; }
 
 @keyframes slideDown {
   from { max-height: 0; opacity: 0; }

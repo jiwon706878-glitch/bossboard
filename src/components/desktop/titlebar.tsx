@@ -14,13 +14,14 @@ import {
   Minus,
   Square,
   X,
+  PanelLeftClose,
+  PanelLeft,
 } from "lucide-react";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { isTauri } from "@/lib/tauri/fs";
 import { useTheme } from "@/components/desktop/theme-provider";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar } from "@/components/desktop/avatar";
-import { DMPanel } from "@/components/desktop/dm-panel";
 import { NotificationsPanel } from "@/components/desktop/notifications-panel";
 
 export function Titlebar() {
@@ -30,34 +31,35 @@ export function Titlebar() {
   const [canGoBack, setCanGoBack] = useState(false);
   const [user, setUser] = useState<{ email: string } | null>(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [dmOpen, setDmOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     setCanGoBack(window.history.length > 1);
+    setSidebarCollapsed(localStorage.getItem("bb_sidebar_collapsed") === "true");
+
+    const onSidebar = (e: Event) => {
+      const detail = (e as CustomEvent<{ collapsed: boolean }>).detail;
+      if (detail) setSidebarCollapsed(detail.collapsed);
+    };
+    window.addEventListener("bb-sidebar-toggle", onSidebar);
 
     const supabase = createClient();
     supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
       const session = data.session;
-      if (session?.user?.email) {
-        setUser({ email: session.user.email });
-      } else {
-        setUser(null);
-      }
+      setUser(session?.user?.email ? { email: session.user.email } : null);
     });
-
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
       (_event: AuthChangeEvent, session: Session | null) => {
-        if (session?.user?.email) {
-          setUser({ email: session.user.email });
-        } else {
-          setUser(null);
-        }
+        setUser(session?.user?.email ? { email: session.user.email } : null);
       },
     );
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener("bb-sidebar-toggle", onSidebar);
+    };
   }, []);
 
   useEffect(() => {
@@ -66,38 +68,43 @@ export function Titlebar() {
         e.preventDefault();
         setSearchExpanded(true);
       }
-      if ((e.metaKey || e.ctrlKey) && e.key === "r") {
-        e.preventDefault();
-        window.location.reload();
-      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
+
+  function toggleSidebar() {
+    const next = !sidebarCollapsed;
+    setSidebarCollapsed(next);
+    localStorage.setItem("bb_sidebar_collapsed", String(next));
+    window.dispatchEvent(new CustomEvent("bb-sidebar-toggle", { detail: { collapsed: next } }));
+  }
 
   async function handleMinimize() {
     if (!isTauri()) return;
     const { getCurrentWindow } = await import("@tauri-apps/api/window");
     await getCurrentWindow().minimize();
   }
-
   async function handleMaximize() {
     if (!isTauri()) return;
     const { getCurrentWindow } = await import("@tauri-apps/api/window");
     await getCurrentWindow().toggleMaximize();
   }
-
   async function handleClose() {
     if (!isTauri()) return;
     const { getCurrentWindow } = await import("@tauri-apps/api/window");
     await getCurrentWindow().close();
   }
-
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
     setProfileMenuOpen(false);
     router.replace("/desktop/login");
+  }
+  function sendFeedback() {
+    if (typeof window !== "undefined") {
+      window.location.href = "mailto:jay@mybossboard.com?subject=BossBoard%20feedback";
+    }
   }
 
   return (
@@ -106,6 +113,18 @@ export function Titlebar() {
         data-tauri-drag-region
         className="h-12 bg-bb-bg border-b border-bb-border flex items-center px-3 select-none relative"
       >
+        <button
+          onClick={toggleSidebar}
+          className="p-2 hover:bg-bb-card rounded mr-1"
+          title={sidebarCollapsed ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
+        >
+          {sidebarCollapsed ? (
+            <PanelLeft className="w-4 h-4 text-gray-400" />
+          ) : (
+            <PanelLeftClose className="w-4 h-4 text-gray-400" />
+          )}
+        </button>
+
         <div className="flex items-center gap-0.5 mr-2">
           <button
             onClick={() => router.back()}
@@ -138,7 +157,7 @@ export function Titlebar() {
                 onKeyDown={(e) => {
                   if (e.key === "Escape") setSearchExpanded(false);
                 }}
-                className="flex-1 bg-transparent text-sm text-white outline-none"
+                className="flex-1 bg-transparent text-sm text-bb-fg outline-none"
               />
               <span className="text-[10px] text-gray-500">Esc</span>
             </div>
@@ -169,9 +188,9 @@ export function Titlebar() {
           </button>
 
           <button
-            onClick={() => setDmOpen((o) => !o)}
+            onClick={() => window.dispatchEvent(new Event("bb-dm-toggle"))}
             className="p-2 hover:bg-bb-card rounded"
-            title="Direct Messages"
+            title="Direct Messages (Ctrl+Shift+D)"
           >
             <MessageSquare className="w-4 h-4 text-gray-400" />
           </button>
@@ -203,7 +222,7 @@ export function Titlebar() {
                     className="fixed inset-0 z-40"
                     onClick={() => setProfileMenuOpen(false)}
                   />
-                  <div className="absolute right-0 top-12 w-56 bg-bb-card border border-bb-border rounded-md shadow-xl z-50">
+                  <div className="absolute right-0 top-12 w-60 bg-bb-card border border-bb-border rounded-md shadow-xl z-50">
                     <div className="p-3 border-b border-bb-border">
                       <div className="text-xs text-gray-500">Signed in as</div>
                       <div className="text-sm truncate">{user.email}</div>
@@ -216,6 +235,33 @@ export function Titlebar() {
                       className="w-full text-left px-3 py-2 text-sm hover:bg-bb-bg"
                     >
                       Settings
+                    </button>
+                    <button
+                      onClick={() => {
+                        window.dispatchEvent(new Event("bb-shortcuts-open"));
+                        setProfileMenuOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-bb-bg"
+                    >
+                      Keyboard shortcuts
+                    </button>
+                    <button
+                      onClick={() => {
+                        window.dispatchEvent(new Event("bb-about-open"));
+                        setProfileMenuOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-bb-bg"
+                    >
+                      About BossBoard
+                    </button>
+                    <button
+                      onClick={() => {
+                        sendFeedback();
+                        setProfileMenuOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-bb-bg border-t border-bb-border"
+                    >
+                      Send feedback
                     </button>
                     <button
                       onClick={handleSignOut}
@@ -242,7 +288,6 @@ export function Titlebar() {
         </div>
       </div>
 
-      <DMPanel isOpen={dmOpen} onClose={() => setDmOpen(false)} />
       <NotificationsPanel
         isOpen={notificationsOpen}
         onClose={() => setNotificationsOpen(false)}

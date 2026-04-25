@@ -17,12 +17,12 @@ const TEMPLATES: { value: AgentTemplate; label: string; hint: string }[] = [
   {
     value: "personal-assistant",
     label: "Personal Assistant",
-    hint: "Friendly generalist with read access to your whole Library.",
+    hint: "Helps you track tasks and supports you across all projects.",
   },
   {
-    value: "marketing-lead",
-    label: "Marketing Lead",
-    hint: "Campaign brainstorming, audience analysis, content strategy.",
+    value: "domain-specialist",
+    label: "Domain Specialist",
+    hint: "A team member with their own role. Not an assistant — a peer.",
   },
   {
     value: "code-reviewer",
@@ -135,7 +135,7 @@ export default function AgentsPage() {
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Marketing-Lead"
+              placeholder="Agent name"
               className="w-full p-2 bg-bb-bg border border-bb-border rounded-md text-sm"
             />
           </div>
@@ -144,7 +144,7 @@ export default function AgentsPage() {
             <input
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              placeholder="Senior marketing strategist"
+              placeholder="Role"
               className="w-full p-2 bg-bb-bg border border-bb-border rounded-md text-sm"
             />
           </div>

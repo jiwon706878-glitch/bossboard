@@ -6,10 +6,15 @@ import Link from "next/link";
 import { Languages } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { readLibraryFile, saveLibraryFile } from "@/lib/library/service";
-import { type Frontmatter } from "@/lib/markdown/frontmatter";
-import { createDirectory } from "@/lib/tauri/fs";
+import {
+  type Frontmatter,
+  generateId,
+  stringifyMarkdown,
+} from "@/lib/markdown/frontmatter";
+import { createDirectory, writeFile, fileExists } from "@/lib/tauri/fs";
 import { MarkdownRenderer } from "@/components/library/markdown-renderer";
 import { TranslationPanel } from "@/components/library/translation-panel";
+import type { LangCode } from "@/lib/library/translate";
 
 function EditorInner() {
   const params = useSearchParams();
@@ -23,7 +28,12 @@ function EditorInner() {
   const [dirty, setDirty] = useState(false);
   const [editorError, setEditorError] = useState<string | null>(null);
   const [translationOpen, setTranslationOpen] = useState(false);
-  const [translation, setTranslation] = useState<{ lang: string; content: string } | null>(null);
+  const [translation, setTranslation] = useState<{
+    code: LangCode;
+    name: string;
+    content: string;
+  } | null>(null);
+  const [savedTranslationPath, setSavedTranslationPath] = useState<string | null>(null);
 
   useEffect(() => {
     if (!filePath) return;
@@ -103,6 +113,36 @@ function EditorInner() {
   function handleDragOver(e: React.DragEvent) {
     e.preventDefault();
   }
+
+  async function saveTranslation() {
+    if (!translation || !frontmatter) return;
+    const dir = filePath.substring(0, filePath.lastIndexOf("/"));
+    const fname = filePath.split(/[\\/]/).pop() || "untitled.md";
+    const base = fname.replace(/\.md$/, "");
+    const newPath = `${dir}/${base}.${translation.code}.md`;
+    if (await fileExists(newPath)) {
+      setEditorError(`Already exists: ${base}.${translation.code}.md`);
+      return;
+    }
+    const fm = {
+      id: generateId(),
+      title: `${frontmatter.title} (${translation.name})`,
+      tags: ["translation"],
+      created: new Date().toISOString(),
+      modified: new Date().toISOString(),
+      translated_from: fname,
+      language: translation.code,
+    };
+    try {
+      await writeFile(newPath, stringifyMarkdown(fm as never, translation.content));
+      setSavedTranslationPath(newPath);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setEditorError(`Failed to save translation: ${msg}`);
+    }
+  }
+
+  const folderPath = filePath ? filePath.substring(0, filePath.lastIndexOf("/")) : undefined;
 
   if (loading) {
     return <div className="p-8 text-bb-fg">Loading…</div>;
@@ -185,17 +225,36 @@ function EditorInner() {
               />
             </div>
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-xs uppercase text-gray-500">{translation.lang}</h2>
-                <button
-                  onClick={() => setTranslation(null)}
-                  className="text-xs text-gray-400 hover:text-white underline"
-                >
-                  Close
-                </button>
+              <div className="flex items-center justify-between mb-2 gap-2">
+                <h2 className="text-xs uppercase text-gray-500 truncate">{translation.name}</h2>
+                <div className="flex items-center gap-2">
+                  {savedTranslationPath ? (
+                    <span className="text-xs text-bb-primary">Saved</span>
+                  ) : (
+                    <button
+                      onClick={saveTranslation}
+                      className="text-xs px-2 py-0.5 bg-bb-primary hover:bg-bb-primary-hover rounded"
+                    >
+                      Save as new file
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setTranslation(null);
+                      setSavedTranslationPath(null);
+                    }}
+                    className="text-xs text-gray-400 hover:text-bb-fg underline"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
               <div className="h-[60vh] overflow-auto bg-bb-card border border-bb-border rounded-md p-4">
-                <MarkdownRenderer content={translation.content} editable={false} />
+                <MarkdownRenderer
+                  content={translation.content}
+                  editable={false}
+                  basePath={folderPath}
+                />
               </div>
             </div>
           </div>
@@ -224,7 +283,7 @@ function EditorInner() {
             )}
             {mode === "preview" && (
               <div className="prose prose-invert max-w-none">
-                <MarkdownRenderer content={content} editable={false} />
+                <MarkdownRenderer content={content} editable={false} basePath={folderPath} />
               </div>
             )}
           </>
@@ -235,9 +294,10 @@ function EditorInner() {
         <TranslationPanel
           sourceContent={content}
           onClose={() => setTranslationOpen(false)}
-          onTranslated={(lang, translated) =>
-            setTranslation({ lang, content: translated })
-          }
+          onTranslated={(code, name, translated) => {
+            setTranslation({ code, name, content: translated });
+            setSavedTranslationPath(null);
+          }}
         />
       )}
     </div>

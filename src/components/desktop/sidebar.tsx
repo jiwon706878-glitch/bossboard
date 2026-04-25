@@ -12,9 +12,8 @@ import {
   Users,
   Bot,
   Settings,
-  ChevronLeft,
-  ChevronRight,
   ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -24,16 +23,17 @@ interface NavItem {
   icon: LucideIcon;
   disabled?: boolean;
   subItems?: { href: string; label: string }[];
+  emit?: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/desktop/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/desktop/library", label: "Library", icon: Library },
   { href: "/desktop/agents", label: "Agents", icon: Bot },
-  { href: "/desktop/dm", label: "DM", icon: MessageSquare },
+  { href: "/desktop/dm", label: "DM", icon: MessageSquare, emit: "bb-dm-toggle" },
+  { href: "/desktop/meetings", label: "Meetings", icon: Users },
   { href: "/desktop/board", label: "Board", icon: LayoutGrid, disabled: true },
   { href: "/desktop/calendar", label: "Calendar", icon: Calendar, disabled: true },
-  { href: "/desktop/meetings", label: "Meetings", icon: Users, disabled: true },
 ];
 
 export function Sidebar() {
@@ -42,15 +42,14 @@ export function Sidebar() {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const saved = localStorage.getItem("bb_sidebar_collapsed");
-    if (saved === "true") setCollapsed(true);
+    setCollapsed(localStorage.getItem("bb_sidebar_collapsed") === "true");
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ collapsed: boolean }>).detail;
+      if (detail) setCollapsed(detail.collapsed);
+    };
+    window.addEventListener("bb-sidebar-toggle", handler);
+    return () => window.removeEventListener("bb-sidebar-toggle", handler);
   }, []);
-
-  function toggleCollapse() {
-    const next = !collapsed;
-    setCollapsed(next);
-    localStorage.setItem("bb_sidebar_collapsed", String(next));
-  }
 
   function toggleExpand(href: string) {
     setExpandedItems((s) => {
@@ -70,7 +69,7 @@ export function Sidebar() {
       <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
-          const active = pathname?.startsWith(item.href);
+          const active = !item.emit && pathname?.startsWith(item.href);
           const expanded = expandedItems.has(item.href);
           const hasSubs = item.subItems && item.subItems.length > 0;
 
@@ -94,21 +93,34 @@ export function Sidebar() {
             );
           }
 
+          const itemClass = `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition flex-1 ${
+            active
+              ? "bg-bb-primary/20 text-bb-primary border-l-2 border-bb-primary"
+              : "text-gray-400 hover:text-bb-fg hover:bg-bb-card"
+          }`;
+
           return (
             <div key={item.href}>
               <div className="flex items-center">
-                <Link
-                  href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition flex-1 ${
-                    active
-                      ? "bg-bb-primary/20 text-bb-primary border-l-2 border-bb-primary"
-                      : "text-gray-400 hover:text-white hover:bg-bb-card"
-                  }`}
-                  title={collapsed ? item.label : undefined}
-                >
-                  <Icon className="w-4 h-4 flex-shrink-0" />
-                  {!collapsed && <span>{item.label}</span>}
-                </Link>
+                {item.emit ? (
+                  <button
+                    onClick={() => window.dispatchEvent(new Event(item.emit!))}
+                    className={itemClass}
+                    title={collapsed ? item.label : undefined}
+                  >
+                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    {!collapsed && <span>{item.label}</span>}
+                  </button>
+                ) : (
+                  <Link
+                    href={item.href}
+                    className={itemClass}
+                    title={collapsed ? item.label : undefined}
+                  >
+                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    {!collapsed && <span>{item.label}</span>}
+                  </Link>
+                )}
                 {!collapsed && hasSubs && (
                   <button
                     onClick={() => toggleExpand(item.href)}
@@ -130,7 +142,7 @@ export function Sidebar() {
                     <Link
                       key={sub.href}
                       href={sub.href}
-                      className="block px-3 py-1 text-xs text-gray-400 hover:text-white hover:bg-bb-card rounded"
+                      className="block px-3 py-1 text-xs text-gray-400 hover:text-bb-fg hover:bg-bb-card rounded"
                     >
                       {sub.label}
                     </Link>
@@ -142,23 +154,15 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="p-2 border-t border-bb-border space-y-1">
+      <div className="p-2 border-t border-bb-border">
         <Link
           href="/desktop/settings"
-          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-400 hover:text-white hover:bg-bb-card"
+          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-400 hover:text-bb-fg hover:bg-bb-card"
           title={collapsed ? "Settings" : undefined}
         >
           <Settings className="w-4 h-4 flex-shrink-0" />
           {!collapsed && <span>Settings</span>}
         </Link>
-        <button
-          onClick={toggleCollapse}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-500 hover:text-white hover:bg-bb-card"
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          {!collapsed && <span>Collapse</span>}
-        </button>
       </div>
     </aside>
   );

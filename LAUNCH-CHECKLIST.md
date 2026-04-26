@@ -6,6 +6,95 @@ side; this checklist is the everything-else.
 
 ---
 
+## What this final hotfix shipped (2026-04-26)
+
+Five commits on `main` (3523a2d → 24a11a6).
+
+✅ **Tauri launch panic fix** (3523a2d)
+   - Dropped `tauri-plugin-log` (collision with `tracing-subscriber`'s
+     log shim). 5 `log::` calls migrated to `tracing::`. Verified
+     clean cold-launch, MCP server bound on 127.0.0.1:39001.
+
+✅ **Group A — User-found bugs** (ca334a8)
+   - Library page widened (max-w-7xl + lg:px-8).
+   - Responsive font sizing via .library-content + clamp().
+   - Translation feature deleted entirely (translate.ts,
+     translation-cache.ts, translation-panel.tsx). Replacement copy
+     points users at agent DM.
+   - 404 page detects __TAURI_INTERNALS__ and routes to
+     /desktop/dashboard inside the app, "/" on the web.
+   - FormatNotice component (pptx/docx/pdf/xlsx) with localStorage
+     "don't show again" — ready for wiring.
+   - **Deferred A.5 (ICS export removal):** N/A in v3.0 desktop —
+     no calendar surface exists yet. Will land with the calendar.
+
+✅ **Group B — API key UX + xAI** (db9aee7)
+   - New multi-key data model (src/lib/ai/keys.ts): one keychain
+     entry holds the JSON list of {id, provider, name, key, notes,
+     createdAt, lastUsedAt}.
+   - Six providers: google, anthropic, openai, xai, local, custom.
+   - Settings page rebuilt with KeyCard list + "Add API key" button
+     + Add/Edit modal. Animated with Framer Motion.
+   - migrateOldKeys() runs on desktop layout mount: packs the legacy
+     api_key_google / _anthropic / _openai / _grok singletons into
+     the new list, then deletes the legacy entries. Idempotent.
+   - Agent execute.ts uses resolveKey(); supports new optional
+     ai_key_id frontmatter so a manual can pin to a specific key.
+   - xAI Grok wired via @ai-sdk/xai (default grok-4-fast, 128k ctx).
+   - Old ApiKeys helper deleted from keychain.ts.
+
+✅ **Group C — Framer Motion suite** (6803bad)
+   - Motion tokens: src/lib/motion/tokens.ts (duration / ease /
+     spring presets).
+   - DM panel: AnimatePresence slide (x:100% spring) + per-message
+     bubble entrance + smart typing indicator (3s dots / 15s
+     "Thinking" / 15s+ explains delay, calls out Local AI).
+   - Sidebar: motion.aside spring on collapse + layoutId pill that
+     slides between active routes.
+   - Modal: AnimatePresence scale+y+opacity, exit animation now
+     plays. ConfirmDialog inherits.
+   - Toast system (src/components/desktop/toast.tsx): zustand store
+     + AnimatePresence cards, auto-dismiss 4s, mounted in layout.
+   - Page transitions: keyed AnimatePresence around <main> children.
+   - Skeletons: src/components/desktop/skeletons.tsx
+     (LibrarySkeleton, AgentCardSkeleton).
+   - List stagger: applied to /desktop/library list.
+   - **Partial / deferred:**
+     - C.7 button hover/tap — would touch every primary CTA;
+       MotionButton helper not yet extracted.
+     - C.8 stagger fanout — only Library so far; Agents / Board /
+       DM message list pending.
+     - C.14 alert() → toast — there were 0 alert() calls in the
+       /desktop scope, so this is a no-op for v3.0; toast plumbing
+       is in place for future code.
+
+✅ **Group D — Code optimization** (24a11a6)
+   - @next/bundle-analyzer wired behind ANALYZE=true.
+   - TipTap MarkdownRenderer lazy-loaded via next/dynamic.
+   - KeyCard memoized.
+   - Memory-leak audit walked every useEffect with setInterval /
+     addEventListener under /desktop. All cleanups present.
+   - **Deferred:**
+     - D.4 image lazy: needs custom Tiptap Image extension.
+     - D.6 search debounce: no search input shipped yet in /desktop.
+     - D.7 virtual scroll: @tanstack/react-virtual installed; no
+       list crosses the threshold today, so wiring is premature.
+
+**Validation (2026-04-26)**
+- `npx tsc --noEmit` — clean
+- `npx eslint` (v3.0 scope) — 0 errors, 7 warnings (all the
+  documented localStorage hydrate-on-mount pattern; one new from
+  format-notice.tsx, the rest pre-existing)
+- `cargo check` — clean (only pre-existing AccessDenied dead_code)
+- `cargo clippy` — 3 pre-existing warnings, no new ones (Rust
+  unchanged this pass)
+- Tauri cold-launch verified earlier in the session
+
+Ready for beta launch after manual smoke test (see "Smoke test"
+section below).
+
+---
+
 ## 🔴 Required before beta launch
 
 ### 1. Sentry DSN setup

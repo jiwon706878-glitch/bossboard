@@ -13,6 +13,7 @@ import {
   Bot,
   KeyRound,
   Check,
+  Info,
 } from "lucide-react";
 import { MOTION } from "@/lib/motion/tokens";
 
@@ -67,10 +68,35 @@ export default function WelcomePage() {
                 <Sparkles className="w-8 h-8 text-bb-primary" />
               </div>
               <h1 className="text-3xl font-bold mb-3">Welcome to BossBoard</h1>
-              <p className="text-gray-400 mb-8">
+              <p className="text-gray-400 mb-6">
                 Your local-first AI workspace. Files stay on your machine, agents do
                 real work, and you bring your own AI keys.
               </p>
+
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mb-6 text-left">
+                <div className="flex items-start gap-2">
+                  <Info className="size-4 text-amber-400 mt-0.5 shrink-0" />
+                  <div className="text-sm text-amber-200">
+                    <div className="font-semibold">This is Beta v0.1</div>
+                    <ul className="mt-1.5 space-y-0.5 text-amber-200/80 text-xs">
+                      <li>• Built by one person — please be patient with bugs</li>
+                      <li>• Auto-backup runs daily, kept 7 days</li>
+                      <li>
+                        • Found a bug?{" "}
+                        <a
+                          href="mailto:jay@mybossboard.com?subject=BossBoard%20bug"
+                          className="underline hover:text-amber-100"
+                        >
+                          Tell me
+                        </a>{" "}
+                        — I respond within 24h
+                      </li>
+                      <li>• First 100 paying users get 30 % off forever</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-3 gap-3 mb-8 text-left">
                 <Feature icon={<FolderOpen className="w-5 h-5" />} title="Local files" />
                 <Feature icon={<Bot className="w-5 h-5" />} title="AI agents" />

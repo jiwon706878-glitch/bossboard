@@ -20,6 +20,11 @@ export default function DesktopDashboard() {
         router.replace("/desktop/login");
         return;
       }
+      // First-run: send the user to the welcome screen.
+      if (localStorage.getItem("bb_onboarding_complete") !== "true") {
+        router.replace("/desktop/welcome");
+        return;
+      }
       setUser(session.user);
       const path = localStorage.getItem("bb_workspace_path") || "";
       setWorkspacePath(path);

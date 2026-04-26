@@ -6,6 +6,194 @@ side; this checklist is the everything-else.
 
 ---
 
+## What the final-polish pass shipped (2026-04-26, evening)
+
+Eight commits on `main` (2bdd417 → 538ff47).
+
+✅ **Group A — Critical data safety** (2bdd417)
+   - DB backup-before-migrate in `commands/metadata.rs` — every
+     PRAGMA-gated migration first copies the live SQLite to
+     `metadata.v{N}.backup.sqlite`. New `metadata_restore_backup`
+     command rolls forward via file copy.
+   - Frontmatter migration (already lossless via `parseMarkdown`
+     fallback) and JSON-snapshot startup backup verified.
+   - Roadmap.md seed updated to drop the deleted translation feature.
+
+✅ **Group D — UI/UX primitives** (437ffd7)
+   - `EmptyState`, `ErrorState`, `useConfirm` hook, focus-visible
+     CSS scoped to `.bb-app-shell`. Library list now renders the
+     real EmptyState + ErrorState with retry.
+
+✅ **Group E — Tauri-aware routing** (f51b590)
+   - `MarketingShell` redirects `__TAURI_INTERNALS__` visitors to
+     `/desktop/dashboard`. Verified that `/desktop/{not-found,error}`
+     already inherit the layout's Titlebar (window controls stay
+     usable on errors).
+
+✅ **Group F — Profile menu** (1a307f2)
+   - "Go to Dashboard" + "Reload app" added at the top of the
+     existing profile dropdown. Wrapped in AnimatePresence with the
+     Group C modal motion.
+
+✅ **Group G — Settings split** (7cfe4e7)
+   - `/desktop/settings/{layout,page,ai-providers,integrations,data,about}`.
+     Sidebar nav, AI keys vs external tools cleanly separated.
+     `APIKeyManager` lifted into `components/desktop/api-key-manager.tsx`
+     so the agent wizard can reuse it later.
+
+✅ **Group H — BB-System-Reference auto-gen** (38e229c)
+   - `lib/agents/system-reference.ts` writes
+     `/Library/BB-System-Reference.md` and `/Library/Welcome.md` on
+     desktop layout mount + after `createAgent`. Runtime reference
+     covers folder layout, four critical agent rules, and the
+     active-agent roster. `executeDMTurn` injects it as the first
+     section of every agent's system prompt.
+
+✅ **Group I — Agent wizard** (06738e5)
+   - `lib/agents/templates.ts` holds the four richer manuals.
+     `/desktop/agents/new` is a 4-step wizard (template → name+role
+     → manual edit → review+provider). Old inline modal deleted.
+
+✅ **Group J — Welcome screen** (39bbaca)
+   - `/desktop/welcome` 3-step flow (hero → optional name → create
+     first agent / skip). Dashboard redirects to it when
+     `bb_onboarding_complete` is missing.
+
+✅ **Group K — Calendar from scratch** (2886030)
+   - Real `/desktop/calendar` with Month / Week / Day views and a
+     full event modal (title, datetime range, notes, color). Events
+     persist to `/Library/calendar/events.json`. Calendar nav item
+     enabled in the sidebar.
+
+✅ **Group L — Plans v3.0 limits** (2dec28e)
+   - Additive `v3Limits` block on every plan: devices (Free 1,
+     Starter 2, Pro/Business unlimited), per-channel cloudSync (DMs
+     local on Free), aiMeeting tier, smartSearch, teamCollaboration.
+     `BETA_DISCOUNT` constant exported (30 % lifetime, 100 slots).
+
+✅ **Group M — Beta v0.1 label** (538ff47)
+   - Pill badge in the Titlebar centre and at the top of the About
+     modal. Subline reads `v3.0.0-beta.1` for bug-report clarity.
+
+**Validation (2026-04-26 evening)**
+- `npx tsc --noEmit` — clean
+- `npx eslint` (v3.0 scope) — 0 errors, 9 warnings (all the
+  documented `react-hooks/set-state-in-effect` localStorage hydrate
+  pattern; +2 new from welcome and format-notice)
+- `cargo check` — clean (only pre-existing AccessDenied dead_code)
+- `cargo clippy` — 3 pre-existing warnings, no new ones
+
+---
+
+## Strict deferrals from final-polish-prompt.md
+
+Tracked here so the next pass knows exactly what's missing.
+
+### Group B — i18n with next-intl, 10 languages
+**Why deferred:** the prompt assumes `src/app/[locale]/...` routing.
+Today every desktop route lives at `src/app/desktop/...`. Moving every
+route into a locale segment is a 20+ file refactor that touches the
+entire navigation tree, every `<Link>` href, and every `usePathname()`
+caller. Not safe to do as part of an autonomous polish pass — needs a
+dedicated migration commit with a clean fallback strategy.
+
+**What's still in place:** the existing `src/lib/i18n.ts` and the
+admin `src/lib/admin-i18n.ts` for the marketing/auth surfaces are
+untouched and still work. Agent-side locale awareness in
+`executeDMTurn` reads `navigator.language` via `system-reference.ts`,
+so agents already default to the user's browser locale.
+
+### Group C — Obsidian-style library
+**Why deferred:** folder tree + sort + drag-and-drop + multi-select +
+Ctrl+P quick finder + tags + favorites is a multi-day rewrite of the
+Library page, the Tauri fs commands (move, batch-rename), and a new
+`favorites.json` + `tags index`. Worth doing right with a design
+review, not as part of one autonomous run.
+
+**What's still in place:** the current Library page is a simple flat
+file list with the Group A EmptyState + ErrorState, frontmatter
+parsing, and per-file context menu. Calendar files (`/Library/calendar/`)
+do show in the list now since they're real markdown.
+
+### Group N — Public website (landing + docs + FAQ + download + …)
+**Why deferred:** that's 10+ separate marketing-route pages. The
+existing `/(marketing)/page.tsx` already covers the hero / value
+props / FAQ / pricing for v2.6 and works fine. Mac coming-soon copy,
+ChatGPT comparison table, and `/download` page are content-only and
+can ship via the marketing track.
+
+### Group O — Admin dashboard with full visibility
+**Why deferred:** requires Supabase admin RLS, an `/api/admin/stats`
+route that aggregates users/MRR/feedback/errors/OS distribution from
+multiple tables that don't yet exist (devices, events, feedback). The
+existing `src/app/(admin)/...` admin shell is untouched.
+
+---
+
+## Strict deferrals from final-polish-prompt-v2-additions.md
+
+The v2-additions add cross-cutting backend systems. Each one needs
+Supabase migrations + Tauri commands + auth integration. Documented
+here in order of business priority.
+
+### Addition 1 — DM cloud sync toggle (Pro+ option)
+**Required infrastructure:**
+- Supabase table `dm_sync_settings (user_id, cloud_sync_enabled,
+  last_synced_at)`
+- Supabase table `dm_messages (user_id, agent_name, message_id,
+  content, role, ts)` with RLS
+- Tauri commands: `get_dm_sync_settings`, `set_dm_sync_enabled`,
+  `sync_dms_to_cloud`, `pull_dms_from_cloud`
+- Rust `AppState` struct (currently doesn't exist) holding
+  `db: Mutex<Connection>` and `user_id: String`
+- A Rust `dm.rs` module that owns the local DM file format
+- Background tokio task on app start to pull deltas + on each send
+  to push
+
+**What's in place today:** DMs are local-only (per Sacred Rule #4:
+"User's files stay on user's PC"). Free-plan users are already in
+the right state. No UX surface promises cloud sync, so removing the
+deferred toggle doesn't surprise anyone.
+
+### Addition 2 — Admin OS distribution stats
+**Required infrastructure:**
+- Supabase `devices` table (per migration 0003 in the prompt)
+- `lib/analytics/device-info.ts` ↔ `/api/track/device` endpoint
+- Admin `/api/admin/stats` aggregator + admin dashboard cards
+- Telegram daily summary bot endpoint
+
+**What's in place today:** zero of the above. Admin shell exists at
+`src/app/(admin)/...` but doesn't yet have any stats surface for v3.
+
+### Addition 3 — Device registration system (1-device limit)
+**Required infrastructure:**
+- Supabase RPC `register_device(p_device_id, p_os, p_os_version,
+  p_app_version)` returning JSON `{success, error?, current?, max?}`
+- Tauri startup hook that resolves a stable device ID (Group L's
+  v3Limits.devices is already the source of truth for the cap)
+- DeviceLimitModal in the desktop UI that fires when the RPC
+  returns `device_limit_reached`
+- "Manage devices" pane in /settings/data so users can revoke
+  device IDs
+
+**What's in place today:** plan limits exist as the single source of
+truth. Enforcement is wide open — a paying Free user can run BB on
+multiple PCs and nothing stops them. Acceptable for closed beta;
+must close before public billing goes live.
+
+### Addition 4 — Welcome screen ✅
+Shipped in **Group J** above (`/desktop/welcome`).
+
+### Addition 5 — Profile menu Go to Dashboard ✅
+Shipped in **Group F** above.
+
+### Addition 6 — Error pages preserve TitleBar ✅
+Verified in **Group E** above. The `/desktop` layout wraps both
+`error.tsx` and `not-found.tsx`, so the Titlebar (with window
+controls) remains visible on errors and 404s.
+
+---
+
 ## What this final hotfix shipped (2026-04-26)
 
 Five commits on `main` (3523a2d → 24a11a6).

@@ -6,10 +6,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Avatar } from "@/components/desktop/avatar";
 import { listAgents, type Agent } from "@/lib/agents/service";
 import { executeDMTurn } from "@/lib/agents/execute";
+import { RateLimitError } from "@/lib/agents/errors";
 import { writeFile, readFile, fileExists } from "@/lib/tauri/fs";
 import { loadKeys } from "@/lib/ai/keys";
 import { MOTION } from "@/lib/motion/tokens";
 import { TypingIndicator } from "@/components/desktop/typing-indicator";
+import { RateLimitErrorBanner } from "@/components/desktop/rate-limit-error";
 
 interface Message {
   role: "user" | "agent";
@@ -29,6 +31,7 @@ export function DMPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
   const [activeProvider, setActiveProvider] = useState<string>("google");
   const [compressing, setCompressing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rateLimit, setRateLimit] = useState<RateLimitError | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -126,7 +129,11 @@ export function DMPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       }
     } catch (e: unknown) {
       setMessages((prev) => prev.slice(0, -1));
-      setError(e instanceof Error ? e.message : String(e));
+      if (e instanceof RateLimitError) {
+        setRateLimit(e);
+      } else {
+        setError(e instanceof Error ? e.message : String(e));
+      }
     } finally {
       setSending(false);
       setSendStartTime(null);
@@ -297,6 +304,20 @@ export function DMPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
             </div>
           )}
 
+          {rateLimit && (
+            <div className="px-3 pt-2 pb-1 border-t border-bb-border">
+              <RateLimitErrorBanner
+                provider={rateLimit.provider}
+                retryAfterSeconds={rateLimit.retryAfterSeconds}
+              />
+              <button
+                onClick={() => setRateLimit(null)}
+                className="mt-1 text-[11px] text-amber-200/70 hover:text-amber-100 underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
           {error && (
             <div className="px-3 py-2 bg-red-900/20 border-t border-red-800 text-red-300 text-xs">
               {error}

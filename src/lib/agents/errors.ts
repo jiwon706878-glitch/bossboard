@@ -1,10 +1,35 @@
 /**
+ * Subclass that callers (UI, telemetry) can identify with `instanceof`. Carries
+ * the provider name + optional retry-after seconds so the rate-limit banner
+ * can show "retry in N seconds" + a link to the provider's tier page.
+ */
+export class RateLimitError extends Error {
+  constructor(
+    public provider: string,
+    public retryAfterSeconds?: number,
+  ) {
+    super(
+      retryAfterSeconds
+        ? `${provider} rate limit hit. Retry in ${Math.ceil(retryAfterSeconds)}s, or switch providers.`
+        : `${provider} rate limit hit. Wait a moment or switch providers.`,
+    );
+    this.name = "RateLimitError";
+  }
+}
+
+/**
  * Map a raw provider error into a human-readable Error. Inputs come from
  * Vercel AI SDK calls (which surface upstream HTTP status as `statusCode`),
  * raw fetch responses, or generic JS errors.
  */
 export function wrapAIError(provider: string, error: unknown): Error {
-  const e = error as { statusCode?: number; status?: number; message?: string };
+  const e = error as {
+    statusCode?: number;
+    status?: number;
+    message?: string;
+    headers?: Record<string, string | string[]>;
+    responseHeaders?: Record<string, string | string[]>;
+  };
   const status = e?.statusCode ?? e?.status;
   const message = e?.message ?? String(error);
 
@@ -12,7 +37,17 @@ export function wrapAIError(provider: string, error: unknown): Error {
     return new Error(`${provider} API key invalid. Check Settings → AI providers.`);
   }
   if (status === 429 || /rate[ _-]?limit/i.test(message)) {
-    return new Error(`${provider} rate limit hit. Wait a moment or switch providers.`);
+    const headers = e?.headers ?? e?.responseHeaders ?? {};
+    const raw = headers["retry-after"] ?? headers["Retry-After"];
+    const retryAfter = Array.isArray(raw)
+      ? Number(raw[0])
+      : typeof raw === "string"
+        ? Number(raw)
+        : undefined;
+    return new RateLimitError(
+      provider,
+      Number.isFinite(retryAfter) ? retryAfter : undefined,
+    );
   }
   if (status === 400 && /context|too long|maximum/i.test(message)) {
     return new Error(

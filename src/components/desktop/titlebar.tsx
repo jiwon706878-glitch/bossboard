@@ -145,7 +145,11 @@ export function Titlebar() {
           </button>
         </div>
 
-        <div data-tauri-drag-region className="flex-1 h-full" />
+        <div data-tauri-drag-region className="flex-1 h-full flex items-center justify-center pointer-events-none">
+          <span className="text-[10px] px-2 py-0.5 bg-bb-primary/15 text-bb-primary border border-bb-primary/30 rounded uppercase tracking-wide">
+            Beta v0.1
+          </span>
+        </div>
 
         <div className="flex items-center gap-1">
           {searchExpanded ? (

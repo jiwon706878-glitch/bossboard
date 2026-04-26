@@ -2,11 +2,11 @@ use axum::{
     extract::State,
     http::{HeaderMap, StatusCode},
     middleware::{from_fn_with_state, Next},
-    response::Response,
-    routing::get,
+    response::{IntoResponse, Response},
+    routing::{get, post},
     Json, Router,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::net::TcpListener;
 use std::sync::{Arc, Mutex};
 
@@ -53,8 +53,135 @@ async fn info_handler() -> Json<McpInfo> {
             "library.write".to_string(),
             "agents.list".to_string(),
             "board.post".to_string(),
+            "admin.send_telegram".to_string(),
         ],
     })
+}
+
+#[derive(Debug, Deserialize)]
+struct AdminTelegramRequest {
+    message: String,
+    #[serde(default)]
+    priority: Option<String>,
+    /// Caller's email — must be on the admin allow-list. The MCP token
+    /// already gates access to the server but doesn't bind to a user, so
+    /// we double-check here. Pass via the `x-bb-user-email` header (set
+    /// by the in-app agent runner from the signed-in user's email).
+    #[serde(default)]
+    user_email: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct AdminTelegramResponse {
+    success: bool,
+    error: Option<String>,
+}
+
+const ADMIN_EMAILS: &[&str] = &["jay@mybossboard.com", "jiwon706878@gmail.com"];
+
+fn is_admin_email(email: &str) -> bool {
+    let lower = email.to_lowercase();
+    ADMIN_EMAILS.iter().any(|e| *e == lower)
+}
+
+/// Single MCP admin tool: send an arbitrary message to the configured
+/// Telegram admin chat. Lets a Jay agent in BB ping itself for alerts
+/// without going through the Vercel /api route. Full MCP tool registry
+/// (search_library / list_feedback / etc.) is deferred to v3.1.
+async fn admin_send_telegram_handler(
+    headers: HeaderMap,
+    Json(payload): Json<AdminTelegramRequest>,
+) -> Response {
+    // Email gate: prefer the X-Bb-User-Email header (set by the agent
+    // runner) over the JSON body so the body can't override.
+    let header_email = headers
+        .get("x-bb-user-email")
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.to_string());
+    let email = header_email.or(payload.user_email).unwrap_or_default();
+    if !is_admin_email(&email) {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(AdminTelegramResponse {
+                success: false,
+                error: Some("admin email required".to_string()),
+            }),
+        )
+            .into_response();
+    }
+
+    let bot_token = match std::env::var("TELEGRAM_BOT_TOKEN") {
+        Ok(v) => v,
+        Err(_) => {
+            return (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(AdminTelegramResponse {
+                    success: false,
+                    error: Some("TELEGRAM_BOT_TOKEN env not set".to_string()),
+                }),
+            )
+                .into_response();
+        }
+    };
+    let chat_id = match std::env::var("TELEGRAM_ADMIN_CHAT_ID") {
+        Ok(v) => v,
+        Err(_) => {
+            return (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(AdminTelegramResponse {
+                    success: false,
+                    error: Some("TELEGRAM_ADMIN_CHAT_ID env not set".to_string()),
+                }),
+            )
+                .into_response();
+        }
+    };
+
+    let prefix = match payload.priority.as_deref() {
+        Some("critical") => "🚨",
+        Some("warning") => "⚠️",
+        _ => "ℹ️",
+    };
+    let body = format!("{prefix} {}", payload.message);
+
+    let url = format!("https://api.telegram.org/bot{bot_token}/sendMessage");
+    let client = reqwest::Client::new();
+    let res = client
+        .post(&url)
+        .json(&serde_json::json!({
+            "chat_id": chat_id,
+            "text": body,
+            "parse_mode": "Markdown",
+        }))
+        .send()
+        .await;
+
+    match res {
+        Ok(r) if r.status().is_success() => (
+            StatusCode::OK,
+            Json(AdminTelegramResponse {
+                success: true,
+                error: None,
+            }),
+        )
+            .into_response(),
+        Ok(r) => (
+            StatusCode::BAD_GATEWAY,
+            Json(AdminTelegramResponse {
+                success: false,
+                error: Some(format!("telegram returned {}", r.status())),
+            }),
+        )
+            .into_response(),
+        Err(e) => (
+            StatusCode::BAD_GATEWAY,
+            Json(AdminTelegramResponse {
+                success: false,
+                error: Some(format!("telegram unreachable: {e}")),
+            }),
+        )
+            .into_response(),
+    }
 }
 
 async fn auth_middleware(
@@ -102,6 +229,10 @@ pub async fn run_mcp_server(state: McpState) {
 
     let protected = Router::new()
         .route("/", get(info_handler))
+        .route(
+            "/tools/admin_send_telegram",
+            post(admin_send_telegram_handler),
+        )
         .layer(from_fn_with_state(state.clone(), auth_middleware));
 
     let app = Router::new()

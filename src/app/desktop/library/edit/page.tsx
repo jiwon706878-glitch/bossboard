@@ -3,18 +3,11 @@
 import { useEffect, useState, Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Languages } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { readLibraryFile, saveLibraryFile } from "@/lib/library/service";
-import {
-  type Frontmatter,
-  generateId,
-  stringifyMarkdown,
-} from "@/lib/markdown/frontmatter";
-import { createDirectory, writeFile, fileExists } from "@/lib/tauri/fs";
+import { type Frontmatter } from "@/lib/markdown/frontmatter";
+import { createDirectory } from "@/lib/tauri/fs";
 import { MarkdownRenderer } from "@/components/library/markdown-renderer";
-import { TranslationPanel } from "@/components/library/translation-panel";
-import type { LangCode } from "@/lib/library/translate";
 
 function EditorInner() {
   const params = useSearchParams();
@@ -27,13 +20,6 @@ function EditorInner() {
   const [loading, setLoading] = useState(true);
   const [dirty, setDirty] = useState(false);
   const [editorError, setEditorError] = useState<string | null>(null);
-  const [translationOpen, setTranslationOpen] = useState(false);
-  const [translation, setTranslation] = useState<{
-    code: LangCode;
-    name: string;
-    content: string;
-  } | null>(null);
-  const [savedTranslationPath, setSavedTranslationPath] = useState<string | null>(null);
 
   useEffect(() => {
     if (!filePath) return;
@@ -114,34 +100,6 @@ function EditorInner() {
     e.preventDefault();
   }
 
-  async function saveTranslation() {
-    if (!translation || !frontmatter) return;
-    const dir = filePath.substring(0, filePath.lastIndexOf("/"));
-    const fname = filePath.split(/[\\/]/).pop() || "untitled.md";
-    const base = fname.replace(/\.md$/, "");
-    const newPath = `${dir}/${base}.${translation.code}.md`;
-    if (await fileExists(newPath)) {
-      setEditorError(`Already exists: ${base}.${translation.code}.md`);
-      return;
-    }
-    const fm = {
-      id: generateId(),
-      title: `${frontmatter.title} (${translation.name})`,
-      tags: ["translation"],
-      created: new Date().toISOString(),
-      modified: new Date().toISOString(),
-      translated_from: fname,
-      language: translation.code,
-    };
-    try {
-      await writeFile(newPath, stringifyMarkdown(fm as never, translation.content));
-      setSavedTranslationPath(newPath);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setEditorError(`Failed to save translation: ${msg}`);
-    }
-  }
-
   const folderPath = filePath ? filePath.substring(0, filePath.lastIndexOf("/")) : undefined;
 
   if (loading) {
@@ -158,13 +116,6 @@ function EditorInner() {
           ← Library
         </Link>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setTranslationOpen(true)}
-            className="p-2 hover:bg-bb-card rounded"
-            title="Translate page"
-          >
-            <Languages className="w-4 h-4 text-gray-400" />
-          </button>
           <div className="flex rounded-md overflow-hidden border border-bb-border">
             {(["source", "live", "preview"] as const).map((m) => (
               <button
@@ -188,7 +139,7 @@ function EditorInner() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-8">
+      <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8 w-full">
         {editorError && (
           <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded-md text-red-300 text-sm">
             <div>{editorError}</div>
@@ -211,95 +162,38 @@ function EditorInner() {
           className="w-full text-3xl font-bold bg-transparent border-none outline-none mb-6"
         />
 
-        {translation ? (
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <h2 className="text-xs uppercase text-gray-500 mb-2">Original</h2>
-              <textarea
-                value={content}
-                onChange={(e) => {
-                  setContent(e.target.value);
-                  setDirty(true);
-                }}
-                className="w-full h-[60vh] bg-bb-card border border-bb-border rounded-md p-4 font-mono text-sm"
-              />
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-2 gap-2">
-                <h2 className="text-xs uppercase text-gray-500 truncate">{translation.name}</h2>
-                <div className="flex items-center gap-2">
-                  {savedTranslationPath ? (
-                    <span className="text-xs text-bb-primary">Saved</span>
-                  ) : (
-                    <button
-                      onClick={saveTranslation}
-                      className="text-xs px-2 py-0.5 bg-bb-primary hover:bg-bb-primary-hover rounded"
-                    >
-                      Save as new file
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      setTranslation(null);
-                      setSavedTranslationPath(null);
-                    }}
-                    className="text-xs text-gray-400 hover:text-bb-fg underline"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-              <div className="h-[60vh] overflow-auto bg-bb-card border border-bb-border rounded-md p-4">
-                <MarkdownRenderer
-                  content={translation.content}
-                  editable={false}
-                  basePath={folderPath}
-                />
-              </div>
-            </div>
-          </div>
-        ) : (
-          <>
-            {mode === "source" && (
-              <textarea
-                value={content}
-                onChange={(e) => {
-                  setContent(e.target.value);
-                  setDirty(true);
-                }}
-                className="w-full h-[60vh] bg-bb-card border border-bb-border rounded-md p-4 font-mono text-sm"
-              />
-            )}
-            {mode === "live" && (
-              <textarea
-                value={content}
-                onChange={(e) => {
-                  setContent(e.target.value);
-                  setDirty(true);
-                }}
-                placeholder="Drop images here to attach…"
-                className="w-full h-[60vh] bg-transparent border border-bb-border rounded-md p-4 text-base leading-relaxed"
-              />
-            )}
-            {mode === "preview" && (
-              <div className="prose prose-invert max-w-none">
-                <MarkdownRenderer content={content} editable={false} basePath={folderPath} />
-              </div>
-            )}
-          </>
+        {mode === "source" && (
+          <textarea
+            value={content}
+            onChange={(e) => {
+              setContent(e.target.value);
+              setDirty(true);
+            }}
+            className="w-full h-[60vh] bg-bb-card border border-bb-border rounded-md p-4 font-mono text-sm"
+          />
         )}
-      </div>
+        {mode === "live" && (
+          <textarea
+            value={content}
+            onChange={(e) => {
+              setContent(e.target.value);
+              setDirty(true);
+            }}
+            placeholder="Drop images here to attach…"
+            className="library-content w-full h-[60vh] bg-transparent border border-bb-border rounded-md p-4"
+          />
+        )}
+        {mode === "preview" && (
+          <div className="library-content prose prose-invert max-w-none">
+            <MarkdownRenderer content={content} editable={false} basePath={folderPath} />
+          </div>
+        )}
 
-      {translationOpen && (
-        <TranslationPanel
-          sourceContent={content}
-          onClose={() => setTranslationOpen(false)}
-          onTranslated={(code, name, translated) => {
-            setTranslation({ code, name, content: translated });
-            setSavedTranslationPath(null);
-          }}
-        />
-      )}
+        <p className="mt-6 text-xs text-gray-500">
+          Need to translate? Just ask any agent in DM:
+          “Translate this document to Korean”.
+        </p>
+      </div>
     </div>
   );
 }

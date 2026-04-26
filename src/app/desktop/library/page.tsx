@@ -89,7 +89,6 @@ export default function LibraryPage() {
         shortcut: "F2",
       },
       { label: "Duplicate", onClick: () => setNotice("Duplicate comes in Week 4.") },
-      { label: "Translate (open file)", onClick: () => router.push(`/desktop/library/edit?path=${encodeURIComponent(f.path)}`) },
       { separator: true, label: "" },
       { label: "Show in folder", onClick: () => setNotice(`Path: ${f.path}`) },
       {
@@ -111,7 +110,7 @@ export default function LibraryPage() {
 
   return (
     <div className="p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4 lg:px-8 w-full">
         <div className="flex items-center justify-between mb-8">
           <div>
             <Link

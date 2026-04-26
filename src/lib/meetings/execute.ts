@@ -17,11 +17,19 @@ export interface MeetingResult {
   endedAt: string;
 }
 
+export interface RunMeetingOptions {
+  /** When true, agents may "pass" or interrupt each other and prompt
+   *  rules loosen for emergent group behaviour. Gated to Pro+ via the
+   *  free_discussion_meeting Beta Feature toggle in the caller. */
+  freeDiscussion?: boolean;
+}
+
 export async function runMeeting(
   topic: string,
   agentNames: string[],
   rounds: number,
   onProgress?: (msg: MeetingMessage) => void,
+  options: RunMeetingOptions = {},
 ): Promise<MeetingResult> {
   if (agentNames.length === 0) {
     throw new Error("Pick at least one agent.");
@@ -40,24 +48,11 @@ export async function runMeeting(
           : round === rounds
             ? "Provide your final position before we conclude."
             : "Respond to the discussion so far and add your viewpoint.";
-      // Anti-echo-chamber rules: meetings devolve into agreement spam
-      // when each agent leads with "I agree with X". Force concrete
-      // contribution or an explicit "nothing to add — moving on" exit.
-      const prompt = `Meeting topic: ${topic}
 
-Previous discussion:
-${transcript || "(none yet)"}
+      const prompt = options.freeDiscussion
+        ? buildFreeDiscussionPrompt(agentName, topic, round, rounds, transcript)
+        : buildSequentialPrompt(agentName, topic, round, rounds, stage, transcript);
 
-You are ${agentName}. Round ${round} of ${rounds}. ${stage}
-
-Critical rules for this meeting:
-1. DO NOT start with "I agree" or "Great point" or any sycophantic opener.
-2. DO NOT recap what other agents said — go straight to YOUR contribution.
-3. If you disagree, say so directly with reasoning.
-4. Add NEW information, analysis, or a concrete next step. Never just rephrase.
-5. Be concise — 3-5 sentences ideal.
-6. End with a concrete next step or open question (not "let me know your thoughts").
-7. If you have NOTHING new to add, say "I have nothing new to add — passing." and stop.`;
       const content = await executeDMTurn(agentName, prompt);
       const msg: MeetingMessage = { agent: agentName, content, round };
       messages.push(msg);
@@ -75,6 +70,61 @@ Critical rules for this meeting:
     startedAt,
     endedAt: new Date().toISOString(),
   };
+}
+
+function buildSequentialPrompt(
+  agentName: string,
+  topic: string,
+  round: number,
+  rounds: number,
+  stage: string,
+  transcript: string,
+): string {
+  // Anti-echo-chamber rules: meetings devolve into agreement spam when each
+  // agent leads with "I agree with X". Force concrete contribution or an
+  // explicit "nothing to add — passing" exit.
+  return `Meeting topic: ${topic}
+
+Previous discussion:
+${transcript || "(none yet)"}
+
+You are ${agentName}. Round ${round} of ${rounds}. ${stage}
+
+Critical rules for this meeting:
+1. DO NOT start with "I agree" or "Great point" or any sycophantic opener.
+2. DO NOT recap what other agents said — go straight to YOUR contribution.
+3. If you disagree, say so directly with reasoning.
+4. Add NEW information, analysis, or a concrete next step. Never just rephrase.
+5. Be concise — 3-5 sentences ideal.
+6. End with a concrete next step or open question (not "let me know your thoughts").
+7. If you have NOTHING new to add, say "I have nothing new to add — passing." and stop.`;
+}
+
+function buildFreeDiscussionPrompt(
+  agentName: string,
+  topic: string,
+  round: number,
+  rounds: number,
+  transcript: string,
+): string {
+  // Pro+ Beta Feature. Looser turn structure for emergent group dynamics.
+  return `Meeting topic: ${topic}
+
+Recent discussion:
+${transcript || "(none yet)"}
+
+You are ${agentName}. Round ${round} of ${rounds}. This is a FREE DISCUSSION meeting.
+
+You can:
+- Interrupt the previous speaker if you have crucial input.
+- Ask other agents direct questions by name.
+- Disagree directly with reasoning.
+- Skip your turn entirely with "I have nothing new to add — passing." and stop.
+
+Still required:
+- Don't repeat what others said.
+- Add new value with each turn.
+- Be concise (3-5 sentences ideal).`;
 }
 
 async function summarizeMeeting(

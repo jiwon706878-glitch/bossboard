@@ -27,6 +27,7 @@ const NAV: Array<{
   { href: "/desktop/settings/cloud-sync", label: "Cloud Sync", icon: Cloud },
   { href: "/desktop/settings/usage", label: "Token Usage", icon: Zap },
   { href: "/desktop/settings/translations", label: "Translations", icon: Globe },
+  { href: "/desktop/settings/beta-features", label: "Beta Features", icon: Sparkles },
   { href: "/desktop/settings/data", label: "Data & Privacy", icon: Lock },
   {
     href: "/desktop/settings/feedback",

@@ -19,6 +19,9 @@ import {
 } from "@/lib/tauri/fs";
 import { stringifyMarkdown, generateId } from "@/lib/markdown/frontmatter";
 import { estimateCostUsd, formatCost } from "@/lib/ai/cost";
+import { useBetaFeature } from "@/lib/beta-features";
+import { usePlan } from "@/lib/auth/use-plan";
+import { isFeatureAvailable } from "@/lib/plan-gate";
 
 interface MeetingFile {
   path: string;
@@ -43,6 +46,11 @@ export default function MeetingsPage() {
     tokens: number;
     cost: string;
   } | null>(null);
+
+  const { plan } = usePlan();
+  const [freeDiscussionToggle] = useBetaFeature("free_discussion_meeting");
+  const freeDiscussionAvailable =
+    freeDiscussionToggle && isFeatureAvailable("ai_meeting_room_full", plan);
 
   function meetingsDir() {
     const ws = localStorage.getItem("bb_workspace_path") || "";
@@ -106,8 +114,12 @@ export default function MeetingsPage() {
     setProgress([]);
     setResult(null);
     try {
-      const r = await runMeeting(topic.trim(), Array.from(picked), rounds, (m) =>
-        setProgress((p) => [...p, m]),
+      const r = await runMeeting(
+        topic.trim(),
+        Array.from(picked),
+        rounds,
+        (m) => setProgress((p) => [...p, m]),
+        { freeDiscussion: freeDiscussionAvailable },
       );
       setResult(r);
 
@@ -215,6 +227,12 @@ export default function MeetingsPage() {
           </div>
         ) : (
           <div className="space-y-3">
+            {freeDiscussionAvailable && (
+              <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-200">
+                ⚡ Free Discussion mode active (Beta Feature). Agents may pass
+                or interrupt instead of taking strict turns.
+              </div>
+            )}
             <div>
               <label className="block text-xs text-gray-400 mb-1">Topic / question</label>
               <textarea

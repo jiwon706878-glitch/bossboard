@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { MOTION } from "@/lib/motion/tokens";
+import { FeatureStatusBadge } from "@/components/desktop/feature-status-badge";
 import {
   LayoutDashboard,
   Library,
@@ -80,15 +81,13 @@ export function Sidebar() {
               <div
                 key={item.href}
                 className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-600 cursor-not-allowed"
-                title={collapsed ? `${item.label} (soon)` : undefined}
+                title={collapsed ? `${item.label} (Coming soon)` : undefined}
               >
                 <Icon className="w-4 h-4 flex-shrink-0" />
                 {!collapsed && (
                   <>
                     <span>{item.label}</span>
-                    <span className="ml-auto text-[10px] bg-bb-card px-1.5 py-0.5 rounded">
-                      soon
-                    </span>
+                    <FeatureStatusBadge status="coming-soon" className="ml-auto" />
                   </>
                 )}
               </div>

@@ -11,6 +11,19 @@ import {
   type APIKey,
   type AIProvider,
 } from "@/lib/ai/keys";
+import {
+  FeatureStatusBadge,
+  type FeatureStatus,
+} from "@/components/desktop/feature-status-badge";
+
+const PROVIDER_STATUS: Record<AIProvider, FeatureStatus> = {
+  google: "stable",
+  anthropic: "stable",
+  openai: "stable",
+  xai: "stable",
+  local: "experimental",
+  custom: "experimental",
+};
 
 export function APIKeyManager() {
   const [keys, setKeys] = useState<APIKey[]>([]);
@@ -226,7 +239,10 @@ function KeyModal({
 
         <div className="space-y-3">
           <div>
-            <label className="text-xs text-gray-400">Provider</label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs text-gray-400">Provider</label>
+              <FeatureStatusBadge status={PROVIDER_STATUS[provider]} />
+            </div>
             <select
               value={provider}
               onChange={(e) => setProvider(e.target.value as AIProvider)}

@@ -34,8 +34,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/desktop/agents", label: "Agents", icon: Bot },
   { href: "/desktop/dm", label: "DM", icon: MessageSquare, emit: "bb-dm-toggle" },
   { href: "/desktop/meetings", label: "Meetings", icon: Users },
+  { href: "/desktop/calendar", label: "Calendar", icon: Calendar },
   { href: "/desktop/board", label: "Board", icon: LayoutGrid, disabled: true },
-  { href: "/desktop/calendar", label: "Calendar", icon: Calendar, disabled: true },
 ];
 
 export function Sidebar() {

@@ -15,8 +15,13 @@ import { ShortcutsModal } from "@/components/desktop/shortcuts-modal";
 import { AboutModal } from "@/components/desktop/about-modal";
 import { ErrorBoundary } from "@/components/desktop/error-boundary";
 import { ToastContainer } from "@/components/desktop/toast";
+import {
+  DeviceLimitModal,
+  type RegisteredDevice,
+} from "@/components/desktop/device-limit-modal";
 import { migrateOldKeys } from "@/lib/ai/keys";
 import { generateSystemReference } from "@/lib/agents/system-reference";
+import { registerDevice, revokeRemoteDevice } from "@/lib/auth/register-device";
 
 export default function DesktopLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -26,6 +31,11 @@ export default function DesktopLayout({ children }: { children: React.ReactNode 
   const [dmOpen, setDmOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [deviceLimit, setDeviceLimit] = useState<{
+    devices: RegisteredDevice[];
+    plan: "free" | "starter" | "pro" | "business";
+    currentDeviceId: string;
+  } | null>(null);
 
   useEffect(() => {
     migrateOldKeys().catch(() => {
@@ -36,6 +46,45 @@ export default function DesktopLayout({ children }: { children: React.ReactNode 
     // pick), the helper swallows the error.
     generateSystemReference();
   }, []);
+
+  useEffect(() => {
+    // Register this device with the cloud once per session. The helper
+    // gracefully skips when not in Tauri, when the user isn't signed in,
+    // and when the SQL migration hasn't been applied yet.
+    let cancelled = false;
+    (async () => {
+      const result = await registerDevice();
+      if (cancelled) return;
+      if (result.kind === "limit_reached") {
+        setDeviceLimit({
+          devices: result.devices,
+          plan: result.plan as "free" | "starter" | "pro" | "business",
+          currentDeviceId: result.currentDeviceId,
+        });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function handleRevokeAndRetry(deviceId: string) {
+    const r = await revokeRemoteDevice(deviceId);
+    if (!r.success) {
+      throw new Error(r.message ?? "Revoke failed");
+    }
+    // Try to register again now that a slot opened.
+    const result = await registerDevice();
+    if (result.kind === "limit_reached") {
+      setDeviceLimit({
+        devices: result.devices,
+        plan: result.plan as "free" | "starter" | "pro" | "business",
+        currentDeviceId: result.currentDeviceId,
+      });
+    } else {
+      setDeviceLimit(null);
+    }
+  }
 
   useEffect(() => {
     const onDM = () => setDmOpen((v) => !v);
@@ -115,6 +164,17 @@ export default function DesktopLayout({ children }: { children: React.ReactNode 
         <ShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
         <AboutModal isOpen={aboutOpen} onClose={() => setAboutOpen(false)} />
         <ToastContainer />
+        {deviceLimit && (
+          <DeviceLimitModal
+            currentDevices={deviceLimit.devices}
+            currentDeviceId={deviceLimit.currentDeviceId}
+            plan={deviceLimit.plan}
+            onUpgrade={() =>
+              window.open("https://mybossboard.com/pricing", "_blank")
+            }
+            onRevoke={handleRevokeAndRetry}
+          />
+        )}
       </div>
     </ThemeProvider>
   );

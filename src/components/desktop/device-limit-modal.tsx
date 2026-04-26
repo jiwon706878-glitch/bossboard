@@ -7,52 +7,54 @@ import { MOTION } from "@/lib/motion/tokens";
 
 export interface RegisteredDevice {
   id: string;
+  device_id: string;
+  device_name: string | null;
   os: string;
-  appVersion: string;
-  lastSeen: string;
-  isCurrent: boolean;
+  last_seen: string;
 }
 
 interface Props {
   currentDevices: RegisteredDevice[];
+  currentDeviceId: string;
   plan: "free" | "starter" | "pro" | "business";
   onUpgrade: () => void;
   onRevoke: (deviceId: string) => Promise<void>;
 }
 
-const PLAN_LIMITS: Record<Props["plan"], { devices: number; nextLabel: string }> = {
-  free: { devices: 1, nextLabel: "Starter" },
-  starter: { devices: 2, nextLabel: "Pro" },
-  pro: { devices: -1, nextLabel: "Business" },
-  business: { devices: -1, nextLabel: "" },
+const PLAN_NEXT: Record<Props["plan"], string> = {
+  free: "Starter",
+  starter: "Pro",
+  pro: "Business",
+  business: "",
+};
+
+const PLAN_DEVICE_HINT: Record<Props["plan"], string> = {
+  free: "1 device",
+  starter: "2 devices",
+  pro: "unlimited devices",
+  business: "unlimited devices",
 };
 
 /**
  * Modal shown when device registration is rejected because the plan limit
  * is reached. Lets the user revoke another device (so the current one can
  * register) or upgrade.
- *
- * Shipping the UI today; the wiring depends on a Supabase `devices` table
- * + register_device / revoke_device RPCs (deferred — see LAUNCH-CHECKLIST
- * v2-additions Addition 3). Until those exist, callers can pass a no-op
- * onRevoke for development testing.
  */
 export function DeviceLimitModal({
   currentDevices,
+  currentDeviceId,
   plan,
   onUpgrade,
   onRevoke,
 }: Props) {
   const [revoking, setRevoking] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const limit = PLAN_LIMITS[plan];
 
-  async function revoke(id: string) {
-    setRevoking(id);
+  async function revoke(deviceId: string) {
+    setRevoking(deviceId);
     setError(null);
     try {
-      await onRevoke(id);
-      // Caller is expected to refresh the device list / reload the app.
+      await onRevoke(deviceId);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -77,43 +79,46 @@ export function DeviceLimitModal({
         </h2>
         <p className="text-sm text-gray-400 text-center mb-6">
           Your <strong className="text-bb-fg capitalize">{plan}</strong> plan allows{" "}
-          {limit.devices === -1
-            ? "unlimited devices"
-            : `${limit.devices} ${limit.devices === 1 ? "device" : "devices"}`}
-          .
+          {PLAN_DEVICE_HINT[plan]}.
         </p>
 
         <div className="border border-bb-border rounded-lg divide-y divide-bb-border mb-6">
-          {currentDevices.map((d) => (
-            <div key={d.id} className="p-3 flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium">
-                  {d.os}
-                  {d.isCurrent && (
-                    <span className="ml-2 text-[10px] text-bb-primary uppercase">
-                      this device
-                    </span>
-                  )}
+          {currentDevices.map((d) => {
+            const isCurrent = d.device_id === currentDeviceId;
+            return (
+              <div
+                key={d.device_id}
+                className="p-3 flex items-center justify-between"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">
+                    {d.device_name || d.os}
+                    {isCurrent && (
+                      <span className="ml-2 text-[10px] text-bb-primary uppercase">
+                        this device
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {d.os} · last seen {new Date(d.last_seen).toLocaleString()}
+                  </div>
                 </div>
-                <div className="text-xs text-gray-500">
-                  v{d.appVersion} · last seen {new Date(d.lastSeen).toLocaleString()}
-                </div>
+                {!isCurrent && (
+                  <button
+                    onClick={() => revoke(d.device_id)}
+                    disabled={revoking === d.device_id}
+                    className="px-2 py-1 text-xs border border-bb-border hover:bg-bb-bg rounded inline-flex items-center gap-1 disabled:opacity-50"
+                  >
+                    {revoking === d.device_id ? (
+                      <RefreshCw className="size-3 animate-spin" />
+                    ) : (
+                      "Sign out"
+                    )}
+                  </button>
+                )}
               </div>
-              {!d.isCurrent && (
-                <button
-                  onClick={() => revoke(d.id)}
-                  disabled={revoking === d.id}
-                  className="px-2 py-1 text-xs border border-bb-border hover:bg-bb-bg rounded inline-flex items-center gap-1 disabled:opacity-50"
-                >
-                  {revoking === d.id ? (
-                    <RefreshCw className="size-3 animate-spin" />
-                  ) : (
-                    "Sign out"
-                  )}
-                </button>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {error && (
@@ -123,12 +128,12 @@ export function DeviceLimitModal({
         )}
 
         <div className="space-y-2">
-          {limit.nextLabel && (
+          {PLAN_NEXT[plan] && (
             <button
               onClick={onUpgrade}
               className="w-full px-4 py-2 bg-bb-primary hover:bg-bb-primary-hover rounded-md text-sm"
             >
-              Upgrade to {limit.nextLabel}
+              Upgrade to {PLAN_NEXT[plan]}
             </button>
           )}
           <p className="text-[11px] text-gray-500 text-center">

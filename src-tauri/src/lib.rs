@@ -9,6 +9,7 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
 use commands::backup::create_workspace_backup;
+use commands::device::get_device_info;
 use commands::fs::{
     check_workspace_health, create_directory, delete_file, file_exists, list_directory, read_file,
     write_binary_file, write_file,
@@ -130,6 +131,7 @@ pub fn run() {
             list_trash,
             restore_from_trash,
             empty_trash,
+            get_device_info,
             get_mcp_info,
             get_logs,
         ])

@@ -1,17 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
-import { createAgent, type AgentProvider } from "@/lib/agents/service";
+import { createAgent, listAgents, type AgentProvider } from "@/lib/agents/service";
 import {
   AGENT_TEMPLATES,
   fillTemplate,
   type AgentTemplateId,
 } from "@/lib/agents/templates";
 import { MOTION } from "@/lib/motion/tokens";
+import { usePlan } from "@/lib/auth/use-plan";
+import { isFeatureAvailable, type Feature } from "@/lib/plan-gate";
+import { UpgradeModal } from "@/components/desktop/upgrade-modal";
+import type { PlanId } from "@/config/plans";
 
 const PROVIDER_OPTIONS: Array<{ value: AgentProvider; label: string; hint: string }> = [
   { value: "google", label: "Google Gemini", hint: "Cheapest, generous free tier" },
@@ -23,6 +27,7 @@ const PROVIDER_OPTIONS: Array<{ value: AgentProvider; label: string; hint: strin
 
 export default function NewAgentWizardPage() {
   const router = useRouter();
+  const { plan } = usePlan();
   const [step, setStep] = useState(1);
   const [templateId, setTemplateId] = useState<AgentTemplateId>("personal-assistant");
   const [name, setName] = useState("");
@@ -31,6 +36,17 @@ export default function NewAgentWizardPage() {
   const [customManual, setCustomManual] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [agentCount, setAgentCount] = useState(0);
+  const [upgradeGate, setUpgradeGate] = useState<{
+    feature: Feature;
+    requiredPlan: PlanId;
+  } | null>(null);
+
+  useEffect(() => {
+    listAgents()
+      .then((list) => setAgentCount(list.length))
+      .catch(() => setAgentCount(0));
+  }, []);
 
   const template = AGENT_TEMPLATES[templateId];
   const filledManual = fillTemplate(
@@ -44,7 +60,25 @@ export default function NewAgentWizardPage() {
   const canStep3 = name.trim().length > 0 && (role.trim().length > 0 || templateId === "personal-assistant" || templateId === "blank");
   const canStep4 = finalManual.trim().length > 0;
 
+  function checkAgentCountGate(): { gated: true; gate: { feature: Feature; requiredPlan: PlanId } } | { gated: false } {
+    if (agentCount >= 50 && !isFeatureAvailable("more_than_50_agents", plan)) {
+      return { gated: true, gate: { feature: "more_than_50_agents", requiredPlan: "business" } };
+    }
+    if (agentCount >= 10 && !isFeatureAvailable("more_than_10_agents", plan)) {
+      return { gated: true, gate: { feature: "more_than_10_agents", requiredPlan: "pro" } };
+    }
+    if (agentCount >= 3 && !isFeatureAvailable("more_than_3_agents", plan)) {
+      return { gated: true, gate: { feature: "more_than_3_agents", requiredPlan: "starter" } };
+    }
+    return { gated: false };
+  }
+
   async function handleCreate() {
+    const gate = checkAgentCountGate();
+    if (gate.gated) {
+      setUpgradeGate(gate.gate);
+      return;
+    }
     setCreating(true);
     setError(null);
     try {
@@ -154,6 +188,17 @@ export default function NewAgentWizardPage() {
           </button>
         )}
       </div>
+
+      {upgradeGate && (
+        <UpgradeModal
+          feature={upgradeGate.feature}
+          requiredPlan={upgradeGate.requiredPlan}
+          onClose={() => setUpgradeGate(null)}
+          onUpgrade={() =>
+            window.open("https://mybossboard.com/pricing", "_blank")
+          }
+        />
+      )}
     </div>
   );
 }

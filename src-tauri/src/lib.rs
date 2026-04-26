@@ -10,6 +10,7 @@ use tracing_subscriber::util::SubscriberInitExt;
 
 use commands::backup::create_workspace_backup;
 use commands::device::get_device_info;
+use commands::token_usage::{get_token_usage, record_token_usage};
 use commands::translations::{
     export_user_translations, load_user_translations, save_user_translation,
 };
@@ -138,6 +139,8 @@ pub fn run() {
             load_user_translations,
             save_user_translation,
             export_user_translations,
+            record_token_usage,
+            get_token_usage,
             get_mcp_info,
             get_logs,
         ])

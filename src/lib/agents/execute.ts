@@ -7,6 +7,7 @@ import { readFile } from "@/lib/tauri/fs";
 import { parseMarkdown } from "@/lib/markdown/frontmatter";
 import { resolveKey, markKeyUsed, type AIProvider } from "@/lib/ai/keys";
 import { assertNoKeysInPrompt, sanitizeAgentResponse } from "@/lib/ai/key-leak-guard";
+import { recordTokenUsage } from "@/lib/usage/record";
 import { detectLoopHash, recordInteraction } from "./loop-guard";
 import { callWithTimeout, wrapAIError } from "./errors";
 
@@ -152,16 +153,47 @@ export async function executeDMTurn(
         timeoutMs,
         `${provider} timed out after ${Math.round(timeoutMs / 1000)}s.`,
       );
+      void recordUsageFromResult(agentName, provider, stream as UsageBearing);
       return sanitizeAgentResponse(full);
     }
 
-    const { text } = await callWithTimeout(
+    const result = await callWithTimeout(
       () => generateText({ model, system, prompt: userMessage }),
       timeoutMs,
       `${provider} timed out after ${Math.round(timeoutMs / 1000)}s.`,
     );
-    return sanitizeAgentResponse(text);
+    void recordUsageFromResult(agentName, provider, result as UsageBearing);
+    return sanitizeAgentResponse(result.text);
   } catch (e: unknown) {
     throw wrapAIError(provider, e);
   }
+}
+
+interface UsageShape {
+  inputTokens?: number;
+  outputTokens?: number;
+  promptTokens?: number;
+  completionTokens?: number;
+}
+
+interface UsageBearing {
+  usage?: Promise<UsageShape> | UsageShape;
+}
+
+async function recordUsageFromResult(
+  agentName: string,
+  provider: string,
+  result: UsageBearing,
+): Promise<void> {
+  const usage = await Promise.resolve(result.usage).catch(() => undefined);
+  if (!usage) return;
+  const tokens_in = usage.inputTokens ?? usage.promptTokens ?? 0;
+  const tokens_out = usage.outputTokens ?? usage.completionTokens ?? 0;
+  if (!tokens_in && !tokens_out) return;
+  await recordTokenUsage({
+    agent_name: agentName,
+    provider,
+    tokens_in,
+    tokens_out,
+  });
 }

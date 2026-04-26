@@ -1,5 +1,6 @@
 import { listDirectory, readFile, writeFile, createDirectory } from "@/lib/tauri/fs";
 import { parseMarkdown, stringifyMarkdown, generateId } from "@/lib/markdown/frontmatter";
+import { generateSystemReference } from "./system-reference";
 
 export type AgentProvider = "anthropic" | "google" | "openai" | "grok" | "local";
 export type AgentTemplate =
@@ -110,6 +111,9 @@ export async function createAgent(
     `${dir}/memory.md`,
     `# ${name} — Memory\n\nNo summary yet. This file accumulates over time.\n`,
   );
+
+  // Refresh the system reference so the new agent shows up in the active list.
+  await generateSystemReference();
 }
 
 const TEMPLATES: Record<AgentTemplate, string> = {

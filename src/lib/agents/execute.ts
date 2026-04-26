@@ -96,15 +96,26 @@ export async function executeDMTurn(
   const root = localStorage.getItem("bb_workspace_path") || "";
   const manualPath = `${root}/agents/${agentName}/manual.md`;
   const memoryPath = `${root}/agents/${agentName}/memory.md`;
+  const systemRefPath = `${root}/Library/BB-System-Reference.md`;
 
   const manualRaw = await readFile(manualPath);
   const memoryRaw = await readFile(memoryPath).catch(() => "");
+  const systemRefRaw = await readFile(systemRefPath).catch(() => "");
   const { frontmatter, content: manualContent } = parseMarkdown(manualRaw);
+  const { content: systemRefContent } = systemRefRaw
+    ? parseMarkdown(systemRefRaw)
+    : { content: "" };
   const fm = frontmatter as unknown as AgentManualFrontmatter;
   const provider = fm.ai_provider || "google";
   const modelName = fm.model || "";
 
-  const system = `${manualContent}\n\n## Memory (past conversations summary)\n${memoryRaw}`;
+  const system = [
+    systemRefContent && `# BossBoard runtime\n\n${systemRefContent}`,
+    `# Your role (${agentName})\n\n${manualContent}`,
+    memoryRaw && `# Your memory\n\n${memoryRaw}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
   const limit =
     CONTEXT_LIMITS[modelName || DEFAULTS[provider] || ""] || 100_000;

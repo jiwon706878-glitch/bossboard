@@ -16,6 +16,7 @@ import { AboutModal } from "@/components/desktop/about-modal";
 import { ErrorBoundary } from "@/components/desktop/error-boundary";
 import { ToastContainer } from "@/components/desktop/toast";
 import { migrateOldKeys } from "@/lib/ai/keys";
+import { generateSystemReference } from "@/lib/agents/system-reference";
 
 export default function DesktopLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -30,6 +31,10 @@ export default function DesktopLayout({ children }: { children: React.ReactNode 
     migrateOldKeys().catch(() => {
       /* migration is best-effort; users can re-add keys in Settings */
     });
+    // Refresh BB-System-Reference.md and Welcome.md once per app session.
+    // Best-effort — if /Library doesn't exist yet (first run before workspace
+    // pick), the helper swallows the error.
+    generateSystemReference();
   }, []);
 
   useEffect(() => {

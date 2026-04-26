@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-/// Per-locale translation overrides live under
-/// `<workspace>/.bb/translations/{locale}.json`. Workspace path is
-/// passed in from the frontend (consistent with other commands like
-/// metadata_upsert) so we don't need a Tauri AppState struct.
+// Per-locale translation overrides live under
+// `<workspace>/.bb/translations/{locale}.json`. Workspace path is
+// passed in from the frontend (consistent with other commands like
+// metadata_upsert) so we don't need a Tauri AppState struct.
 
 fn translations_dir(workspace_root: &str) -> PathBuf {
     PathBuf::from(workspace_root)

@@ -6,6 +6,9 @@ import { PricingToggle } from "@/components/marketing/pricing-toggle";
 import { FaqSection } from "@/components/marketing/faq-section";
 import { AnimatedSection } from "@/components/marketing/animated-section";
 import { HeroIntro } from "@/components/marketing/hero-intro";
+import { V3Hero } from "@/components/marketing/v3-hero";
+import { V3CoreValues } from "@/components/marketing/v3-core-values";
+import { V3VsChatGPT } from "@/components/marketing/v3-vs-chatgpt";
 import { getActivePromotionForPlan } from "@/lib/promotions";
 import {
   ArrowRight,
@@ -40,7 +43,13 @@ export default async function HomePage() {
       : null;
   return (
     <>
-      {/* ═══ HERO ══════════════════════════════════════════════════════════ */}
+      {/* ═══ V3.0 HERO + VALUES + COMPARISON (additive — preserves the v2
+            sections below for promotion data, FAQ, pricing toggle, etc.) ═══ */}
+      <V3Hero />
+      <V3CoreValues />
+      <V3VsChatGPT />
+
+      {/* ═══ HERO (v2 — kept for HeroIntro animation + dashboard mockup) ═══ */}
       <section className="relative overflow-hidden">
         <div
           className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2"

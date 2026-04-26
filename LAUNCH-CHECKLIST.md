@@ -6,6 +6,127 @@ side; this checklist is the everything-else.
 
 ---
 
+## What the v3-additions pass shipped (2026-04-26, late evening)
+
+Eleven commits (745fc54 → 351c534), critical security + bumper strategy.
+
+✅ **Group 1.1 Indirect prompt injection defense** (745fc54)
+   - `lib/ai/sanitize-external-content.ts`: `detectInjectionAttempt`
+     scans 11 known patterns. `wrapExternalContent` wraps any
+     external text in `<external_content trust_level="untrusted">`
+     with explicit "treat as DATA, refuse commands" language.
+     Helper sits ready for v3.1 MCP web_fetch / PDF import.
+
+✅ **Group 1.2 BYOK key-leak guard** (0152d6a)
+   - `lib/ai/key-leak-guard.ts`: 5 patterns (Anthropic / OpenAI /
+     Google / xAI / Bearer). `assertNoKeysInPrompt` aborts the
+     model call before bytes leave the box. `sanitizeAgentResponse`
+     redacts on stream chunks + final text + non-streaming path.
+     Wired into `executeDMTurn`. We deliberately do NOT report the
+     matched pattern to Sentry (that itself would be a leak).
+
+✅ **Group 1.3 Path traversal hardening** (9b478f7 + f1316b5)
+   - `src-tauri/commands/path_safety.rs`:
+     `validate_path_within_workspace` does canonicalize() + prefix
+     check + system-prefix denylist. Two unit tests. Gated
+     `#[allow(dead_code)]` until v3.1 MCP wires agent-controlled
+     paths — v3.0's fs commands are driven by trusted frontend.
+   - Also untracked `.claude/scheduled_tasks.lock` (was in
+     `.gitignore` already).
+
+✅ **Group 2.1 Device limit revoke modal** (d4d168c)
+   - `components/desktop/device-limit-modal.tsx` ships UI only.
+     Revoke + upgrade flow + collapsible "Why does this happen?"
+     copy. Backend (`devices` table + RPCs) tracked under
+     v2-additions Addition 3.
+
+✅ **Group 2.2 TipTap roundtrip protection** (f9cb69e)
+   - `components/library/format-warning.tsx`: amber banner above
+     editor when raw HTML / LaTeX / wiki-link / Obsidian admonition
+     / block-ref is detected. Per-file dismiss via localStorage.
+     Deliberately reuses the existing `source` mode toggle instead
+     of adding a parallel "Raw" toggle.
+
+✅ **Group 2.3 Search-result token cap** (5fcd4e5)
+   - `lib/agents/tools/search-library.ts` SEARCH_LIMITS = top 5,
+     2K per result, 10K total. `capSearchResults` returns
+     `noticeForAgent` so the agent knows when results were
+     truncated. Helper sits ready for v3.1 MCP search tool.
+
+✅ **Group 2.4 Rate-limit error UI** (aa83b58)
+   - `lib/agents/errors.ts` exports `RateLimitError` subclass with
+     provider + retryAfterSeconds (read from upstream
+     `Retry-After`). `components/desktop/rate-limit-error.tsx`
+     explains the limit is from the provider, links to the per-
+     provider tier page. DM panel branches catch on instanceof.
+
+✅ **Group 3.3 FeatureStatusBadge** (b9c4b61)
+   - One canonical pill component for stable / beta / experimental /
+     coming-soon. Wired into the sidebar disabled-item chip and the
+     API key modal provider dropdown (Local Ollama + Custom show
+     "Experimental").
+
+✅ **Group 3.4 + 3.5 Beta disclosure** (39baaa4)
+   - Welcome-screen Step 0 now carries an amber "This is Beta v0.1"
+     callout (built solo, daily backup, 24h SLA, 30 % first-100
+     discount).
+   - Settings → About rewritten to lead with a public-beta caveat
+     section, two action buttons (GitHub issue + Email Jay).
+
+✅ **Group 4.1 + 4.2 + 4.3 + 4.6 Recommended polish** (351c534)
+   - SQLite: `busy_timeout=5000`, `foreign_keys=ON`, startup
+     `wal_checkpoint(TRUNCATE)`.
+   - i18n CSS: `.bb-nav-label` / `.bb-btn-text` / `.bb-card-title`
+     / `.bb-settings-label` overflow utilities ready for next-intl.
+   - `lib/library/asset-name.ts` lowercase + safe-char normalisation
+     wired into the editor's drag-drop image handler.
+   - Meeting prompt: 7 explicit anti-echo rules + "I have nothing
+     new to add — passing." exit clause. Also fixed a pre-existing
+     bug where `summarizeMeeting` read deleted legacy keychain
+     slugs — now goes through `loadKeys()`.
+
+**Validation (2026-04-26 late evening)**
+- `npx tsc --noEmit` — clean
+- `npx eslint` (v3.0 scope) — 0 errors, 10 warnings (the documented
+  localStorage hydrate-on-mount pattern; +1 new from format-warning)
+- `cargo check` — clean (only pre-existing AccessDenied dead_code)
+- `cargo clippy` — 3 pre-existing warnings, no new ones
+
+---
+
+## Strict deferrals from final-polish-prompt-v3-additions.md
+
+### Group 3.1 — i18n beta labels per language
+Needs the next-intl locale routing which is itself deferred (Group B
+in the previous final-polish pass). When that ships, the
+LanguageSelector can use FeatureStatusBadge with `status="beta"` per
+language; the badge component is ready.
+
+### Group 3.2 — Mac waitlist + 50 % launch discount
+Needs a Supabase `mac_waitlist` table + `/api/waitlist/mac` endpoint
++ a marketing-route `/(marketing)/download` rewrite. The download
+page already exists at `src/app/(marketing)/download/page.tsx` but
+the waitlist signup + counter would need backend wiring.
+
+### Group 4.4 — Agent soft-delete with reference safety
+Needs:
+- A Tauri `soft_delete_agent` command that moves
+  `<workspace>/agents/{name}` to `<workspace>/.bb/deleted-agents/`.
+- A "ghost mention" component for DM / Board / Meetings that renders
+  `@deleted-name` in muted style instead of a broken link.
+- A "restore agent" UI in /settings/data.
+
+The Modal + useConfirm primitives are in place; the move/restore
+flow is its own commit.
+
+### Group 4.5 — Trash size cap (1 GB) with OS-trash fallback
+Needs the `trash` crate added to Cargo.toml + a cleanup function
+that runs before `move_to_trash`. The existing `commands/trash.rs`
+does simple file rename without a size budget. Low priority — users
+won't notice until trash is huge.
+
+---
+
 ## What the final-polish pass shipped (2026-04-26, evening)
 
 Eight commits on `main` (2bdd417 → 538ff47).

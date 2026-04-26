@@ -10,6 +10,7 @@ import {
   Info,
   Globe,
   MessageCircle,
+  Cloud,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -22,6 +23,7 @@ const NAV: Array<{
   { href: "/desktop/settings", label: "General", icon: SettingsIcon },
   { href: "/desktop/settings/ai-providers", label: "AI Providers", icon: Sparkles },
   { href: "/desktop/settings/integrations", label: "Integrations", icon: Plug },
+  { href: "/desktop/settings/cloud-sync", label: "Cloud Sync", icon: Cloud },
   { href: "/desktop/settings/translations", label: "Translations", icon: Globe },
   { href: "/desktop/settings/data", label: "Data & Privacy", icon: Lock },
   {

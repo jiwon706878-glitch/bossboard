@@ -6,7 +6,7 @@ import { Avatar } from "@/components/desktop/avatar";
 import { listAgents, type Agent } from "@/lib/agents/service";
 import { executeDMTurn } from "@/lib/agents/execute";
 import { writeFile, readFile, fileExists } from "@/lib/tauri/fs";
-import { ApiKeys } from "@/lib/tauri/keychain";
+import { loadKeys } from "@/lib/ai/keys";
 
 interface Message {
   role: "user" | "agent";
@@ -130,14 +130,16 @@ export function DMPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       return;
     }
 
-    const googleKey = await ApiKeys.google();
-    const anthropicKey = await ApiKeys.anthropic();
-    const provider: "google" | "anthropic" = googleKey ? "google" : "anthropic";
-    const apiKey = googleKey || anthropicKey || "";
-    if (!apiKey) {
-      setError("API key required to compress. Add one in Settings.");
+    const allKeys = await loadKeys();
+    const googleKey = allKeys.find((k) => k.provider === "google");
+    const anthropicKey = allKeys.find((k) => k.provider === "anthropic");
+    const picked = googleKey || anthropicKey;
+    if (!picked) {
+      setError("API key required to compress. Add a Google or Anthropic key in Settings.");
       return;
     }
+    const provider: "google" | "anthropic" = picked.provider as "google" | "anthropic";
+    const apiKey = picked.key;
 
     setCompressing(true);
     setError(null);

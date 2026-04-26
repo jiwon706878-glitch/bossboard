@@ -12,6 +12,7 @@ import { DMPanel } from "@/components/desktop/dm-panel";
 import { ShortcutsModal } from "@/components/desktop/shortcuts-modal";
 import { AboutModal } from "@/components/desktop/about-modal";
 import { ErrorBoundary } from "@/components/desktop/error-boundary";
+import { migrateOldKeys } from "@/lib/ai/keys";
 
 export default function DesktopLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -21,6 +22,12 @@ export default function DesktopLayout({ children }: { children: React.ReactNode 
   const [dmOpen, setDmOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+
+  useEffect(() => {
+    migrateOldKeys().catch(() => {
+      /* migration is best-effort; users can re-add keys in Settings */
+    });
+  }, []);
 
   useEffect(() => {
     const onDM = () => setDmOpen((v) => !v);

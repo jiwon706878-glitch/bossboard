@@ -2,21 +2,24 @@ import { streamText, generateText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
+import { createXai } from "@ai-sdk/xai";
 import { readFile } from "@/lib/tauri/fs";
 import { parseMarkdown } from "@/lib/markdown/frontmatter";
-import { ApiKeys } from "@/lib/tauri/keychain";
+import { resolveKey, markKeyUsed, type AIProvider } from "@/lib/ai/keys";
 import { detectLoopHash, recordInteraction } from "./loop-guard";
 import { callWithTimeout, wrapAIError } from "./errors";
 
 interface AgentManualFrontmatter {
-  ai_provider?: "google" | "anthropic" | "openai" | "grok" | "local";
+  ai_provider?: AIProvider;
   model?: string;
+  ai_key_id?: string;
 }
 
-const DEFAULTS = {
+const DEFAULTS: Partial<Record<AIProvider, string>> = {
   google: "gemini-2.5-flash",
   anthropic: "claude-haiku-4-5-20251001",
   openai: "gpt-4o",
+  xai: "grok-4-fast",
 };
 
 const CONTEXT_LIMITS: Record<string, number> = {
@@ -27,6 +30,8 @@ const CONTEXT_LIMITS: Record<string, number> = {
   "claude-opus-4-7": 200_000,
   "claude-haiku-4-5-20251001": 200_000,
   "gpt-4o": 128_000,
+  "grok-4-fast": 128_000,
+  "grok-4": 128_000,
 };
 
 const TIMEOUT_MS_DEFAULT = 60_000;
@@ -36,30 +41,44 @@ function estimateTokens(text: string): number {
   return Math.ceil(text.length / 3.5);
 }
 
-async function pickModel(provider: string, modelName?: string) {
+async function pickModel(
+  provider: AIProvider,
+  modelName: string | undefined,
+  keyId: string | undefined,
+) {
   const wanted = modelName?.trim() || "";
+  const fallback = DEFAULTS[provider] || "";
+
   if (provider === "google") {
-    const apiKey = await ApiKeys.google();
-    if (!apiKey) throw new Error("No Google API key. Add one in Settings.");
-    const google = createGoogleGenerativeAI({ apiKey });
-    return google(wanted || DEFAULTS.google);
+    const entry = await resolveKey("google", keyId);
+    const google = createGoogleGenerativeAI({ apiKey: entry.key });
+    void markKeyUsed(entry.id);
+    return google(wanted || fallback);
   }
   if (provider === "anthropic") {
-    const apiKey = await ApiKeys.anthropic();
-    if (!apiKey) throw new Error("No Anthropic API key. Add one in Settings.");
+    const entry = await resolveKey("anthropic", keyId);
     const anthropic = createAnthropic({
-      apiKey,
+      apiKey: entry.key,
       headers: { "anthropic-dangerous-direct-browser-access": "true" },
     });
-    return anthropic(wanted || DEFAULTS.anthropic);
+    void markKeyUsed(entry.id);
+    return anthropic(wanted || fallback);
   }
   if (provider === "openai") {
-    const apiKey = await ApiKeys.openai();
-    if (!apiKey) throw new Error("No OpenAI API key. Add one in Settings.");
-    const openai = createOpenAI({ apiKey });
-    return openai(wanted || DEFAULTS.openai);
+    const entry = await resolveKey("openai", keyId);
+    const openai = createOpenAI({ apiKey: entry.key });
+    void markKeyUsed(entry.id);
+    return openai(wanted || fallback);
   }
-  throw new Error(`Provider "${provider}" not supported yet. Use google, anthropic, or openai.`);
+  if (provider === "xai") {
+    const entry = await resolveKey("xai", keyId);
+    const xai = createXai({ apiKey: entry.key });
+    void markKeyUsed(entry.id);
+    return xai(wanted || fallback);
+  }
+  throw new Error(
+    `Provider "${provider}" not supported yet. Use google, anthropic, openai, or xai.`,
+  );
 }
 
 export async function executeDMTurn(
@@ -87,7 +106,8 @@ export async function executeDMTurn(
 
   const system = `${manualContent}\n\n## Memory (past conversations summary)\n${memoryRaw}`;
 
-  const limit = CONTEXT_LIMITS[modelName || DEFAULTS[provider as keyof typeof DEFAULTS] || ""] || 100_000;
+  const limit =
+    CONTEXT_LIMITS[modelName || DEFAULTS[provider] || ""] || 100_000;
   const totalTokens = estimateTokens(system) + estimateTokens(userMessage);
   if (totalTokens > limit * 0.85) {
     throw new Error(
@@ -97,7 +117,7 @@ export async function executeDMTurn(
     );
   }
 
-  const model = await pickModel(provider, modelName);
+  const model = await pickModel(provider, modelName, fm.ai_key_id);
   const timeoutMs = provider === "local" ? TIMEOUT_MS_LOCAL : TIMEOUT_MS_DEFAULT;
 
   try {

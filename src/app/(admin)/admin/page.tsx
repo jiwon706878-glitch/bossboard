@@ -1,175 +1,428 @@
-import Link from "next/link";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, DollarSign, Building2, MessageSquare, Tag } from "lucide-react";
-import { plans } from "@/config/plans";
-import { AdminPageTitle } from "@/components/admin/admin-page-title";
-import { getActivePromotion } from "@/lib/promotions";
+"use client";
 
-export default async function AdminOverviewPage() {
-  const supabase = createAdminClient();
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Users,
+  Activity,
+  AlertCircle,
+  Globe,
+  Cpu,
+  RefreshCw,
+  Send,
+  TrendingUp,
+  MessageSquare,
+  Download,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { isAdmin } from "@/lib/auth/admin-check";
 
-  const [profilesRes, businessesRes, subsRes, feedbackRes, unreadFeedbackRes, activePromo] = await Promise.all([
-    supabase.from("profiles").select("id, plan_id, created_at", { count: "exact" }),
-    supabase.from("businesses").select("id", { count: "exact", head: true }),
-    supabase.from("subscriptions").select("plan_id, status").eq("status", "active"),
-    supabase.from("feedback").select("id", { count: "exact", head: true }),
-    supabase.from("feedback").select("id", { count: "exact", head: true }).eq("read", false),
-    getActivePromotion(),
-  ]);
+interface AdminStats {
+  total_users: number;
+  active_today: number;
+  active_this_week: number;
+  by_os: Record<string, number>;
+  active_by_os: Record<string, number>;
+  by_plan: Record<string, number>;
+  by_locale: Record<string, number>;
+  mac_waitlist_count: number;
+  first_hundred_count: number;
+  feedback_pending: number;
+  feedback_critical: number;
+  errors_24h: number;
+  panics_24h: number;
+}
 
-  const totalUsers = profilesRes.count ?? 0;
-  const totalBusinesses = businessesRes.count ?? 0;
-  const totalFeedback = feedbackRes.count ?? 0;
-  const unreadFeedback = unreadFeedbackRes.count ?? 0;
+interface AdminMetrics {
+  total_users?: number;
+  paying_users?: number;
+  conversion_rate_pct?: number;
+  d7_retention_pct?: number;
+  d7_eligible?: number;
+  d7_active?: number;
+  d30_retention_pct?: number;
+  d30_eligible?: number;
+  d30_active?: number;
+  mrr_estimate_usd?: number;
+  error?: string;
+}
 
-  // MRR calculation
-  const activeSubs = subsRes.data ?? [];
-  const mrr = activeSubs.reduce((sum, sub) => {
-    const plan = plans[sub.plan_id as keyof typeof plans];
-    return sum + (plan?.monthlyPrice ?? 0);
-  }, 0);
+const BETA_PRICE: Record<string, number> = {
+  starter: 13.86,
+  pro: 34.65,
+  business: 90.93,
+};
 
-  // Plan distribution
-  const planCounts: Record<string, number> = {};
-  for (const p of profilesRes.data ?? []) {
-    planCounts[p.plan_id] = (planCounts[p.plan_id] || 0) + 1;
+export default function LaunchAdminPage() {
+  const router = useRouter();
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [sendingTelegram, setSendingTelegram] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (cancelled) return;
+      if (!user || !isAdmin(user.email)) {
+        router.replace("/desktop");
+        return;
+      }
+      setAuthChecked(true);
+      loadStats();
+    })();
+    const interval = setInterval(loadStats, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function loadStats() {
+    setRefreshing(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const [statsRes, metricsRes] = await Promise.all([
+        supabase.rpc("admin_get_stats"),
+        supabase.rpc("admin_get_metrics"),
+      ]);
+      if (statsRes.error) {
+        if (statsRes.error.code === "42883") {
+          setError("admin_get_stats RPC isn't deployed yet. Run supabase migration 20260427400000_v4_admin_stats.sql.");
+          return;
+        }
+        setError(statsRes.error.message);
+        return;
+      }
+      if (statsRes.data?.error === "forbidden") {
+        setError("Forbidden — your email isn't on the admin allow-list.");
+        return;
+      }
+      setStats(statsRes.data as AdminStats);
+      // Metrics is optional — missing migration shouldn't blank the
+      // whole dashboard. Just skip the card.
+      if (metricsRes.data && !metricsRes.data?.error) {
+        setMetrics(metricsRes.data as AdminMetrics);
+      } else {
+        setMetrics(null);
+      }
+    } finally {
+      setRefreshing(false);
+    }
   }
 
-  // Signups last 7 days
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const recentSignups = (profilesRes.data ?? []).filter(
-    (p) => p.created_at >= weekAgo
-  ).length;
+  async function sendTelegram() {
+    setSendingTelegram(true);
+    try {
+      const res = await fetch("/api/admin/telegram-summary", { method: "POST" });
+      if (res.ok) {
+        alert("Telegram summary sent.");
+      } else {
+        const body = await res.json().catch(() => ({}));
+        alert(`Failed: ${body.error ?? res.status}`);
+      }
+    } finally {
+      setSendingTelegram(false);
+    }
+  }
 
-  // Day 5: dropped "Total AI Calls" stat — credits no longer tracked.
-  const stats = [
-    { title: "Total Users", value: totalUsers, sub: `${recentSignups} this week`, icon: Users, color: "text-blue-500" },
-    { title: "MRR", value: `$${mrr}`, sub: `${activeSubs.length} active subscriptions`, icon: DollarSign, color: "text-green-500" },
-    { title: "Businesses", value: totalBusinesses, sub: "Registered", icon: Building2, color: "text-amber-500" },
-    { title: "Feedback", value: totalFeedback, sub: `${unreadFeedback} unread`, icon: MessageSquare, color: "text-pink-500" },
-  ];
+  if (!authChecked) {
+    return (
+      <div className="p-6 text-sm text-muted-foreground">Checking admin access…</div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="p-6 max-w-2xl">
+        <div className="rounded-md border border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30 p-4 text-red-700 dark:text-red-300 text-sm">
+          {error}
+        </div>
+      </div>
+    );
+  }
+  if (!stats) {
+    return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+  }
+
+  const mrr =
+    (stats.by_plan.starter ?? 0) * BETA_PRICE.starter +
+    (stats.by_plan.pro ?? 0) * BETA_PRICE.pro +
+    (stats.by_plan.business ?? 0) * BETA_PRICE.business;
 
   return (
-    <div className="space-y-6">
-      <AdminPageTitle titleKey="overview" />
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {stats.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.title}
-              </CardTitle>
-              <stat.icon className={`h-5 w-5 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground mt-1">{stat.sub}</p>
-            </CardContent>
-          </Card>
-        ))}
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">BB Launch Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Real-time stats from Supabase admin_get_stats RPC. Auto-refreshes every 60s.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <a
+            href="/api/admin/export-feedback"
+            download
+            className="px-3 py-2 rounded-lg border hover:bg-muted text-sm inline-flex items-center gap-2"
+          >
+            <Download className="size-4" />
+            Export feedback CSV
+          </a>
+          <button
+            onClick={sendTelegram}
+            disabled={sendingTelegram}
+            className="px-3 py-2 rounded-lg border hover:bg-muted text-sm inline-flex items-center gap-2 disabled:opacity-50"
+          >
+            <Send className="size-4" />
+            {sendingTelegram ? "Sending…" : "Send to Telegram"}
+          </button>
+          <button
+            onClick={loadStats}
+            className="p-2 hover:bg-muted rounded-lg"
+            aria-label="Refresh"
+          >
+            <RefreshCw className={`size-5 ${refreshing ? "animate-spin" : ""}`} />
+          </button>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Tag className="h-4 w-4" /> Active Promotion
-            </span>
-            <Link
-              href="/admin/promotions"
-              className="text-xs font-normal text-muted-foreground hover:text-foreground underline"
-            >
-              Manage →
-            </Link>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {activePromo ? (
-            <>
-              <div className="flex items-baseline justify-between">
-                <span className="text-lg font-semibold">{activePromo.name}</span>
-                <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                  {activePromo.discount_type === "percent"
-                    ? `${activePromo.discount_value}% off`
-                    : `$${activePromo.discount_value} off`}
-                </span>
-              </div>
-              {activePromo.max_uses !== null && (
-                <>
-                  <div className="mt-2 flex items-baseline justify-between text-sm">
-                    <span className="font-mono">
-                      {activePromo.current_uses}
-                      <span className="text-muted-foreground">
-                        {" "}/ {activePromo.max_uses}
-                      </span>
-                    </span>
-                    <span className="text-muted-foreground">
-                      {Math.max(
-                        0,
-                        activePromo.max_uses - activePromo.current_uses
-                      )}{" "}
-                      remaining
-                    </span>
-                  </div>
-                  <div className="mt-2 h-2 rounded-full bg-muted">
-                    <div
-                      className="h-2 rounded-full bg-primary transition-all"
-                      style={{
-                        width: `${Math.min(100, (activePromo.current_uses / activePromo.max_uses) * 100)}%`,
-                      }}
-                    />
-                  </div>
-                </>
-              )}
-              {activePromo.max_uses === null && (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Unlimited uses · {activePromo.current_uses} redeemed
-                </p>
-              )}
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              No active promotion.{" "}
-              <Link
-                href="/admin/promotions"
-                className="text-primary underline"
-              >
-                Create one →
-              </Link>
-            </p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <KPI label="Total users" value={stats.total_users} icon={Users} />
+        <KPI label="Active today" value={stats.active_today} icon={Activity} />
+        <KPI
+          label="First-100 used"
+          value={`${stats.first_hundred_count}/100`}
+          icon={TrendingUp}
+        />
+        <KPI
+          label="Critical issues"
+          value={stats.feedback_critical}
+          icon={AlertCircle}
+          alert={stats.feedback_critical > 0}
+        />
+      </div>
+
+      {metrics ? (
+        <Card title="Conversion · Retention · MRR" icon={TrendingUp}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Stat
+              label="Conversion (Free → Paid)"
+              value={`${(metrics.conversion_rate_pct ?? 0).toFixed(1)}%`}
+            />
+            <Stat
+              label={`D7 retention (${metrics.d7_active ?? 0}/${metrics.d7_eligible ?? 0})`}
+              value={`${(metrics.d7_retention_pct ?? 0).toFixed(1)}%`}
+            />
+            <Stat
+              label={`D30 retention (${metrics.d30_active ?? 0}/${metrics.d30_eligible ?? 0})`}
+              value={`${(metrics.d30_retention_pct ?? 0).toFixed(1)}%`}
+            />
+            <Stat
+              label="MRR (beta-discounted)"
+              value={`$${(metrics.mrr_estimate_usd ?? 0).toFixed(0)}/mo`}
+            />
+          </div>
+        </Card>
+      ) : (
+        <Card title="Conversion · Retention · MRR" icon={TrendingUp}>
+          <p className="text-sm text-muted-foreground">
+            Run supabase migration <code>20260428100000_v6_admin_metrics.sql</code>{" "}
+            to enable this card.
+          </p>
+        </Card>
+      )}
+
+      <Card title="Users by OS" icon={Cpu}>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {(["windows", "mac", "linux", "unknown"] as const).map((os) => (
+            <OSCard
+              key={os}
+              os={os}
+              total={stats.by_os[os] ?? 0}
+              active={stats.active_by_os[os] ?? 0}
+              note={
+                os === "mac" && (stats.by_os.mac ?? 0) === 0
+                  ? `${stats.mac_waitlist_count} on waitlist`
+                  : undefined
+              }
+            />
+          ))}
+        </div>
+
+        <div className="mt-4 space-y-2 text-sm">
+          {(stats.by_os.mac ?? 0) === 0 && stats.mac_waitlist_count > 5 && (
+            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+              <AlertCircle className="size-4" />
+              {stats.mac_waitlist_count} Mac waitlist signups — prioritize Mac
+              build after revenue covers Apple Developer.
+            </div>
           )}
-        </CardContent>
+          {(stats.by_os.linux ?? 0) > 5 && (
+            <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+              <AlertCircle className="size-4" />
+              {stats.by_os.linux} Linux users — consider AppImage build.
+            </div>
+          )}
+        </div>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Users by Plan</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {Object.entries(planCounts).map(([planId, count]) => {
-              const plan = plans[planId as keyof typeof plans];
-              const pct = totalUsers > 0 ? Math.round((count / totalUsers) * 100) : 0;
-              return (
-                <div key={planId} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{plan?.name ?? planId}</span>
-                    <span className="text-muted-foreground">{count} ({pct}%)</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-muted">
-                    <div
-                      className="h-2 rounded-full bg-primary transition-all"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
+      <Card title="Users by plan" icon={TrendingUp}>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {(["free", "starter", "pro", "business"] as const).map((p) => (
+            <div key={p} className="rounded-lg border p-4">
+              <div className="text-sm text-muted-foreground capitalize">{p}</div>
+              <div className="text-2xl font-bold mt-1">{stats.by_plan[p] ?? 0}</div>
+              {p !== "free" && BETA_PRICE[p] && (
+                <div className="text-xs text-amber-600 mt-1">
+                  ~${((stats.by_plan[p] ?? 0) * BETA_PRICE[p]).toFixed(0)}/mo
                 </div>
-              );
-            })}
-          </div>
-        </CardContent>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 pt-4 border-t flex justify-between text-sm">
+          <span>Estimated MRR (with beta discount):</span>
+          <span className="font-bold">${mrr.toFixed(0)}/mo</span>
+        </div>
       </Card>
+
+      <Card title="Users by locale" icon={Globe}>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {Object.entries(stats.by_locale ?? {})
+            .sort((a, b) => (b[1] as number) - (a[1] as number))
+            .slice(0, 8)
+            .map(([locale, count]) => (
+              <div key={locale} className="rounded-lg border p-3 text-sm">
+                <div className="font-mono">{locale}</div>
+                <div className="text-2xl font-bold">{count as number}</div>
+              </div>
+            ))}
+        </div>
+      </Card>
+
+      <Card title="Feedback queue" icon={MessageSquare}>
+        <div className="grid grid-cols-2 gap-4">
+          <Stat label="Pending" value={stats.feedback_pending} />
+          <Stat
+            label="Critical"
+            value={stats.feedback_critical}
+            alert={stats.feedback_critical > 0}
+          />
+        </div>
+      </Card>
+
+      <Card title="Errors (24h)" icon={AlertCircle}>
+        <div className="grid grid-cols-2 gap-4">
+          <Stat label="JS errors" value={stats.errors_24h} />
+          <Stat
+            label="Rust panics"
+            value={stats.panics_24h}
+            alert={stats.panics_24h > 0}
+          />
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function KPI({
+  label,
+  value,
+  icon: Icon,
+  alert,
+}: {
+  label: string;
+  value: string | number;
+  icon: LucideIcon;
+  alert?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-lg border p-4 ${
+        alert ? "border-red-500 bg-red-50 dark:bg-red-950/20" : ""
+      }`}
+    >
+      <div className="flex items-center gap-2 mb-1 text-sm text-muted-foreground">
+        <Icon className="size-4" />
+        {label}
+      </div>
+      <div className="text-2xl font-bold">{value}</div>
+    </div>
+  );
+}
+
+function Card({
+  title,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  icon?: LucideIcon;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border p-6">
+      <div className="flex items-center gap-2 mb-4">
+        {Icon && <Icon className="size-5 text-muted-foreground" />}
+        <h2 className="font-semibold">{title}</h2>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function OSCard({
+  os,
+  total,
+  active,
+  note,
+}: {
+  os: string;
+  total: number;
+  active: number;
+  note?: string;
+}) {
+  return (
+    <div className="rounded-lg border p-4">
+      <div className="text-sm text-muted-foreground capitalize">{os}</div>
+      <div className="text-2xl font-bold mt-1">{total}</div>
+      <div className="text-xs text-muted-foreground mt-0.5">
+        {active} active 24h
+      </div>
+      {note && (
+        <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+          {note}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  alert,
+}: {
+  label: string;
+  value: number | string;
+  alert?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-lg border p-4 ${
+        alert ? "border-red-500 bg-red-50 dark:bg-red-950/20" : ""
+      }`}
+    >
+      <div className="text-sm text-muted-foreground">{label}</div>
+      <div className="text-2xl font-bold mt-1">{value}</div>
     </div>
   );
 }

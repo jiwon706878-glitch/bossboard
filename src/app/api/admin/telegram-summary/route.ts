@@ -115,5 +115,5 @@ function formatSummary(s: AdminStats): string {
   • Errors (24h): ${s.errors_24h ?? 0}
   • Panics (24h): ${s.panics_24h ?? 0}
 
-[Open Launch Dashboard](https://mybossboard.com/admin/launch)`.trim();
+[Open Admin Dashboard](https://mybossboard.com/admin)`.trim();
 }

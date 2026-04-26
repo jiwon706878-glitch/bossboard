@@ -42,10 +42,13 @@ export function setBetaFeatureEnabled(id: BetaFeatureId, enabled: boolean): void
 }
 
 export function useBetaFeature(id: BetaFeatureId): [boolean, (v: boolean) => void] {
-  const [enabled, setEnabled] = useState(false);
+  // Lazy initializer reads directly from localStorage on first render so we
+  // don't need a setState inside useEffect. SSR-safe — read() short-circuits
+  // when window/localStorage is undefined.
+  const [enabled, setEnabled] = useState<boolean>(() => isBetaFeatureEnabled(id));
 
   useEffect(() => {
-    setEnabled(isBetaFeatureEnabled(id));
+    if (typeof window === "undefined") return;
     const handler = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY) setEnabled(isBetaFeatureEnabled(id));
     };

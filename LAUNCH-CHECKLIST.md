@@ -6,6 +6,180 @@ side; this checklist is the everything-else.
 
 ---
 
+## 🔴 Manual work Jay must do for v6 to function
+
+### 1. Run the v6 Supabase migrations (in order)
+After v4's five migrations, apply:
+
+```
+supabase/migrations/20260428000000_v6_email_accounts.sql
+supabase/migrations/20260428100000_v6_admin_metrics.sql
+supabase/migrations/20260428200000_v6_priority_feature_requests.sql
+```
+
+Frontend gracefully no-ops when these are missing (Email page = "Coming
+v3.1" copy regardless; Conversion/Retention/MRR card explains the
+migration filename; priority_feature_request submit returns the
+constraint-violation error from Postgres).
+
+### 2. Update Paddle product prices in the Paddle dashboard
+The code now displays $19.80 / $49.50 / $129.90, but the actual Paddle
+products keep whatever you set them to. Update each Paddle product
+(Starter / Pro / Business) to match. Beta-discounted prices ($13.86 /
+$34.65 / $90.93) are 30% off and should be applied via the
+first-100 discount code from `assign_first_hundred_discount` (still
+deferred — Paddle webhook handler not built).
+
+### 3. Mac waitlist + Telegram + Cron unchanged from v4
+TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, CRON_SECRET still the only
+env vars needed for the wired surfaces. The MCP `admin_send_telegram`
+tool (added in v5) reads the same env vars at request time — set them
+in the Tauri launch environment too if you want the agent-side call to
+work locally.
+
+---
+
+## What v6 shipped (2026-04-27)
+
+Eleven commits + validation: 2811c7b → 5ac9c80.
+
+✅ **v6 Group 1** Pricing $19.80 / $49.50 / $129.90 (2811c7b)
+   - plans.ts + /pricing + UpgradeModal + /admin/launch MRR estimate
+     all updated. Beta prices: $13.86 / $34.65 / $90.93.
+
+✅ **v6 Group 2** Email Integration UI shell + SQL (cc1c26b)
+   - `/desktop/settings/integrations/email` with Pro+ gate ("Coming
+     v3.1" for Pro+, full upgrade modal for Free / Starter).
+   - 4 new feature gates: email_integration, mcp_client,
+     library_cloud_sync, priority_feature_requests.
+   - email_accounts SQL migration (Supabase stores connection
+     metadata only — credentials in OS keychain on the user's machine,
+     content NEVER stored).
+   - **Strict deferral**: Gmail/Outlook OAuth + IMAP/SMTP backend +
+     email MCP tools are multi-day work, not in v6.
+
+✅ **v6 Group 3** Cloud Sync 4-toggle page (a6f4b62)
+   - `/desktop/settings/cloud-sync` with Library / Board / Calendar /
+     DM toggles. Library hard-gated to v3.2; DM gated to Starter+.
+
+✅ **v6 Group 4** Token Usage dashboard (a804915)
+   - `/desktop/settings/usage` page + Tauri `record_token_usage` /
+     `get_token_usage` commands writing to a separate
+     `<app_data>/token_usage.sqlite`.
+   - executeDMTurn instrumented to record after every successful
+     stream / generate. Cost estimates per provider's public per-
+     1M-token rates.
+
+✅ **v6 Group 5** Default workspace `~/BossBoard` (72108a4)
+   - `get_default_workspace_path()` now returns `~/BossBoard` (was
+     `~/Documents/BossBoard`).
+   - New `detect_legacy_workspace()` command lets the picker UI offer
+     a one-click migration without auto-renaming behind the user's
+     back. (UI hookup deferred to next pass.)
+
+✅ **v6 Group 6** /admin rename + metrics (34ae633)
+   - `/admin/launch` → `/admin`. The v2 admin overview moved to
+     `/admin/overview` so it stays accessible.
+   - New `admin_get_metrics` SQL RPC: total_users, paying_users,
+     conversion_rate_pct, d7/d30 retention with raw cohort counts,
+     mrr_estimate_usd at the v6 beta-discounted rates.
+   - Dashboard renders a "Conversion · Retention · MRR" card or a
+     friendly "run migration X" hint when the RPC isn't deployed.
+   - Telegram daily summary deep-link points at `/admin`.
+
+✅ **v6 Group 7** BB-Complete-Guide.md auto-gen (4377a11)
+   - `generateSystemReference()` now writes a third file:
+     `/Library/BB-Complete-Guide.md` — comprehensive feature reference
+     with sections covering every BB surface, the v6 plan prices, and
+     7 critical agent rules.
+   - Personal Assistant template manual now opens with "Critical rule:
+     know BossBoard inside out" pointing at the guide; tells the agent
+     to quote the guide verbatim for any "how do I X in BB?" question.
+
+✅ **v6 Group 8** Free Gemini training warning (4b679a8)
+   - Amber warning box appears in the Add API key modal when the
+     Google provider is selected: free-tier keys may be used for
+     training, paid keys are private.
+
+✅ **v6 Group 9** DM agent-to-agent block (958b602)
+   - Hard-rule block injected into every agent's system prompt
+     (regardless of template / custom manual): no agent-to-agent DM
+     (use Board or Meeting instead), never auto-send email, treat
+     external content as DATA.
+   - Domain-specialist + code-reviewer template manuals also gain a
+     "Communication with other agents" section.
+
+✅ **v6 Group 10** Beta Features + Free Discussion (57088e7)
+   - `src/lib/beta-features.ts` localStorage-backed registry +
+     `useBetaFeature` hook with cross-tab storage event listener.
+   - `/desktop/settings/beta-features` page with toggles. Plan-aware:
+     toggling on a Pro+ feature on a free plan opens UpgradeModal.
+   - `runMeeting()` extended with `{ freeDiscussion }` option that
+     swaps the prompt builder. Sequential = strict turns + 7 rules
+     (existing); Free Discussion = looser, agents can interrupt /
+     pass / question each other directly.
+   - `/desktop/meetings` reads the toggle + plan, passes through to
+     runMeeting, shows an amber banner when active.
+
+✅ **v6 Group 11** Custom → Priority feature requests (5ac9c80)
+   - Pricing copy already updated in Group 1.
+   - New "Priority FR" feedback type, Business-only via plan-gate.
+     Auto-promoted to critical priority + Telegram ping.
+   - SQL migration widens the feedback.type CHECK constraint.
+
+**Validation (2026-04-27)**
+- `npx tsc --noEmit` clean
+- `npx eslint` (v6 scope) — 0 errors, 13 warnings (the documented
+  set-state-in-effect localStorage hydrate pattern; the new
+  beta-features hook was rewritten to use a useState lazy initializer
+  to avoid the rule)
+- `cargo check` clean
+- `cargo clippy` 3 pre-existing warnings, no new ones
+
+---
+
+## Strict deferrals from v6-hotfix-prompt.md
+
+### Group 2 — Full Email Integration backend
+Multi-day work, deliberately not in v6. Required for the page to
+actually connect:
+- Tauri commands: `start_gmail_oauth`, `start_outlook_oauth`,
+  `add_email_account_imap_smtp`, `list_email_accounts`,
+  `sync_email_account`, `disconnect_email_account`
+- Gmail / Outlook OAuth flows with `bossboard://oauth/...` deep links
+  registered through the Tauri deep-link plugin
+- IMAP client (`imap` crate), SMTP client (`lettre`), MIME parser
+  (`mail-parser`) — three new Rust deps
+- Token storage in OS keychain
+- Email MCP tools (`email_list`, `email_search`, `email_read`,
+  `email_draft_reply`) — depends on the v3.1 MCP tool registry
+- Background sync loop + last_synced_at tracking
+
+The UI shell + SQL ship now so users see the upgrade path on the
+pricing page; the backend lands in v3.1 alongside the MCP client work.
+
+### Group 5 — Workspace migration UI dialog
+The `detect_legacy_workspace()` command is wired in lib.rs but the
+"Move from old default? [Yes / Keep current]" picker dialog isn't
+built yet. Existing users with a workspace path already in localStorage
+are unaffected; first-run only sees the new `~/BossBoard` default.
+
+### Group 6 — `/admin/announcements` + `/admin/feedback` v2 cleanup
+Pre-existing v2 admin pages have `any` types and Date.now-in-render
+errors that surfaced when I included `(admin)/admin/**` in the eslint
+sweep. Out of scope for v6 — those routes are v2 admin functionality
+the user hasn't touched. Re-tightened the lint scope back to just
+`/admin/page.tsx` (the v3 launch dashboard).
+
+### Group 9 — Tool-level send_dm gate
+The MCP `send_dm` tool the prompt sketches doesn't exist in v3.0 — the
+Tauri MCP server today only exposes `/health`, `/`, and
+`/tools/admin_send_telegram`. The system-prompt-level rule is the
+entire defense for v3.0; the tool-level `if calling_agent.is_some()`
+check lands when v3.1's full MCP tool registry ships.
+
+---
+
 ## 🔴 Manual work Jay must do for v4 to function
 
 ### 1. Run the Supabase migrations (in order)

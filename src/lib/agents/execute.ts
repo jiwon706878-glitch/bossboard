@@ -6,6 +6,7 @@ import { createXai } from "@ai-sdk/xai";
 import { readFile } from "@/lib/tauri/fs";
 import { parseMarkdown } from "@/lib/markdown/frontmatter";
 import { resolveKey, markKeyUsed, type AIProvider } from "@/lib/ai/keys";
+import { assertNoKeysInPrompt, sanitizeAgentResponse } from "@/lib/ai/key-leak-guard";
 import { detectLoopHash, recordInteraction } from "./loop-guard";
 import { callWithTimeout, wrapAIError } from "./errors";
 
@@ -128,6 +129,11 @@ export async function executeDMTurn(
     );
   }
 
+  // Defense-in-depth: refuse to ship a prompt that contains an API key.
+  // Catches accidental injection of a key into manual.md, memory.md, or
+  // (heaven forbid) BB-System-Reference.md.
+  assertNoKeysInPrompt(`${system}\n${userMessage}`);
+
   const model = await pickModel(provider, modelName, fm.ai_key_id);
   const timeoutMs = provider === "local" ? TIMEOUT_MS_LOCAL : TIMEOUT_MS_DEFAULT;
 
@@ -139,13 +145,14 @@ export async function executeDMTurn(
         async () => {
           for await (const chunk of stream.textStream) {
             full += chunk;
-            onChunk(chunk);
+            const safe = sanitizeAgentResponse(chunk);
+            onChunk(safe);
           }
         },
         timeoutMs,
         `${provider} timed out after ${Math.round(timeoutMs / 1000)}s.`,
       );
-      return full;
+      return sanitizeAgentResponse(full);
     }
 
     const { text } = await callWithTimeout(
@@ -153,7 +160,7 @@ export async function executeDMTurn(
       timeoutMs,
       `${provider} timed out after ${Math.round(timeoutMs / 1000)}s.`,
     );
-    return text;
+    return sanitizeAgentResponse(text);
   } catch (e: unknown) {
     throw wrapAIError(provider, e);
   }

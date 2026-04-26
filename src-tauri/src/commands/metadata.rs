@@ -58,7 +58,8 @@ fn open_db(app: &tauri::AppHandle, workspace_root: &str) -> Result<Connection, F
     let path = db_path(app)?;
     let conn = Connection::open(&path).map_err(|e| FsError::InvalidPath(e.to_string()))?;
     apply_pragmas(&conn);
-    ensure_schema(&conn).map_err(|e| FsError::InvalidPath(e.to_string()))?;
+    ensure_schema_with_path(&conn, Some(&path))
+        .map_err(|e| FsError::InvalidPath(e.to_string()))?;
     Ok(conn)
 }
 
@@ -72,12 +73,43 @@ fn apply_pragmas(conn: &Connection) {
     );
 }
 
-fn ensure_schema(conn: &Connection) -> rusqlite::Result<()> {
+/// Schema gating + backup-before-migrate. When `db_file` is supplied and the
+/// DB on disk is non-empty, a sibling `metadata.v{N}.backup.sqlite` snapshot
+/// is taken before any DDL runs. Restore is one filesystem copy away.
+fn ensure_schema_with_path(
+    conn: &Connection,
+    db_file: Option<&PathBuf>,
+) -> rusqlite::Result<()> {
     let current: i32 = conn
         .query_row("PRAGMA user_version", [], |row| row.get(0))
         .unwrap_or(0);
     if current >= SCHEMA_VERSION {
         return Ok(());
+    }
+
+    if let Some(path) = db_file {
+        if path.exists() {
+            if let Ok(meta) = std::fs::metadata(path) {
+                if meta.len() > 0 && current > 0 {
+                    let backup =
+                        path.with_file_name(format!("metadata.v{current}.backup.sqlite"));
+                    if !backup.exists() {
+                        match std::fs::copy(path, &backup) {
+                            Ok(_) => tracing::info!(
+                                "Backed up metadata.sqlite v{} to {}",
+                                current,
+                                backup.display()
+                            ),
+                            Err(e) => tracing::warn!(
+                                "Failed to back up metadata.sqlite before v{}→v{} migration: {e}",
+                                current,
+                                SCHEMA_VERSION
+                            ),
+                        }
+                    }
+                }
+            }
+        }
     }
 
     let tx = conn.unchecked_transaction()?;
@@ -245,4 +277,30 @@ pub async fn metadata_delete(
     conn.execute("DELETE FROM file_search WHERE id = ?1", params![id])
         .map_err(|e| FsError::InvalidPath(e.to_string()))?;
     Ok(())
+}
+
+/// Restore the metadata DB from a `metadata.v{N}.backup.sqlite` snapshot
+/// taken before a schema migration. Closes any open connections by simply
+/// overwriting the file — the next open_db call re-runs migrations on the
+/// restored DB if its user_version is older than current.
+#[tauri::command]
+pub async fn metadata_restore_backup(
+    app: tauri::AppHandle,
+    version: i32,
+) -> Result<String, FsError> {
+    let path = db_path(&app)?;
+    let backup = path.with_file_name(format!("metadata.v{version}.backup.sqlite"));
+    if !backup.exists() {
+        return Err(FsError::InvalidPath(format!(
+            "Backup not found: {}",
+            backup.display()
+        )));
+    }
+    std::fs::copy(&backup, &path)?;
+    tracing::info!(
+        "Restored metadata.sqlite from {} → {}",
+        backup.display(),
+        path.display()
+    );
+    Ok(path.to_string_lossy().to_string())
 }

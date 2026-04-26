@@ -105,12 +105,12 @@ created: "2026-04-24T00:00:00Z"
 
 ## Current (v3.0)
 - Local-first file storage
-- BYOK AI providers
+- BYOK AI providers (Anthropic, Google, OpenAI, xAI Grok, local Ollama)
 - Multi-agent collaboration
-- GitHub + Google Drive MCP integration
-- Desktop app (Windows + macOS)
+- GitHub + Google Drive MCP integration (v3.1 OAuth)
+- Desktop app (Windows now, macOS coming soon)
 - DM-based chat with agents (Personal Assistant + specialists)
-- Translate any wiki page to 6 languages (BYOK; Gemini Flash is the cheapest)
+- Multi-key support per provider (production / personal / test accounts)
 
 ## Coming Soon
 

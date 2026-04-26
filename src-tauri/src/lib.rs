@@ -14,7 +14,9 @@ use commands::fs::{
     write_binary_file, write_file,
 };
 use commands::keychain::{keychain_delete, keychain_get, keychain_set};
-use commands::metadata::{metadata_delete, metadata_list, metadata_search, metadata_upsert};
+use commands::metadata::{
+    metadata_delete, metadata_list, metadata_restore_backup, metadata_search, metadata_upsert,
+};
 use commands::trash::{empty_trash, list_trash, move_to_trash, restore_from_trash};
 use commands::watcher::{
     start_watching_workspace, stop_watching_workspace, WatcherState,
@@ -117,6 +119,7 @@ pub fn run() {
             metadata_list,
             metadata_search,
             metadata_delete,
+            metadata_restore_backup,
             start_watching_workspace,
             stop_watching_workspace,
             keychain_set,

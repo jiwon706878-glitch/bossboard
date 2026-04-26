@@ -25,6 +25,19 @@ export interface PlanConfig {
     autoIndexing: boolean;        // Gemini auto-index on save
     aiChat: boolean;              // in-app AI chat with workspace
   };
+  /** BB v3.0 desktop-app limits — additive, does not replace `limits`. */
+  v3Limits: {
+    devices: number;              // -1 = unlimited
+    workspaces: number;           // -1 = unlimited
+    cloudSync: {
+      dms: boolean;               // sync DM messages across devices
+      board: boolean;
+      calendar: boolean;
+    };
+    aiMeeting: false | "basic" | "full";
+    smartSearch: boolean;
+    teamCollaboration: boolean;
+  };
   features: string[];
 }
 
@@ -47,10 +60,18 @@ export const plans: Record<PlanId, PlanConfig> = {
       autoIndexing: false,
       aiChat: false,
     },
+    v3Limits: {
+      devices: 1,                 // 1 device only on Free
+      workspaces: 1,
+      cloudSync: { dms: false, board: true, calendar: true }, // DMs local-only
+      aiMeeting: false,
+      smartSearch: false,
+      teamCollaboration: false,
+    },
     features: [
       "3 AI agents",
-      "5 GB storage · 50 MB per file",
-      "10 GB monthly downloads",
+      "1 device",
+      "DMs stay on this device (local only)",
       "Wiki, Board, Calendar, Todos, Meetings",
       "MCP server + REST API",
       "BYOK (use your own AI key)",
@@ -75,11 +96,20 @@ export const plans: Record<PlanId, PlanConfig> = {
       autoIndexing: true,
       aiChat: true,
     },
+    v3Limits: {
+      devices: 2,                 // PC + mobile
+      workspaces: 1,
+      cloudSync: { dms: true, board: true, calendar: true },
+      aiMeeting: "basic",
+      smartSearch: false,
+      teamCollaboration: false,
+    },
     features: [
       "10 AI agents",
-      "50 GB storage · 200 MB per file",
-      "100 GB monthly downloads",
+      "2 devices (PC + mobile)",
+      "DM cloud sync across devices",
       "Everything in Free",
+      "Basic AI Meeting Room",
       "Daily / weekly / monthly checklists",
     ],
   },
@@ -101,12 +131,21 @@ export const plans: Record<PlanId, PlanConfig> = {
       autoIndexing: true,
       aiChat: true,
     },
+    v3Limits: {
+      devices: -1,
+      workspaces: 3,
+      cloudSync: { dms: true, board: true, calendar: true },
+      aiMeeting: "full",
+      smartSearch: true,
+      teamCollaboration: false,
+    },
     features: [
       "50 AI agents",
-      "200 GB storage · 2 GB per file",
-      "500 GB monthly downloads",
+      "Unlimited devices",
+      "DM cloud sync",
+      "AI Meeting Room (full discussion mode)",
+      "Smart Search (semantic)",
       "Everything in Starter",
-      "AI Meeting Room (multi-agent discussions)",
       "Priority support (24h response)",
     ],
   },
@@ -128,16 +167,34 @@ export const plans: Record<PlanId, PlanConfig> = {
       autoIndexing: true,
       aiChat: true,
     },
+    v3Limits: {
+      devices: -1,
+      workspaces: -1,
+      cloudSync: { dms: true, board: true, calendar: true },
+      aiMeeting: "full",
+      smartSearch: true,
+      teamCollaboration: true,
+    },
     features: [
       "Unlimited AI agents",
-      "1 TB storage · 10 GB per file",
-      "2 TB monthly downloads",
+      "Unlimited devices + workspaces",
+      "Team collaboration (shared workspaces)",
       "Everything in Pro",
-      "Custom storage overages",
       "Dedicated Slack channel for support",
       "Early access to new features",
     ],
   },
+};
+
+/**
+ * Beta launch promo. First 100 paying users get 30% lifetime discount.
+ * Tracked separately in the promotions table; this constant is the source
+ * of truth for the count + percent shown in pricing UI.
+ */
+export const BETA_DISCOUNT = {
+  percent: 30,
+  lifetime: true,
+  totalSlots: 100,
 };
 
 export function getPlanById(planId: PlanId): PlanConfig {

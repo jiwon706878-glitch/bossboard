@@ -44,7 +44,7 @@ fn migrate_legacy_db(app: &tauri::AppHandle, workspace_root: &str) -> Result<(),
     if old_path.exists() {
         std::fs::copy(&old_path, &new_path)?;
         let _ = std::fs::remove_file(&old_path);
-        log::info!(
+        tracing::info!(
             "Migrated metadata.sqlite from {} to {}",
             old_path.display(),
             new_path.display()

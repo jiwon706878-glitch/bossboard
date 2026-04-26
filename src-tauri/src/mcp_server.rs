@@ -91,14 +91,14 @@ pub async fn run_mcp_server(state: McpState) {
     let port = match find_available_port(39001, 39099) {
         Some(p) => p,
         None => {
-            log::error!("MCP server: no available port in 39001..=39099");
+            tracing::error!("MCP server: no available port in 39001..=39099");
             return;
         }
     };
     if let Ok(mut g) = state.port.lock() {
         *g = port;
     }
-    log::info!("MCP server starting on 127.0.0.1:{port}");
+    tracing::info!("MCP server starting on 127.0.0.1:{port}");
 
     let protected = Router::new()
         .route("/", get(info_handler))
@@ -112,13 +112,13 @@ pub async fn run_mcp_server(state: McpState) {
     let listener = match tokio::net::TcpListener::bind(("127.0.0.1", port)).await {
         Ok(l) => l,
         Err(e) => {
-            log::error!("MCP server failed to bind on {port}: {e}");
+            tracing::error!("MCP server failed to bind on {port}: {e}");
             return;
         }
     };
 
     if let Err(e) = axum::serve(listener, app).await {
-        log::error!("MCP server crashed: {e}");
+        tracing::error!("MCP server crashed: {e}");
     }
 }
 

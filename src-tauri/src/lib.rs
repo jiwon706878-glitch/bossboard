@@ -95,13 +95,6 @@ pub fn run() {
             if let Ok(dir) = app.path().app_data_dir() {
                 setup_logging(&dir);
             }
-            if cfg!(debug_assertions) {
-                app.handle().plugin(
-                    tauri_plugin_log::Builder::default()
-                        .level(log::LevelFilter::Info)
-                        .build(),
-                )?;
-            }
             let mcp = mcp_state_clone.clone();
             tauri::async_runtime::spawn(async move {
                 mcp_server::run_mcp_server(mcp).await;

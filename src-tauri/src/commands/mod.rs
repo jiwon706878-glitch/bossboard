@@ -4,6 +4,7 @@ pub mod fs;
 pub mod keychain;
 pub mod metadata;
 pub mod path_safety;
+pub mod translations;
 pub mod trash;
 pub mod watcher;
 pub mod workspace;

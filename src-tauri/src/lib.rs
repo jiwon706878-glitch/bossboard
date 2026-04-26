@@ -10,6 +10,9 @@ use tracing_subscriber::util::SubscriberInitExt;
 
 use commands::backup::create_workspace_backup;
 use commands::device::get_device_info;
+use commands::translations::{
+    export_user_translations, load_user_translations, save_user_translation,
+};
 use commands::fs::{
     check_workspace_health, create_directory, delete_file, file_exists, list_directory, read_file,
     write_binary_file, write_file,
@@ -132,6 +135,9 @@ pub fn run() {
             restore_from_trash,
             empty_trash,
             get_device_info,
+            load_user_translations,
+            save_user_translation,
+            export_user_translations,
             get_mcp_info,
             get_logs,
         ])

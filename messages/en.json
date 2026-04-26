@@ -1,0 +1,86 @@
+{
+  "Common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading…",
+    "error": "Error",
+    "success": "Success",
+    "confirm": "Confirm",
+    "dismiss": "Dismiss",
+    "retry": "Try again",
+    "next": "Next",
+    "back": "Back",
+    "skip": "Skip",
+    "close": "Close",
+    "create": "Create",
+    "search": "Search"
+  },
+  "Navigation": {
+    "dashboard": "Dashboard",
+    "library": "Library",
+    "agents": "Agents",
+    "dm": "DM",
+    "meetings": "Meetings",
+    "calendar": "Calendar",
+    "board": "Board",
+    "settings": "Settings"
+  },
+  "Library": {
+    "title": "Library",
+    "newPagePlaceholder": "New page name…",
+    "createButton": "Create",
+    "emptyTitle": "No files yet",
+    "emptyDescription": "Create your first markdown page above, or drop one in your /Library folder. Your agents can read and search anything you put here.",
+    "translateHint": "Need to translate? Just ask any agent in DM: \"Translate this document to Korean\"."
+  },
+  "Agents": {
+    "title": "Agents",
+    "newAgent": "New agent",
+    "wizardTitle": "Create a new agent",
+    "step": "Step {step} of {total}",
+    "pickTemplate": "Pick a template",
+    "nameYourAgent": "Name your agent",
+    "customizeManual": "Customize the manual",
+    "reviewAndModel": "Review & pick a model",
+    "createAgent": "Create agent"
+  },
+  "Settings": {
+    "title": "Settings",
+    "general": "General",
+    "aiProviders": "AI Providers",
+    "integrations": "Integrations",
+    "data": "Data & Privacy",
+    "translations": "Translations",
+    "about": "About",
+    "addApiKey": "Add API key",
+    "noKeysYet": "No API keys configured yet."
+  },
+  "Welcome": {
+    "title": "Welcome to BossBoard",
+    "subtitle": "Your local-first AI workspace. Files stay on your machine, agents do real work, and you bring your own AI keys.",
+    "betaCalloutTitle": "This is Beta v0.1",
+    "letsStart": "Let's get started",
+    "whatToCallYou": "What should we call you?",
+    "namePlaceholder": "Your name",
+    "createFirstAgent": "Create my first agent",
+    "skipExplore": "Skip — I'll explore on my own"
+  },
+  "DeviceLimit": {
+    "title": "Device limit reached",
+    "thisDevice": "this device",
+    "signOut": "Sign out",
+    "upgradeButton": "Upgrade to {nextPlan}",
+    "orSignOutHint": "Or sign out from another device above to continue here.",
+    "whyHeader": "Why does this happen?",
+    "whyBody": "Each install of BossBoard registers as a separate device — including reinstalls and PC formatting. If you reformatted, simply sign out from the old device above and the slot frees up immediately."
+  },
+  "Errors": {
+    "somethingWentWrong": "Something went wrong",
+    "rateLimitReached": "{provider} API rate limit reached",
+    "keyInvalid": "{provider} API key invalid. Check Settings → AI providers.",
+    "contextTooLong": "Context too long for {provider}. Compress the conversation or use a model with a larger context window.",
+    "providerError": "{provider} error: {message}"
+  }
+}

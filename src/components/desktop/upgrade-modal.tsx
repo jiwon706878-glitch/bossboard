@@ -49,9 +49,9 @@ const PLAN_PRICING: Record<
   { price: string; betaPrice: string | null }
 > = {
   free: { price: "$0", betaPrice: null },
-  starter: { price: "$19/mo", betaPrice: "$13.30/mo" },
-  pro: { price: "$49/mo", betaPrice: "$34.30/mo" },
-  business: { price: "$129/mo", betaPrice: "$90.30/mo" },
+  starter: { price: "$19.80/mo", betaPrice: "$13.86/mo" },
+  pro: { price: "$49.50/mo", betaPrice: "$34.65/mo" },
+  business: { price: "$129.90/mo", betaPrice: "$90.93/mo" },
 };
 
 interface Props {

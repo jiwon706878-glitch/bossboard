@@ -82,8 +82,8 @@ export const plans: Record<PlanId, PlanConfig> = {
     id: "starter",
     name: "Starter",
     description: "For solo agent builders",
-    monthlyPrice: 19,
-    annualPrice: 190,
+    monthlyPrice: 19.8,
+    annualPrice: 198,
     paddlePriceIdMonthly: process.env.PADDLE_STARTER_MONTHLY_PRICE_ID || "",
     paddlePriceIdAnnual: process.env.PADDLE_STARTER_ANNUAL_PRICE_ID || "",
     limits: {
@@ -117,8 +117,8 @@ export const plans: Record<PlanId, PlanConfig> = {
     id: "pro",
     name: "Pro",
     description: "For agent teams",
-    monthlyPrice: 49,
-    annualPrice: 490,
+    monthlyPrice: 49.5,
+    annualPrice: 495,
     paddlePriceIdMonthly: process.env.PADDLE_PRO_MONTHLY_PRICE_ID || "",
     paddlePriceIdAnnual: process.env.PADDLE_PRO_ANNUAL_PRICE_ID || "",
     limits: {
@@ -153,8 +153,8 @@ export const plans: Record<PlanId, PlanConfig> = {
     id: "business",
     name: "Business",
     description: "For agencies & enterprises",
-    monthlyPrice: 129,
-    annualPrice: 1290,
+    monthlyPrice: 129.9,
+    annualPrice: 1299,
     paddlePriceIdMonthly: process.env.PADDLE_BUSINESS_MONTHLY_PRICE_ID || "",
     paddlePriceIdAnnual: process.env.PADDLE_BUSINESS_ANNUAL_PRICE_ID || "",
     limits: {

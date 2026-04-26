@@ -35,9 +35,9 @@ interface AdminStats {
 }
 
 const BETA_PRICE: Record<string, number> = {
-  starter: 13.3,
-  pro: 34.3,
-  business: 90.3,
+  starter: 13.86,
+  pro: 34.65,
+  business: 90.93,
 };
 
 export default function LaunchAdminPage() {

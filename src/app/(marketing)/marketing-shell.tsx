@@ -1,7 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import type { ReactNode } from "react";
 
 /**
@@ -12,7 +13,16 @@ import type { ReactNode } from "react";
  */
 export function MarketingShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const shouldReduceMotion = useReducedMotion();
+
+  // When the desktop app accidentally lands on a marketing route, redirect
+  // straight to /desktop/dashboard. Web visitors are unaffected.
+  useEffect(() => {
+    if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+      router.replace("/desktop/dashboard");
+    }
+  }, [router]);
 
   return (
     <AnimatePresence mode="wait">

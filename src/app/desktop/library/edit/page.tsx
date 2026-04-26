@@ -3,11 +3,22 @@
 import { useEffect, useState, Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { invoke } from "@tauri-apps/api/core";
 import { readLibraryFile, saveLibraryFile } from "@/lib/library/service";
 import { type Frontmatter } from "@/lib/markdown/frontmatter";
 import { createDirectory } from "@/lib/tauri/fs";
-import { MarkdownRenderer } from "@/components/library/markdown-renderer";
+
+const MarkdownRenderer = dynamic(
+  () =>
+    import("@/components/library/markdown-renderer").then((m) => m.MarkdownRenderer),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[60vh] bg-bb-card border border-bb-border rounded-md animate-pulse" />
+    ),
+  },
+);
 
 function EditorInner() {
   const params = useSearchParams();

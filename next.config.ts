@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+import withBundleAnalyzer from "@next/bundle-analyzer";
 
 const isTauriBuild = process.env.TAURI_BUILD === "true";
+
+const bundleAnalyzer = withBundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
 const nextConfig: NextConfig = {
   ...(isTauriBuild ? { output: "export" } : {}),
@@ -64,7 +69,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
+export default withSentryConfig(bundleAnalyzer(nextConfig), {
   silent: true,
   org: process.env.SENTRY_ORG || "bossboard",
   project: process.env.SENTRY_PROJECT || "bossboard-web",

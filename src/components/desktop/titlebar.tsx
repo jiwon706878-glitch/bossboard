@@ -16,7 +16,9 @@ import {
   X,
   PanelLeftClose,
   PanelLeft,
+  Home,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { isTauri } from "@/lib/tauri/fs";
 import { useTheme } from "@/components/desktop/theme-provider";
@@ -216,62 +218,87 @@ export function Titlebar() {
               >
                 <Avatar email={user.email} size="md" />
               </button>
-              {profileMenuOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setProfileMenuOpen(false)}
-                  />
-                  <div className="absolute right-0 top-12 w-60 bg-bb-card border border-bb-border rounded-md shadow-xl z-50">
-                    <div className="p-3 border-b border-bb-border">
-                      <div className="text-xs text-gray-500">Signed in as</div>
-                      <div className="text-sm truncate">{user.email}</div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        router.push("/desktop/settings");
-                        setProfileMenuOpen(false);
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-bb-bg"
+              <AnimatePresence>
+                {profileMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setProfileMenuOpen(false)}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                      transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                      className="absolute right-0 top-12 w-60 bg-bb-card border border-bb-border rounded-md shadow-xl z-50"
                     >
-                      Settings
-                    </button>
-                    <button
-                      onClick={() => {
-                        window.dispatchEvent(new Event("bb-shortcuts-open"));
-                        setProfileMenuOpen(false);
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-bb-bg"
-                    >
-                      Keyboard shortcuts
-                    </button>
-                    <button
-                      onClick={() => {
-                        window.dispatchEvent(new Event("bb-about-open"));
-                        setProfileMenuOpen(false);
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-bb-bg"
-                    >
-                      About BossBoard
-                    </button>
-                    <button
-                      onClick={() => {
-                        sendFeedback();
-                        setProfileMenuOpen(false);
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-bb-bg border-t border-bb-border"
-                    >
-                      Send feedback
-                    </button>
-                    <button
-                      onClick={handleSignOut}
-                      className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-bb-bg"
-                    >
-                      Sign out
-                    </button>
-                  </div>
-                </>
-              )}
+                      <div className="p-3 border-b border-bb-border">
+                        <div className="text-xs text-gray-500">Signed in as</div>
+                        <div className="text-sm truncate">{user.email}</div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          router.push("/desktop/dashboard");
+                          setProfileMenuOpen(false);
+                        }}
+                        className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm hover:bg-bb-bg"
+                      >
+                        <Home className="w-4 h-4" /> Go to Dashboard
+                      </button>
+                      <button
+                        onClick={() => {
+                          router.push("/desktop/settings");
+                          setProfileMenuOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-bb-bg"
+                      >
+                        Settings
+                      </button>
+                      <button
+                        onClick={() => {
+                          window.location.reload();
+                        }}
+                        className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm hover:bg-bb-bg"
+                      >
+                        <RefreshCw className="w-4 h-4" /> Reload app
+                      </button>
+                      <button
+                        onClick={() => {
+                          window.dispatchEvent(new Event("bb-shortcuts-open"));
+                          setProfileMenuOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-bb-bg"
+                      >
+                        Keyboard shortcuts
+                      </button>
+                      <button
+                        onClick={() => {
+                          window.dispatchEvent(new Event("bb-about-open"));
+                          setProfileMenuOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-bb-bg"
+                      >
+                        About BossBoard
+                      </button>
+                      <button
+                        onClick={() => {
+                          sendFeedback();
+                          setProfileMenuOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-bb-bg border-t border-bb-border"
+                      >
+                        Send feedback
+                      </button>
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-bb-bg"
+                      >
+                        Sign out
+                      </button>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
           )}
 

@@ -16,8 +16,10 @@ import {
   Info,
 } from "lucide-react";
 import { MOTION } from "@/lib/motion/tokens";
+import { TourIllustration } from "@/components/desktop/tour-illustration";
 
 const ONBOARDING_KEY = "bb_onboarding_complete";
+const TOTAL_STEPS = 6;
 
 export default function WelcomePage() {
   const router = useRouter();
@@ -40,14 +42,21 @@ export default function WelcomePage() {
     router.replace(redirect);
   }
 
+  function next() {
+    setStep((s) => Math.min(TOTAL_STEPS - 1, s + 1));
+  }
+  function prev() {
+    setStep((s) => Math.max(0, s - 1));
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-8">
       <div className="flex gap-1 mb-8 w-full max-w-md">
-        {[0, 1, 2].map((s) => (
+        {Array.from({ length: TOTAL_STEPS }, (_, i) => (
           <div
-            key={s}
+            key={i}
             className={`h-1 flex-1 rounded-full ${
-              s <= step ? "bg-bb-primary" : "bg-bb-border"
+              i <= step ? "bg-bb-primary" : "bg-bb-border"
             }`}
           />
         ))}
@@ -60,7 +69,11 @@ export default function WelcomePage() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -16 }}
           transition={{ duration: MOTION.duration.base, ease: MOTION.ease.out }}
-          className="max-w-md w-full text-center"
+          className={
+            step >= 2 && step <= 4
+              ? "max-w-xl w-full"
+              : "max-w-md w-full text-center"
+          }
         >
           {step === 0 && (
             <>
@@ -103,7 +116,7 @@ export default function WelcomePage() {
                 <Feature icon={<KeyRound className="w-5 h-5" />} title="Your keys" />
               </div>
               <button
-                onClick={() => setStep(1)}
+                onClick={next}
                 className="w-full px-4 py-2 bg-bb-primary hover:bg-bb-primary-hover rounded-md text-sm inline-flex items-center justify-center gap-1"
               >
                 Let&apos;s get started <ArrowRight className="w-4 h-4" />
@@ -128,13 +141,13 @@ export default function WelcomePage() {
               />
               <div className="flex gap-2">
                 <button
-                  onClick={() => setStep(0)}
+                  onClick={prev}
                   className="px-3 py-2 text-sm border border-bb-border hover:bg-bb-card rounded-md inline-flex items-center gap-1"
                 >
                   <ArrowLeft className="w-4 h-4" /> Back
                 </button>
                 <button
-                  onClick={() => setStep(2)}
+                  onClick={next}
                   className="flex-1 px-3 py-2 text-sm bg-bb-primary hover:bg-bb-primary-hover rounded-md inline-flex items-center justify-center gap-1"
                 >
                   Continue <ArrowRight className="w-4 h-4" />
@@ -144,6 +157,57 @@ export default function WelcomePage() {
           )}
 
           {step === 2 && (
+            <TourStep
+              kicker="Step 1 of 3 · Tour"
+              title="Your Library"
+              description="Markdown files. Local. Editable in any editor — Obsidian, VS Code, Notepad. Drop notes, reference docs, project context."
+              slide="library"
+              bullets={[
+                "Frontmatter tags help you and your agents search.",
+                "Agents read + write to your library via tools.",
+                "Open the same folder in Obsidian — full round-trip.",
+              ]}
+              onPrev={prev}
+              onNext={next}
+              nextLabel="Next: Agents"
+            />
+          )}
+
+          {step === 3 && (
+            <TourStep
+              kicker="Step 2 of 3 · Tour"
+              title="AI Agents with Manuals"
+              description="Each agent has manual.md (role + behaviour) and memory.md (long-term memory). Edit them like documents."
+              slide="agents"
+              bullets={[
+                "Pick a template (Personal Assistant, Specialist, Reviewer) or start blank.",
+                "Conversations persist as files — agents recall context across sessions.",
+                "Memory compresses automatically when threads get long.",
+              ]}
+              onPrev={prev}
+              onNext={next}
+              nextLabel="Next: BYOK"
+            />
+          )}
+
+          {step === 4 && (
+            <TourStep
+              kicker="Step 3 of 3 · Tour"
+              title="Bring Your Own Key"
+              description="Use any AI provider. Your usage goes to them directly. BossBoard never marks up AI costs."
+              slide="byok"
+              bullets={[
+                "Anthropic, Google, OpenAI, xAI Grok — all supported.",
+                "Local LLMs (Ollama, LM Studio) work fully offline.",
+                "Multiple keys per provider; pin a specific key per agent.",
+              ]}
+              onPrev={prev}
+              onNext={next}
+              nextLabel="Set up your first agent"
+            />
+          )}
+
+          {step === 5 && (
             <>
               <div className="size-16 rounded-2xl bg-bb-primary/10 grid place-items-center mx-auto mb-6">
                 <Bot className="w-8 h-8 text-bb-primary" />
@@ -191,5 +255,63 @@ function Feature({ icon, title }: { icon: React.ReactNode; title: string }) {
       </div>
       <div className="text-xs">{title}</div>
     </div>
+  );
+}
+
+function TourStep({
+  title,
+  kicker,
+  description,
+  slide,
+  bullets,
+  onPrev,
+  onNext,
+  nextLabel,
+}: {
+  title: string;
+  kicker: string;
+  description: string;
+  slide: "library" | "agents" | "byok";
+  bullets: string[];
+  onPrev: () => void;
+  onNext: () => void;
+  nextLabel: string;
+}) {
+  return (
+    <>
+      <div className="text-xs uppercase tracking-wide text-bb-primary mb-1">
+        {kicker}
+      </div>
+      <h2 className="text-2xl font-bold mb-2">{title}</h2>
+      <p className="text-gray-400 mb-5">{description}</p>
+
+      <div className="rounded-lg border border-bb-border overflow-hidden mb-5 bg-bb-card">
+        <TourIllustration slide={slide} />
+      </div>
+
+      <ul className="text-sm space-y-2 mb-6">
+        {bullets.map((b) => (
+          <li key={b} className="flex items-start gap-2">
+            <Check className="size-4 text-green-400 mt-0.5 shrink-0" />
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="flex gap-2">
+        <button
+          onClick={onPrev}
+          className="px-3 py-2 text-sm border border-bb-border hover:bg-bb-card rounded-md inline-flex items-center gap-1"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+        <button
+          onClick={onNext}
+          className="flex-1 px-3 py-2 text-sm bg-bb-primary hover:bg-bb-primary-hover rounded-md inline-flex items-center justify-center gap-1"
+        >
+          {nextLabel} <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+    </>
   );
 }

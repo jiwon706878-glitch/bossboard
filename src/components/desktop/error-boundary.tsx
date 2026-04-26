@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { captureError } from "@/lib/error-tracking";
 
 interface State {
   hasError: boolean;
@@ -19,6 +20,9 @@ export class ErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("BB ErrorBoundary:", error, info);
+    // Mirror to Sentry + Supabase error_logs so render-time errors land
+    // in the /admin/launch dashboard alongside JS runtime errors.
+    captureError(error, { type: "js_error" });
   }
 
   render() {

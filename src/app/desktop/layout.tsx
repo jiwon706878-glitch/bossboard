@@ -22,6 +22,7 @@ import {
 import { migrateOldKeys } from "@/lib/ai/keys";
 import { generateSystemReference } from "@/lib/agents/system-reference";
 import { registerDevice, revokeRemoteDevice } from "@/lib/auth/register-device";
+import { registerGlobalErrorHandlers } from "@/lib/error-tracking";
 
 export default function DesktopLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -38,6 +39,10 @@ export default function DesktopLayout({ children }: { children: React.ReactNode 
   } | null>(null);
 
   useEffect(() => {
+    // Window error + unhandled-rejection → Sentry + error_logs.
+    // Idempotent: re-mounts of the layout don't double-register.
+    registerGlobalErrorHandlers();
+
     migrateOldKeys().catch(() => {
       /* migration is best-effort; users can re-add keys in Settings */
     });

@@ -8,6 +8,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { readLibraryFile, saveLibraryFile } from "@/lib/library/service";
 import { type Frontmatter } from "@/lib/markdown/frontmatter";
 import { createDirectory } from "@/lib/tauri/fs";
+import { FormatWarning } from "@/components/library/format-warning";
 
 const MarkdownRenderer = dynamic(
   () =>
@@ -172,6 +173,8 @@ function EditorInner() {
           }}
           className="w-full text-3xl font-bold bg-transparent border-none outline-none mb-6"
         />
+
+        <FormatWarning content={content} storageKey={`bb-fmt-warn:${filePath}`} />
 
         {mode === "source" && (
           <textarea

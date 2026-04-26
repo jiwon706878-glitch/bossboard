@@ -26,7 +26,9 @@ use commands::trash::{empty_trash, list_trash, move_to_trash, restore_from_trash
 use commands::watcher::{
     start_watching_workspace, stop_watching_workspace, WatcherState,
 };
-use commands::workspace::{get_default_workspace_path, initialize_workspace, is_workspace};
+use commands::workspace::{
+    detect_legacy_workspace, get_default_workspace_path, initialize_workspace, is_workspace,
+};
 use mcp_server::{get_mcp_info, McpState};
 
 fn setup_logging(app_data_dir: &Path) {
@@ -120,6 +122,7 @@ pub fn run() {
             initialize_workspace,
             is_workspace,
             get_default_workspace_path,
+            detect_legacy_workspace,
             metadata_upsert,
             metadata_list,
             metadata_search,

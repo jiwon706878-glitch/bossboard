@@ -59,8 +59,28 @@ pub async fn is_workspace(root_path: String) -> bool {
 pub async fn get_default_workspace_path() -> Result<String, FsError> {
     let home = dirs::home_dir()
         .ok_or_else(|| FsError::InvalidPath("could not resolve home directory".into()))?;
-    let path = home.join("Documents").join("BossBoard");
+    // v6: shorter, top-level path. The legacy ~/Documents/BossBoard is
+    // detected by detect_legacy_workspace below for one-time migration.
+    let path = home.join("BossBoard");
     Ok(path.to_string_lossy().to_string())
+}
+
+/// One-time check for the v3.0–v5 default location. Returns the legacy
+/// path iff it exists and the new default does NOT — at which point the
+/// frontend can offer the user a migration. We intentionally do NOT
+/// auto-rename here: respect that some users may be syncing the legacy
+/// folder with OneDrive / Dropbox and want to keep it there.
+#[tauri::command]
+pub async fn detect_legacy_workspace() -> Result<Option<String>, FsError> {
+    let home = dirs::home_dir()
+        .ok_or_else(|| FsError::InvalidPath("could not resolve home directory".into()))?;
+    let legacy = home.join("Documents").join("BossBoard");
+    let new_default = home.join("BossBoard");
+    if legacy.exists() && !new_default.exists() {
+        Ok(Some(legacy.to_string_lossy().to_string()))
+    } else {
+        Ok(None)
+    }
 }
 
 const GETTING_STARTED_CONTENT: &str = r#"---

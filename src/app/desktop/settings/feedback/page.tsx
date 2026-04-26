@@ -9,13 +9,21 @@ import {
   HelpCircle,
   MessageCircle,
   Check,
+  Star,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { isTauri } from "@/lib/tauri/fs";
 import { createClient } from "@/lib/supabase/client";
+import { usePlan } from "@/lib/auth/use-plan";
+import { isFeatureAvailable } from "@/lib/plan-gate";
 
-type FeedbackType = "bug" | "feature" | "question" | "other";
+type FeedbackType =
+  | "bug"
+  | "feature"
+  | "question"
+  | "other"
+  | "priority_feature_request";
 type Priority = "critical" | "normal" | "low";
 
 interface DeviceInfo {
@@ -25,12 +33,16 @@ interface DeviceInfo {
   app_version?: string;
 }
 
-const TYPES: Array<{
+interface TypeOption {
   value: FeedbackType;
   label: string;
   icon: LucideIcon;
   color: string;
-}> = [
+  /** When true, this option only appears for users on the Business plan. */
+  businessOnly?: boolean;
+}
+
+const TYPES: TypeOption[] = [
   { value: "bug", label: "Bug Report", icon: Bug, color: "text-red-400" },
   {
     value: "feature",
@@ -50,9 +62,22 @@ const TYPES: Array<{
     icon: MessageCircle,
     color: "text-gray-400",
   },
+  {
+    value: "priority_feature_request",
+    label: "Priority FR",
+    icon: Star,
+    color: "text-purple-400",
+    businessOnly: true,
+  },
 ];
 
 export default function FeedbackPage() {
+  const { plan } = usePlan();
+  const businessFeatures = isFeatureAvailable(
+    "priority_feature_requests",
+    plan,
+  );
+  const visibleTypes = TYPES.filter((t) => !t.businessOnly || businessFeatures);
   const [type, setType] = useState<FeedbackType>("bug");
   const [priority, setPriority] = useState<Priority>("normal");
   const [subject, setSubject] = useState("");
@@ -86,10 +111,23 @@ export default function FeedbackPage() {
         return;
       }
 
+      // Bugs use the user-picked severity; priority feature requests
+      // (Business plan only) auto-promote to critical so they land at
+      // the top of Jay's queue alongside critical bug reports;
+      // everything else is normal.
+      let resolvedPriority: Priority;
+      if (type === "bug") {
+        resolvedPriority = priority;
+      } else if (type === "priority_feature_request") {
+        resolvedPriority = "critical";
+      } else {
+        resolvedPriority = "normal";
+      }
+
       const { error: insertError } = await supabase.from("feedback").insert({
         user_id: session.user.id,
         type,
-        priority: type === "bug" ? priority : "normal",
+        priority: resolvedPriority,
         subject: subject.trim().slice(0, 200),
         body: body.trim() || null,
         os: device?.os ?? null,
@@ -105,8 +143,9 @@ export default function FeedbackPage() {
         throw insertError;
       }
 
-      // Critical bugs ping Telegram. Best-effort — silent on failure.
-      if (type === "bug" && priority === "critical") {
+      // Critical bugs and Business priority requests ping Telegram.
+      // Best-effort — silent on failure.
+      if (resolvedPriority === "critical") {
         fetch("/api/admin/telegram-summary", { method: "POST" }).catch(() => {});
       }
 
@@ -175,7 +214,7 @@ export default function FeedbackPage() {
         <div>
           <label className="text-sm font-medium block mb-2">Type</label>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {TYPES.map((t) => {
+            {visibleTypes.map((t) => {
               const Icon = t.icon;
               const active = type === t.value;
               return (
@@ -195,6 +234,17 @@ export default function FeedbackPage() {
             })}
           </div>
         </div>
+
+        {type === "priority_feature_request" && (
+          <div className="rounded-md border border-purple-500/40 bg-purple-500/10 p-3 text-xs text-purple-200">
+            <div className="font-medium text-purple-100">Business priority queue</div>
+            <p className="mt-1">
+              Priority feature requests skip the regular feedback queue and
+              land at the top of Jay&apos;s roadmap review. Submitted as
+              critical so they trigger an immediate Telegram alert.
+            </p>
+          </div>
+        )}
 
         {type === "bug" && (
           <div>

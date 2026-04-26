@@ -2,11 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Send, Sparkles, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Avatar } from "@/components/desktop/avatar";
 import { listAgents, type Agent } from "@/lib/agents/service";
 import { executeDMTurn } from "@/lib/agents/execute";
 import { writeFile, readFile, fileExists } from "@/lib/tauri/fs";
 import { loadKeys } from "@/lib/ai/keys";
+import { MOTION } from "@/lib/motion/tokens";
+import { TypingIndicator } from "@/components/desktop/typing-indicator";
 
 interface Message {
   role: "user" | "agent";
@@ -22,6 +25,8 @@ export function DMPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [sendStartTime, setSendStartTime] = useState<number | null>(null);
+  const [activeProvider, setActiveProvider] = useState<string>("google");
   const [compressing, setCompressing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -53,7 +58,9 @@ export function DMPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
         setMessages([]);
       }
     })();
-  }, [selectedAgent]);
+    const a = agents.find((x) => x.name === selectedAgent);
+    if (a?.ai_provider) setActiveProvider(a.ai_provider);
+  }, [selectedAgent, agents]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -88,6 +95,7 @@ export function DMPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
     setMessages(next);
     setInput("");
     setSending(true);
+    setSendStartTime(Date.now());
     setError(null);
 
     try {
@@ -95,6 +103,7 @@ export function DMPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
         selectedAgent,
         userMsg.content,
         (chunk) => {
+          if (sendStartTime !== null) setSendStartTime(null);
           setMessages((prev) => {
             const arr = [...prev];
             const last = arr[arr.length - 1];
@@ -120,6 +129,7 @@ export function DMPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setSending(false);
+      setSendStartTime(null);
     }
   }
 
@@ -165,12 +175,18 @@ export function DMPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
     }
   }
 
-  if (!isOpen) return null;
-
   const showCompressHint = messages.length > COMPRESSION_THRESHOLD;
 
   return (
-    <div className="fixed top-12 right-0 h-[calc(100vh-3rem)] w-96 bg-bb-card border-l border-bb-border z-40 flex flex-col shadow-2xl">
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ x: "100%", opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: "100%", opacity: 0 }}
+          transition={MOTION.spring.default}
+          className="fixed top-12 right-0 h-[calc(100vh-3rem)] w-96 bg-bb-card border-l border-bb-border z-40 flex flex-col shadow-2xl"
+        >
       <div className="flex items-center gap-2 p-3 border-b border-bb-border">
         {selectedAgent && (
           <button
@@ -248,8 +264,11 @@ export function DMPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
               </div>
             )}
             {messages.map((m, i) => (
-              <div
+              <motion.div
                 key={i}
+                initial={{ y: 12, opacity: 0, scale: 0.95 }}
+                animate={{ y: 0, opacity: 1, scale: 1 }}
+                transition={MOTION.spring.snappy}
                 className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
@@ -261,13 +280,11 @@ export function DMPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
                 >
                   <div className="whitespace-pre-wrap break-words">{m.content}</div>
                 </div>
-              </div>
+              </motion.div>
             ))}
-            {sending && (
+            {sending && sendStartTime !== null && (
               <div className="flex justify-start">
-                <div className="bg-bb-bg border border-bb-border px-3 py-2 rounded-2xl rounded-bl-sm text-sm text-gray-400">
-                  Thinking...
-                </div>
+                <TypingIndicator provider={activeProvider} startTime={sendStartTime} />
               </div>
             )}
             <div ref={endRef} />
@@ -319,7 +336,9 @@ export function DMPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
           </div>
         </>
       )}
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 

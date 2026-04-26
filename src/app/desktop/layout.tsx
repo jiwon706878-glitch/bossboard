@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { MOTION } from "@/lib/motion/tokens";
 import { Titlebar } from "@/components/desktop/titlebar";
 import { Sidebar } from "@/components/desktop/sidebar";
 import { OfflineBanner } from "@/components/desktop/offline-banner";
@@ -12,6 +14,7 @@ import { DMPanel } from "@/components/desktop/dm-panel";
 import { ShortcutsModal } from "@/components/desktop/shortcuts-modal";
 import { AboutModal } from "@/components/desktop/about-modal";
 import { ErrorBoundary } from "@/components/desktop/error-boundary";
+import { ToastContainer } from "@/components/desktop/toast";
 import { migrateOldKeys } from "@/lib/ai/keys";
 
 export default function DesktopLayout({ children }: { children: React.ReactNode }) {
@@ -87,13 +90,26 @@ export default function DesktopLayout({ children }: { children: React.ReactNode 
         <div className="flex-1 flex overflow-hidden">
           {!isAuthPage && <Sidebar />}
           <main className="flex-1 overflow-auto">
-            <ErrorBoundary>{children}</ErrorBoundary>
+            <ErrorBoundary>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={pathname}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: MOTION.duration.base, ease: MOTION.ease.out }}
+                >
+                  {children}
+                </motion.div>
+              </AnimatePresence>
+            </ErrorBoundary>
           </main>
         </div>
         <GlobalContextMenu />
         <DMPanel isOpen={dmOpen} onClose={() => setDmOpen(false)} />
         <ShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
         <AboutModal isOpen={aboutOpen} onClose={() => setAboutOpen(false)} />
+        <ToastContainer />
       </div>
     </ThemeProvider>
   );

@@ -3,11 +3,21 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { listLibrary, createLibraryFile, type LibraryFile } from "@/lib/library/service";
 import { ContextMenu, type ContextMenuItem } from "@/components/desktop/context-menu";
 import { isTauri } from "@/lib/tauri/fs";
+
+const containerVariants = {
+  animate: { transition: { staggerChildren: 0.04 } },
+};
+
+const itemVariants = {
+  initial: { y: 8, opacity: 0 },
+  animate: { y: 0, opacity: 1, transition: { duration: 0.2 } },
+};
 
 export default function LibraryPage() {
   const router = useRouter();
@@ -166,38 +176,45 @@ export default function LibraryPage() {
         ) : files.length === 0 ? (
           <div className="text-gray-400">No files yet. Create your first page above.</div>
         ) : (
-          <div className="space-y-2">
+          <motion.div
+            variants={containerVariants}
+            initial="initial"
+            animate="animate"
+            className="space-y-2"
+          >
             {files.map((f) => (
-              <ContextMenu key={f.path} items={buildItems(f)}>
-                <Link
-                  href={`/desktop/library/edit?path=${encodeURIComponent(f.path)}`}
-                  className="block p-4 bg-bb-card rounded-md border border-bb-border hover:border-bb-primary transition"
-                >
-                  <div className="flex items-center gap-2">
-                    <span>{f.is_directory ? "📁" : "📄"}</span>
-                    <span className="font-medium">
-                      {f.frontmatter?.title || f.name.replace(".md", "")}
-                    </span>
-                    {f.frontmatter?.tags && f.frontmatter.tags.length > 0 && (
-                      <div className="flex gap-1 ml-2">
-                        {f.frontmatter.tags.map((t) => (
-                          <span
-                            key={t}
-                            className="text-xs bg-bb-bg px-2 py-0.5 rounded"
-                          >
-                            {t}
-                          </span>
-                        ))}
-                      </div>
+              <motion.div key={f.path} variants={itemVariants}>
+                <ContextMenu items={buildItems(f)}>
+                  <Link
+                    href={`/desktop/library/edit?path=${encodeURIComponent(f.path)}`}
+                    className="block p-4 bg-bb-card rounded-md border border-bb-border hover:border-bb-primary transition"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>{f.is_directory ? "📁" : "📄"}</span>
+                      <span className="font-medium">
+                        {f.frontmatter?.title || f.name.replace(".md", "")}
+                      </span>
+                      {f.frontmatter?.tags && f.frontmatter.tags.length > 0 && (
+                        <div className="flex gap-1 ml-2">
+                          {f.frontmatter.tags.map((t) => (
+                            <span
+                              key={t}
+                              className="text-xs bg-bb-bg px-2 py-0.5 rounded"
+                            >
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {f.preview && (
+                      <div className="text-sm text-gray-400 mt-1 line-clamp-2">{f.preview}</div>
                     )}
-                  </div>
-                  {f.preview && (
-                    <div className="text-sm text-gray-400 mt-1 line-clamp-2">{f.preview}</div>
-                  )}
-                </Link>
-              </ContextMenu>
+                  </Link>
+                </ContextMenu>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
     </div>

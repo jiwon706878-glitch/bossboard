@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
+import { MOTION } from "@/lib/motion/tokens";
 import {
   LayoutDashboard,
   Library,
@@ -61,10 +63,10 @@ export function Sidebar() {
   }
 
   return (
-    <aside
-      className={`bg-bb-sidebar border-r border-bb-border flex flex-col transition-[width] duration-200 ${
-        collapsed ? "w-14" : "w-56"
-      }`}
+    <motion.aside
+      animate={{ width: collapsed ? 56 : 224 }}
+      transition={MOTION.spring.default}
+      className="bg-bb-sidebar border-r border-bb-border flex flex-col overflow-hidden"
     >
       <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
@@ -93,11 +95,19 @@ export function Sidebar() {
             );
           }
 
-          const itemClass = `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition flex-1 ${
+          const itemClass = `relative flex items-center gap-3 px-3 py-2 rounded-md text-sm transition flex-1 ${
             active
-              ? "bg-bb-primary/20 text-bb-primary border-l-2 border-bb-primary"
+              ? "text-bb-primary"
               : "text-gray-400 hover:text-bb-fg hover:bg-bb-card"
           }`;
+
+          const indicator = active ? (
+            <motion.div
+              layoutId="sidebar-active"
+              transition={MOTION.spring.default}
+              className="absolute inset-0 bg-bb-primary/20 rounded-md border-l-2 border-bb-primary"
+            />
+          ) : null;
 
           return (
             <div key={item.href}>
@@ -108,8 +118,9 @@ export function Sidebar() {
                     className={itemClass}
                     title={collapsed ? item.label : undefined}
                   >
-                    <Icon className="w-4 h-4 flex-shrink-0" />
-                    {!collapsed && <span>{item.label}</span>}
+                    {indicator}
+                    <Icon className="w-4 h-4 flex-shrink-0 relative z-10" />
+                    {!collapsed && <span className="relative z-10">{item.label}</span>}
                   </button>
                 ) : (
                   <Link
@@ -117,8 +128,9 @@ export function Sidebar() {
                     className={itemClass}
                     title={collapsed ? item.label : undefined}
                   >
-                    <Icon className="w-4 h-4 flex-shrink-0" />
-                    {!collapsed && <span>{item.label}</span>}
+                    {indicator}
+                    <Icon className="w-4 h-4 flex-shrink-0 relative z-10" />
+                    {!collapsed && <span className="relative z-10">{item.label}</span>}
                   </Link>
                 )}
                 {!collapsed && hasSubs && (
@@ -164,6 +176,6 @@ export function Sidebar() {
           {!collapsed && <span>Settings</span>}
         </Link>
       </div>
-    </aside>
+    </motion.aside>
   );
 }

@@ -42,6 +42,26 @@ const FEATURE_DESCRIPTIONS: Record<
     title: "Unlimited agents",
     description: "Build a Business-scale agent team with no per-seat limit.",
   },
+  email_integration: {
+    title: "Email Integration",
+    description:
+      "Connect Gmail / Outlook / IMAP so agents can read, search, and draft replies. Sending requires explicit approval.",
+  },
+  mcp_client: {
+    title: "MCP Client",
+    description:
+      "Let your agents call external tools via the Model Context Protocol — GitHub, Notion, Linear, and more.",
+  },
+  library_cloud_sync: {
+    title: "Library Cloud Sync",
+    description:
+      "Sync your Library across devices. Coming in v3.2 — Pro+ subscribers get early access on launch.",
+  },
+  priority_feature_requests: {
+    title: "Priority Feature Requests",
+    description:
+      "Submit feature requests prioritized for the next release cycle. Direct line to the BB roadmap.",
+  },
 };
 
 const PLAN_PRICING: Record<

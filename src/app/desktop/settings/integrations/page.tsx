@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Mail, ArrowRight } from "lucide-react";
 import { getKey, setKey } from "@/lib/tauri/keychain";
 
 export default function IntegrationsPage() {
@@ -47,6 +49,27 @@ export default function IntegrationsPage() {
           </button>
         </div>
       )}
+
+      <Link
+        href="/desktop/settings/integrations/email"
+        className="group mb-4 flex items-center gap-3 p-4 bg-bb-card rounded-md border border-bb-border hover:border-bb-primary transition"
+      >
+        <div className="size-10 rounded-md bg-bb-primary/10 grid place-items-center text-bb-primary shrink-0">
+          <Mail className="size-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-sm flex items-center gap-2">
+            Email Integration
+            <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">
+              Pro+ · Coming v3.1
+            </span>
+          </div>
+          <div className="text-xs text-gray-400 mt-0.5">
+            Connect Gmail / Outlook / IMAP — agents read, search, and draft replies.
+          </div>
+        </div>
+        <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-bb-primary group-hover:translate-x-1 transition-all" />
+      </Link>
 
       <section className="p-6 bg-bb-card rounded-md border border-bb-border space-y-4">
         <div>

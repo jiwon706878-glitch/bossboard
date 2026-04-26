@@ -7,7 +7,11 @@ export type Feature =
   | "team_workspace"
   | "more_than_3_agents"
   | "more_than_10_agents"
-  | "more_than_50_agents";
+  | "more_than_50_agents"
+  | "email_integration"
+  | "mcp_client"
+  | "library_cloud_sync"
+  | "priority_feature_requests";
 
 const PLAN_RANK: Record<PlanId, number> = {
   free: 0,
@@ -24,6 +28,10 @@ const FEATURE_REQUIRES: Record<Feature, PlanId> = {
   more_than_3_agents: "starter",
   more_than_10_agents: "pro",
   more_than_50_agents: "business",
+  email_integration: "pro",
+  mcp_client: "pro",
+  library_cloud_sync: "pro",
+  priority_feature_requests: "business",
 };
 
 export function isFeatureAvailable(feature: Feature, plan: PlanId): boolean {

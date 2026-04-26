@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, memo } from "react";
-import { Plus, Trash2, Edit2, ExternalLink } from "lucide-react";
+import { Plus, Trash2, Edit2, ExternalLink, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   loadKeys,
@@ -264,6 +264,32 @@ function KeyModal({
                 Get your {PROVIDERS[provider].label} key
                 <ExternalLink className="w-3 h-3" />
               </a>
+            )}
+            {provider === "google" && (
+              <div className="mt-2 rounded-md border-l-4 border-amber-500 bg-amber-900/15 p-2.5 text-xs">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="size-3.5 text-amber-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-medium text-amber-200">
+                      Free Gemini keys may be used for training
+                    </p>
+                    <p className="text-amber-200/80 mt-0.5">
+                      Google&apos;s free-tier Gemini API allows them to use your
+                      prompts for model improvements. For full privacy, enable
+                      billing in AI Studio and use a{" "}
+                      <a
+                        href="https://aistudio.google.com/app/apikey"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline hover:text-amber-100"
+                      >
+                        paid Gemini key
+                      </a>
+                      .
+                    </p>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 

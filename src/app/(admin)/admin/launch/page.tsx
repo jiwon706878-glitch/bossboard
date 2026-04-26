@@ -12,6 +12,7 @@ import {
   Send,
   TrendingUp,
   MessageSquare,
+  Download,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -142,6 +143,14 @@ export default function LaunchAdminPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <a
+            href="/api/admin/export-feedback"
+            download
+            className="px-3 py-2 rounded-lg border hover:bg-muted text-sm inline-flex items-center gap-2"
+          >
+            <Download className="size-4" />
+            Export feedback CSV
+          </a>
           <button
             onClick={sendTelegram}
             disabled={sendingTelegram}

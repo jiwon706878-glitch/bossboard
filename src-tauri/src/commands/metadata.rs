@@ -64,13 +64,22 @@ fn open_db(app: &tauri::AppHandle, workspace_root: &str) -> Result<Connection, F
 }
 
 fn apply_pragmas(conn: &Connection) {
+    // WAL + NORMAL = good throughput with crash-safe semantics for our
+    // scale. busy_timeout=5000 gives Defender / OneDrive scanners 5s to
+    // release file locks before we error out instead of bouncing
+    // immediately. foreign_keys=ON catches orphan-row bugs early.
     let _ = conn.execute_batch(
         r#"
         PRAGMA journal_mode = WAL;
         PRAGMA synchronous = NORMAL;
         PRAGMA cache_size = -64000;
+        PRAGMA busy_timeout = 5000;
+        PRAGMA foreign_keys = ON;
         "#,
     );
+    // Truncate the WAL on each open so a crash or a long-running session
+    // doesn't leave an unbounded -wal sidecar growing forever.
+    let _ = conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);");
 }
 
 /// Schema gating + backup-before-migrate. When `db_file` is supplied and the

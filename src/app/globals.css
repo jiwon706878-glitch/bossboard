@@ -378,6 +378,32 @@ html.light .text-white { color: #1a1a1a; }
   }
 }
 
+/* ═══ i18n overflow utilities (Group 4.2) ═══
+   Localized labels routinely run 1.5–2× the English length (German,
+   Russian especially). These utilities give every navigation / button /
+   card surface a sensible truncate so layouts don't break for the 9
+   non-English locales. */
+.bb-nav-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.bb-btn-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bb-card-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.bb-settings-label {
+  white-space: nowrap;
+}
+
 /* ═══ Focus accessibility (Group D) ═══ */
 .bb-app-shell :focus-visible,
 .bb-app-shell button:focus-visible,

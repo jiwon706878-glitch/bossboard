@@ -1,4 +1,5 @@
 import { executeDMTurn } from "@/lib/agents/execute";
+import { loadKeys } from "@/lib/ai/keys";
 
 export interface MeetingMessage {
   agent: string;
@@ -39,7 +40,24 @@ export async function runMeeting(
           : round === rounds
             ? "Provide your final position before we conclude."
             : "Respond to the discussion so far and add your viewpoint.";
-      const prompt = `Meeting topic: ${topic}\n\nPrevious discussion:\n${transcript || "(none yet)"}\n\nYou are ${agentName}. Round ${round} of ${rounds}. ${stage}\nKeep responses concise (3-5 sentences).`;
+      // Anti-echo-chamber rules: meetings devolve into agreement spam
+      // when each agent leads with "I agree with X". Force concrete
+      // contribution or an explicit "nothing to add — moving on" exit.
+      const prompt = `Meeting topic: ${topic}
+
+Previous discussion:
+${transcript || "(none yet)"}
+
+You are ${agentName}. Round ${round} of ${rounds}. ${stage}
+
+Critical rules for this meeting:
+1. DO NOT start with "I agree" or "Great point" or any sycophantic opener.
+2. DO NOT recap what other agents said — go straight to YOUR contribution.
+3. If you disagree, say so directly with reasoning.
+4. Add NEW information, analysis, or a concrete next step. Never just rephrase.
+5. Be concise — 3-5 sentences ideal.
+6. End with a concrete next step or open question (not "let me know your thoughts").
+7. If you have NOTHING new to add, say "I have nothing new to add — passing." and stop.`;
       const content = await executeDMTurn(agentName, prompt);
       const msg: MeetingMessage = { agent: agentName, content, round };
       messages.push(msg);
@@ -63,19 +81,20 @@ async function summarizeMeeting(
   topic: string,
   messages: MeetingMessage[],
 ): Promise<string> {
-  const apiKey =
-    localStorage.getItem("bb_api_key_google") ||
-    localStorage.getItem("bb_api_key_anthropic") ||
-    "";
-  if (!apiKey) {
-    return "(No API key for summary — meeting transcript captured above.)";
+  const allKeys = await loadKeys();
+  const googleKey = allKeys.find((k) => k.provider === "google");
+  const anthropicKey = allKeys.find((k) => k.provider === "anthropic");
+  const picked = googleKey ?? anthropicKey;
+  if (!picked) {
+    return "(No Google or Anthropic key for summary — meeting transcript captured above.)";
   }
+  const apiKey = picked.key;
   const transcript = messages
     .map((m) => `[Round ${m.round}] ${m.agent}: ${m.content}`)
     .join("\n\n");
   const prompt = `Summarize this meeting and provide a clear conclusion.\n\nTopic: ${topic}\n\nDiscussion:\n${transcript}\n\nProvide:\n1. Key points raised\n2. Areas of agreement\n3. Areas of disagreement\n4. Recommended action items`;
 
-  if (localStorage.getItem("bb_api_key_google")) {
+  if (picked.provider === "google") {
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {

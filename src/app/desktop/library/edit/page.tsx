@@ -9,6 +9,7 @@ import { readLibraryFile, saveLibraryFile } from "@/lib/library/service";
 import { type Frontmatter } from "@/lib/markdown/frontmatter";
 import { createDirectory } from "@/lib/tauri/fs";
 import { FormatWarning } from "@/components/library/format-warning";
+import { normalizeAssetName } from "@/lib/library/asset-name";
 
 const MarkdownRenderer = dynamic(
   () =>
@@ -88,7 +89,7 @@ function EditorInner() {
       let inserts = "";
       for (const file of files) {
         if (!file.type.startsWith("image/")) continue;
-        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const safeName = normalizeAssetName(file.name);
         const destPath = `${assetsPath}/${safeName}`;
         const arrayBuffer = await file.arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);

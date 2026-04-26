@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { ScrollToTop } from "@/components/marketing/scroll-to-top";
+import { MacWaitlist } from "@/components/marketing/mac-waitlist";
 
 export const metadata: Metadata = {
   title: "Download Desktop App",
@@ -96,6 +97,10 @@ export default function DownloadPage() {
             Launching Week 2 of beta
           </p>
         </div>
+      </div>
+
+      <div id="mac" className="mb-10">
+        <MacWaitlist source="download" />
       </div>
 
       {/* Use web meanwhile */}

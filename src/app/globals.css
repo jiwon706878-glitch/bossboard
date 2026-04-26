@@ -378,6 +378,16 @@ html.light .text-white { color: #1a1a1a; }
   }
 }
 
+/* ═══ Focus accessibility (Group D) ═══ */
+.bb-app-shell :focus-visible,
+.bb-app-shell button:focus-visible,
+.bb-app-shell a:focus-visible,
+.bb-app-shell [role="button"]:focus-visible {
+  outline: 2px solid var(--color-bb-primary);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
 /* ═══ Library reading typography (clamp-based responsive) ═══ */
 .library-content {
   font-size: clamp(0.9375rem, 0.5vw + 0.75rem, 1.0625rem);

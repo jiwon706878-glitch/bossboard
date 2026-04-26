@@ -4,10 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { FileText } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { listLibrary, createLibraryFile, type LibraryFile } from "@/lib/library/service";
 import { ContextMenu, type ContextMenuItem } from "@/components/desktop/context-menu";
+import { EmptyState } from "@/components/desktop/empty-state";
+import { ErrorState } from "@/components/desktop/error-state";
 import { isTauri } from "@/lib/tauri/fs";
 
 const containerVariants = {
@@ -172,9 +175,13 @@ export default function LibraryPage() {
         {loading ? (
           <div className="text-gray-400">Loading…</div>
         ) : error ? (
-          <div className="text-red-400">{error}</div>
+          <ErrorState error={error} retry={loadFiles} />
         ) : files.length === 0 ? (
-          <div className="text-gray-400">No files yet. Create your first page above.</div>
+          <EmptyState
+            icon={FileText}
+            title="No files yet"
+            description="Create your first markdown page above, or drop one in your /Library folder. Your agents can read and search anything you put here."
+          />
         ) : (
           <motion.div
             variants={containerVariants}
